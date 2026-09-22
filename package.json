@@ -6,20 +6,33 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "node scripts/run-migrations.mjs",
+    "db:verify": "node scripts/verify-schema.mjs",
+    "db:smoke-test": "node scripts/smoke-test-auth.mjs",
+    "db:smoke-test-moderation": "node scripts/smoke-test-product-moderation.mjs",
+    "db:smoke-test-rls": "node scripts/smoke-test-staff-rls.mjs",
+    "db:smoke-test-addresses": "node scripts/smoke-test-addresses.mjs",
+    "db:smoke-test-wholesale": "node scripts/smoke-test-wholesale.mjs",
+    "db:smoke-test-fx": "node scripts/smoke-test-fx-rates.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
     "next": "16.3.1",
+    "next-intl": "^4.13.7",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
+    "pg": "^8.23.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

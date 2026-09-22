@@ -1,0 +1,115 @@
+{
+  "nav": {
+    "novidades": "Novidades",
+    "destaques": "Destaques",
+    "colecoes": "Coleções",
+    "atacado": "Atacado",
+    "sobre": "Sobre",
+    "contato": "Contato",
+    "faq": "FAQ",
+    "cadastro": "Cadastre-se",
+    "login": "Entrar",
+    "minhaConta": "Minha conta",
+    "sair": "Sair",
+    "statusApproved": "Aprovado",
+    "statusPending": "Em análise",
+    "statusRejected": "Recusado"
+  },
+  "benefits": {
+    "shippingTitle": "Entrega Global",
+    "shipping": "Envio internacional com frete e impostos calculados no checkout",
+    "installmentsTitle": "Pagamento Facilitado",
+    "installments": "Parcelamento disponível para clientes aprovados",
+    "supportTitle": "Atendimento Multilíngue",
+    "support": "Atendimento em português, inglês e espanhol"
+  },
+  "product": {
+    "signUpToSeePrice": "Cadastre-se para ver o preço",
+    "pendingApproval": "Cadastro em análise",
+    "buy": "Comprar",
+    "from": "De",
+    "to": "Por",
+    "installmentsLabel": "ou em até 6x",
+    "size": "Tamanho",
+    "color": "Cor",
+    "quantity": "Quantidade",
+    "selectVariant": "Selecione o tamanho e a cor",
+    "addedToCart": "Adicionado ao carrinho.",
+    "viewCart": "Ver carrinho",
+    "internationalOnly": "Disponível para compra apenas na loja internacional."
+  },
+  "cart": {
+    "title": "Seu carrinho",
+    "empty": "Seu carrinho está vazio",
+    "browseCatalog": "Navegar pelo catálogo",
+    "remove": "Remover",
+    "subtotalNotice": "Subtotal (frete e impostos calculados no checkout)",
+    "proceedToCheckout": "Finalizar Pedido",
+    "cartLink": "Carrinho"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "shippingAddress": "Endereço de entrega",
+    "noAddress": "Nenhum endereço cadastrado.",
+    "addAddress": "Adicionar um endereço",
+    "beforeCheckout": "antes de finalizar o pedido.",
+    "orderSummary": "Resumo do pedido",
+    "subtotal": "Subtotal",
+    "pendingIntegration": "Frete e impostos de importação (DHL) e pagamento via cartão de crédito (Stripe) em integração.",
+    "payButton": "Calcular frete e pagar"
+  },
+  "signup": {
+    "individual": "Pessoa Física",
+    "business": "Pessoa Jurídica (Atacado)",
+    "name": "Nome completo",
+    "contactName": "Nome do contato",
+    "companyName": "Razão social / Nome da empresa",
+    "taxId": "CNPJ / Registro da Empresa (Tax ID)",
+    "email": "E-mail",
+    "password": "Senha",
+    "submitting": "Enviando...",
+    "submit": "Cadastrar",
+    "success": "Cadastro recebido! Nossa equipe analisará e aprovará seu acesso — você receberá uma notificação por e-mail assim que for liberado."
+  },
+  "address": {
+    "title": "Endereços",
+    "addTitle": "Adicionar novo endereço",
+    "country": "País",
+    "state": "Estado / Província",
+    "city": "Cidade",
+    "line1": "Endereço (Rua, Número, Bairro)",
+    "line2": "Complemento (opcional)",
+    "postalCode": "CEP / Código Postal",
+    "phone": "Telefone de contato",
+    "save": "Adicionar endereço",
+    "saving": "Salvando...",
+    "empty": "Nenhum endereço cadastrado ainda.",
+    "remove": "Remover"
+  },
+  "wholesale": {
+    "title": "Atacado / B2B",
+    "subtitle": "Cadastro PJ com aprovação de operador para compras em atacado.",
+    "createCta": "Criar cadastro PJ",
+    "notice": "Tabela de preços por volume e pedido mínimo configurados de acordo com o acordo comercial."
+  },
+  "sections": {
+    "novidades": "Novidades",
+    "destaques": "Destaques"
+  },
+  "home": {
+    "heroTitle": "Vestidos com identidade, prontos para o mundo",
+    "heroSubtitle": "Catálogo internacional com frete e impostos calculados antes de você pagar.",
+    "heroCta": "Cadastre-se"
+  },
+  "footer": {
+    "institutional": "Institucional",
+    "about": "Sobre",
+    "faq": "Perguntas frequentes",
+    "contact": "Contato",
+    "policies": "Políticas",
+    "terms": "Termos de uso",
+    "privacy": "Privacidade",
+    "returns": "Trocas e devoluções",
+    "nationalNotice": "Este é o catálogo institucional do site nacional. Para comprar, visite nossa loja internacional."
+  }
+}

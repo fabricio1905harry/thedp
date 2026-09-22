@@ -1,0 +1,112 @@
+{
+  "nav": {
+    "novidades": "Novedades",
+    "destaques": "Destacados",
+    "colecoes": "Colecciones",
+    "atacado": "Mayorista",
+    "sobre": "Nosotros",
+    "contato": "Contacto",
+    "faq": "Preguntas frecuentes",
+    "cadastro": "Regístrate",
+    "login": "Iniciar sesión",
+    "minhaConta": "Mi cuenta",
+    "sair": "Salir",
+    "statusApproved": "Aprobado",
+    "statusPending": "En revisión",
+    "statusRejected": "Rechazado"
+  },
+  "benefits": {
+    "shipping": "Envío internacional con aranceles calculados en el checkout",
+    "installments": "Cuotas disponibles para clientes aprobados",
+    "support": "Atención en portugués, inglés y español"
+  },
+  "product": {
+    "signUpToSeePrice": "Regístrate para ver el precio",
+    "pendingApproval": "Cuenta en revisión",
+    "buy": "Comprar",
+    "from": "De",
+    "to": "Por",
+    "installmentsLabel": "o en hasta 6x",
+    "size": "Talla",
+    "color": "Color",
+    "quantity": "Cantidad",
+    "selectVariant": "Selecciona la talla y el color",
+    "addedToCart": "Añadido al carrito.",
+    "viewCart": "Ver carrito",
+    "internationalOnly": "Disponible para compra solo en la tienda internacional."
+  },
+  "cart": {
+    "title": "Tu Carrito de Compras",
+    "empty": "Tu carrito está vacío",
+    "browseCatalog": "Navegar por el catálogo",
+    "remove": "Eliminar",
+    "subtotalNotice": "Subtotal (envío y aranceles calculados en el checkout)",
+    "proceedToCheckout": "Finalizar Pedido",
+    "cartLink": "Carrito"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "shippingAddress": "Dirección de envío",
+    "noAddress": "Sin dirección guardada.",
+    "addAddress": "Añadir una",
+    "beforeCheckout": "antes de finalizar el pedido.",
+    "orderSummary": "Resumen del pedido",
+    "subtotal": "Subtotal",
+    "pendingIntegration": "Envío y aranceles (DHL) y pago con tarjeta (Stripe) en proceso de integración.",
+    "payButton": "Calcular envío y pagar"
+  },
+  "signup": {
+    "individual": "Persona Física",
+    "business": "Persona Jurídica (Mayorista)",
+    "name": "Nombre completo",
+    "contactName": "Nombre de contacto",
+    "companyName": "Nombre de la empresa / Razón social",
+    "taxId": "Identificación fiscal (Tax ID / RUC / RFC)",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "submitting": "Enviando...",
+    "submit": "Registrarse",
+    "success": "¡Registro recibido! Nuestro equipo revisará y aprobará tu cuenta — recibirás una notificación por correo tan pronto como sea aprobada."
+  },
+  "address": {
+    "title": "Direcciones",
+    "addTitle": "Añadir nueva dirección",
+    "country": "País",
+    "state": "Estado / Provincia",
+    "city": "Ciudad",
+    "line1": "Dirección (Calle, número)",
+    "line2": "Departamento, suite, etc. (opcional)",
+    "postalCode": "Código postal",
+    "phone": "Teléfono de contacto",
+    "save": "Guardar dirección",
+    "saving": "Guardando...",
+    "empty": "Aún no hay direcciones guardadas.",
+    "remove": "Eliminar"
+  },
+  "wholesale": {
+    "title": "Mayorista / B2B",
+    "subtitle": "Registro de cuenta de empresa con aprobación de operador para compras al por mayor.",
+    "createCta": "Crear cuenta de empresa",
+    "notice": "Precios por volumen y pedido mínimo configurados según acuerdo comercial."
+  },
+  "sections": {
+    "novidades": "Novedades",
+    "destaques": "Destacados"
+  },
+  "home": {
+    "heroTitle": "Vestidos con identidad, listos para el mundo",
+    "heroSubtitle": "Catálogo internacional con envío e impuestos calculados antes de pagar.",
+    "heroCta": "Regístrate"
+  },
+  "footer": {
+    "institutional": "Institucional",
+    "about": "Nosotros",
+    "faq": "Preguntas frecuentes",
+    "contact": "Contacto",
+    "policies": "Políticas",
+    "terms": "Términos de uso",
+    "privacy": "Privacidad",
+    "returns": "Cambios y devoluciones",
+    "nationalNotice": "Este es el catálogo institucional del sitio nacional. Para comprar, visita nuestra tienda internacional."
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "nav": {
+    "novidades": "New in",
+    "destaques": "Featured",
+    "colecoes": "Collections",
+    "atacado": "Wholesale",
+    "sobre": "About",
+    "contato": "Contact",
+    "faq": "FAQ",
+    "cadastro": "Sign up",
+    "login": "Sign in",
+    "minhaConta": "My account",
+    "sair": "Sign out",
+    "statusApproved": "Approved",
+    "statusPending": "Pending review",
+    "statusRejected": "Rejected"
+  },
+  "benefits": {
+    "shippingTitle": "Global Shipping",
+    "shipping": "International shipping with duties calculated at checkout",
+    "installmentsTitle": "Flexible Payment",
+    "installments": "Installments available for approved accounts",
+    "supportTitle": "Multilingual Support",
+    "support": "Support in Portuguese, English, and Spanish"
+  },
+  "product": {
+    "signUpToSeePrice": "Sign up to see price",
+    "pendingApproval": "Account pending review",
+    "buy": "Add to Cart",
+    "from": "From",
+    "to": "For",
+    "installmentsLabel": "or in up to 6x",
+    "size": "Size",
+    "color": "Color",
+    "quantity": "Quantity",
+    "selectVariant": "Select size and color",
+    "addedToCart": "Added to cart.",
+    "viewCart": "View cart",
+    "internationalOnly": "Available for purchase only on the international store."
+  },
+  "cart": {
+    "title": "Your Shopping Cart",
+    "empty": "Your cart is empty",
+    "browseCatalog": "Browse catalog",
+    "remove": "Remove",
+    "subtotalNotice": "Subtotal (shipping and duties calculated at checkout)",
+    "proceedToCheckout": "Proceed to Checkout",
+    "cartLink": "Cart"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "shippingAddress": "Shipping address",
+    "noAddress": "No saved address yet.",
+    "addAddress": "Add one",
+    "beforeCheckout": "before checking out.",
+    "orderSummary": "Order summary",
+    "subtotal": "Subtotal",
+    "pendingIntegration": "Shipping and import duties (DHL) and card payment (Stripe) integration in progress.",
+    "payButton": "Calculate shipping & pay"
+  },
+  "signup": {
+    "individual": "Individual",
+    "business": "Business (wholesale)",
+    "name": "Full name",
+    "contactName": "Contact name",
+    "companyName": "Company name",
+    "taxId": "Tax ID (CNPJ / EIN / VAT)",
+    "email": "E-mail",
+    "password": "Password",
+    "submitting": "Submitting...",
+    "submit": "Sign up",
+    "success": "Signup received! Our team will review and approve your account — you'll receive an email notification once approved."
+  },
+  "address": {
+    "title": "Addresses",
+    "addTitle": "Add a new address",
+    "country": "Country",
+    "state": "State / Province",
+    "city": "City",
+    "line1": "Street address",
+    "line2": "Apartment, suite, etc. (optional)",
+    "postalCode": "Postal code",
+    "phone": "Contact phone",
+    "save": "Add address",
+    "saving": "Saving...",
+    "empty": "No addresses saved yet.",
+    "remove": "Remove"
+  },
+  "wholesale": {
+    "title": "Wholesale / B2B",
+    "subtitle": "Business account registration with operator approval for wholesale orders.",
+    "createCta": "Create a business account",
+    "notice": "Volume pricing and minimum order quantities configured per commercial agreement."
+  },
+  "sections": {
+    "novidades": "New in",
+    "destaques": "Featured"
+  },
+  "home": {
+    "heroTitle": "Dresses with identity, ready for the world",
+    "heroSubtitle": "An international catalog with shipping and duties calculated before you pay.",
+    "heroCta": "Sign up"
+  },
+  "footer": {
+    "institutional": "About us",
+    "about": "About",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "policies": "Policies",
+    "terms": "Terms of use",
+    "privacy": "Privacy",
+    "returns": "Returns & exchanges",
+    "nationalNotice": "This is the institutional catalog of the Brazilian site. To buy, visit our international store."
+  }
+}
