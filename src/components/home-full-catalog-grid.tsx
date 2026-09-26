@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductCard } from "@/components/product-card";
 import type { CatalogProduct } from "@/lib/catalog";
@@ -13,6 +14,7 @@ export function HomeFullCatalogGrid({
   products: CatalogProduct[];
   siteMode: SiteMode;
 }) {
+  const t = useTranslations("home");
   const [activeTab, setActiveTab] = useState<"all" | "featured" | "recent">("all");
 
   const filteredProducts =
@@ -34,11 +36,11 @@ export function HomeFullCatalogGrid({
           <div className="flex items-center gap-2 mb-1.5">
             <span className="w-6 h-[1px] bg-gold" />
             <span className="text-[10px] uppercase tracking-[0.25em] text-accent font-semibold">
-              Vitrine de Vestidos
+              {t("fullCatalogEyebrow")}
             </span>
           </div>
           <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal tracking-wide text-foreground">
-            Catálogo de Peças Exclusivas
+            {t("fullCatalogTitle")}
           </h2>
         </div>
 
@@ -52,7 +54,7 @@ export function HomeFullCatalogGrid({
                 : "text-muted hover:text-foreground"
             }`}
           >
-            Todas as Peças ({products.length})
+            {t("tabAll")} ({products.length})
           </button>
           <button
             onClick={() => setActiveTab("featured")}
@@ -62,7 +64,7 @@ export function HomeFullCatalogGrid({
                 : "text-muted hover:text-foreground"
             }`}
           >
-            Destaques
+            {t("tabFeatured")}
           </button>
           <button
             onClick={() => setActiveTab("recent")}
@@ -72,7 +74,7 @@ export function HomeFullCatalogGrid({
                 : "text-muted hover:text-foreground"
             }`}
           >
-            Lançamentos
+            {t("tabRecent")}
           </button>
         </div>
       </div>
@@ -90,7 +92,7 @@ export function HomeFullCatalogGrid({
           href="/categorias/vestidos"
           className="inline-flex items-center gap-2 bg-foreground text-white px-8 py-3.5 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-accent transition-all duration-300 shadow-md hover:shadow-xl rounded-xs"
         >
-          <span>Ver Catálogo Completo de Vestidos</span>
+          <span>{t("viewFullCatalogCta")}</span>
           <span>→</span>
         </Link>
       </div>

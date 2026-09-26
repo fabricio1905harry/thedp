@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
 import { ProductCard } from "@/components/product-card";
 import type { CatalogProduct } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
@@ -14,6 +15,9 @@ export function ProductCarousel({
   products: CatalogProduct[];
   siteMode: SiteMode;
 }) {
+  const t = useTranslations("home");
+  const tProduct = useTranslations("product");
+  const tCommon = useTranslations("common");
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   function scrollBy(delta: number) {
@@ -29,7 +33,7 @@ export function ProductCarousel({
           <div className="flex items-center gap-2 mb-1.5">
             <span className="w-6 h-[1px] bg-gold" />
             <span className="text-[10px] uppercase tracking-[0.25em] text-accent font-semibold">
-              Coleção Exclusiva de Vestidos
+              {t("carouselEyebrow")}
             </span>
           </div>
           <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal tracking-wide text-foreground">
@@ -39,17 +43,17 @@ export function ProductCarousel({
 
         <div className="flex items-center gap-2">
           <span className="hidden sm:inline-block text-xs text-muted tracking-wider mr-2 font-medium">
-            {products.length} {products.length === 1 ? "vestido" : "vestidos"}
+            {products.length} {products.length === 1 ? tProduct("dress") : tProduct("dresses")}
           </span>
           <button
-            aria-label="Anterior"
+            aria-label={tCommon("previous")}
             onClick={() => scrollBy(-320)}
             className="w-10 h-10 rounded-full border border-border/80 hover:border-gold hover:text-accent flex items-center justify-center text-sm font-semibold transition-all hover:scale-105 active:scale-95 bg-white shadow-xs"
           >
             ←
           </button>
           <button
-            aria-label="Próximo"
+            aria-label={tCommon("next")}
             onClick={() => scrollBy(320)}
             className="w-10 h-10 rounded-full border border-border/80 hover:border-gold hover:text-accent flex items-center justify-center text-sm font-semibold transition-all hover:scale-105 active:scale-95 bg-white shadow-xs"
           >

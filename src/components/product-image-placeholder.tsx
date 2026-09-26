@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 function hueFromSlug(slug: string): number {
   let hash = 0;
@@ -22,6 +23,7 @@ export function ProductImagePlaceholder({
   imageUrl?: string | null;
   secondaryImageUrl?: string | null;
 }) {
+  const t = useTranslations("product");
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -108,7 +110,7 @@ export function ProductImagePlaceholder({
 
       <div className="text-center pt-2 border-t border-accent/10">
         <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-muted">
-          Alta Costura
+          {t("placeholderTagline")}
         </span>
       </div>
     </div>

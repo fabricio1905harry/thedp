@@ -26,7 +26,7 @@ export function AddressList({ addresses }: { addresses: Address[] }) {
   return (
     <div className="space-y-3 mb-8">
       {addresses.map((a) => (
-        <div key={a.id} className="border border-border p-4 flex justify-between items-start">
+        <div key={a.id} className="border border-border rounded-sm p-4 flex justify-between items-start">
           <div className="text-sm">
             <p>{a.line1}{a.line2 ? `, ${a.line2}` : ""}</p>
             <p className="text-muted">

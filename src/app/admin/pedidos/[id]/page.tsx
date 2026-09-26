@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { calculateShipmentPackages } from "@/lib/dhl-packaging";
 import { DhlShipmentReviewPanel } from "@/components/dhl-shipment-review-panel";
+import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -52,7 +53,7 @@ export default async function AdminOrderDetailPage({
       <div>
         <h1 className="font-serif text-2xl mb-1">Detalhes do Pedido #{order.id.slice(0, 8)}</h1>
         <p className="text-xs text-muted">
-          Status: <strong className="uppercase">{order.status}</strong> · Total:{" "}
+          Status: <strong className="uppercase">{ORDER_STATUS_LABELS[order.status] ?? order.status}</strong> · Total:{" "}
           <strong>
             {order.total} {order.currency}
           </strong>

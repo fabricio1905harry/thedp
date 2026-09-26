@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 
 async function getOrders() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
@@ -44,7 +45,7 @@ export default async function AdminPedidosPage() {
           <tbody>
             {orders.map((o) => (
               <tr key={o.id} className="border-b border-border">
-                <td className="py-2 pr-4">{o.status}</td>
+                <td className="py-2 pr-4">{ORDER_STATUS_LABELS[o.status] ?? o.status}</td>
                 <td className="py-2 pr-4">{o.shipping_cost}</td>
                 <td className="py-2 pr-4">{o.duties_estimate}</td>
                 <td className="py-2">

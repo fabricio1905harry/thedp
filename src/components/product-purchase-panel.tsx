@@ -5,15 +5,61 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/components/currency-provider";
 import { useCart } from "@/components/cart-provider";
-import { formatPicked } from "@/lib/currency";
+import { formatCurrency, pickPrice } from "@/lib/currency";
 import type { ProductDetail } from "@/lib/catalog";
+import type { Variant } from "@/lib/types";
+
+/** Best-effort swatch color for common PT/EN/ES color names; unmapped names
+ * just get a neutral ring so the label still reads without a wrong hint. */
+const SWATCH_HEX: Record<string, string> = {
+  preto: "#141312",
+  black: "#141312",
+  branco: "#ffffff",
+  white: "#ffffff",
+  blanco: "#ffffff",
+  royal: "#1f3fbf",
+  azul: "#2451c4",
+  azulroyal: "#1f3fbf",
+  marinho: "#0f1f3d",
+  navy: "#0f1f3d",
+  coral: "#ff6f59",
+  amarelo: "#f2d24b",
+  yellow: "#f2d24b",
+  amarillo: "#f2d24b",
+  verde: "#2f6b4f",
+  green: "#2f6b4f",
+  vermelho: "#a3271f",
+  red: "#a3271f",
+  rojo: "#a3271f",
+  rosa: "#e8a5c0",
+  pink: "#e8a5c0",
+  nude: "#d9b99b",
+  bege: "#d8cbb0",
+  beige: "#d8cbb0",
+  cinza: "#9a9691",
+  gray: "#9a9691",
+  grey: "#9a9691",
+  gris: "#9a9691",
+  vinho: "#5c1a24",
+  bordô: "#5c1a24",
+  dourado: "#c5a059",
+  gold: "#c5a059",
+  prata: "#c7c7c7",
+  silver: "#c7c7c7",
+};
+
+function swatchHex(color: string): string {
+  const key = color.trim().toLowerCase().replace(/\s+/g, "");
+  return SWATCH_HEX[key] ?? "#cfc9c0";
+}
 
 /**
- * Sizes/colors come as flat lists (products.sizes/colors); which
- * size+color combinations actually exist — and their stock — comes from
- * the generated `variants` matrix. A combo with no matching variant row
- * is never selectable (per spec: never show as available something that
- * isn't in the matrix).
+ * Grid selector: rows = colors, columns = sizes. Each cell maps 1:1 to a row
+ * in `variants` (the size x color matrix generated in the DB — migration
+ * 0005). A cell with no matching variant, or stock 0, renders as a blocked
+ * (disabled) square; otherwise it's a "+" that turns into a qty stepper
+ * capped at that variant's stock. Multiple cells can hold a qty at once —
+ * "Adicionar ao carrinho" adds every selected variant/qty pair in one go.
  */
 export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
   const t = useTranslations("product");
@@ -21,234 +67,194 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
   const { addItem } = useCart();
   const router = useRouter();
   const [added, setAdded] = useState(false);
+  const [selections, setSelections] = useState<Record<string, number>>({});
 
-  const variantIndex = useMemo(() => {
-    const map = new Map<string, (typeof product.variants)[number]>();
+  const variantByKey = useMemo(() => {
+    const map = new Map<string, Variant>();
     for (const v of product.variants) {
-      const key = `${(v.size ?? "").trim().toLowerCase()}::${(v.color ?? "").trim().toLowerCase()}`;
-      map.set(key, v);
+      map.set(`${(v.size ?? "").trim().toLowerCase()}::${(v.color ?? "").trim().toLowerCase()}`, v);
     }
     return map;
-  }, [product]);
+  }, [product.variants]);
 
-  // Find initial size and color with stock > 0 if available
-  const initialVariant = useMemo(() => {
-    return product.variants.find((v) => Number(v.stock ?? 0) > 0) ?? product.variants[0];
-  }, [product]);
+  const variantById = useMemo(() => {
+    const map = new Map<string, Variant>();
+    for (const v of product.variants) map.set(v.id, v);
+    return map;
+  }, [product.variants]);
 
-  const [size, setSize] = useState<string | null>(
-    initialVariant?.size ?? product.sizes[0] ?? null
-  );
-  const [color, setColor] = useState<string | null>(
-    initialVariant?.color ?? product.colors[0] ?? null
-  );
-
-  function isComboAvailable(s: string | null, c: string | null): boolean {
-    const cleanS = s ? s.trim().toLowerCase() : null;
-    const cleanC = c ? c.trim().toLowerCase() : null;
-
-    if (!cleanS && !cleanC) return false;
-
-    if (cleanS && cleanC) {
-      const v = variantIndex.get(`${cleanS}::${cleanC}`);
-      return !!v && Number(v.stock ?? 0) > 0;
-    }
-    if (cleanS) {
-      return product.variants.some(
-        (v) => (v.size ?? "").trim().toLowerCase() === cleanS && Number(v.stock ?? 0) > 0
+  const sizeLabel = useMemo(() => {
+    const cache = new Map<string, string>();
+    for (const s of product.sizes) {
+      const sample = product.variants.find((v) => v.size === s);
+      cache.set(
+        s,
+        currency === "USD" && sample?.sizeUs
+          ? `${s} (US ${sample.sizeUs})`
+          : currency === "EUR" && sample?.sizeEu
+          ? `${s} (EU ${sample.sizeEu})`
+          : s
       );
     }
-    if (cleanC) {
-      return product.variants.some(
-        (v) => (v.color ?? "").trim().toLowerCase() === cleanC && Number(v.stock ?? 0) > 0
+    return cache;
+  }, [product.sizes, product.variants, currency]);
+
+  const picked = product.pricing ? pickPrice(product.pricing, currency) : null;
+
+  function setCellQty(variant: Variant, qty: number) {
+    const clamped = Math.max(0, Math.min(qty, variant.stock));
+    setAdded(false);
+    setSelections((prev) => {
+      const next = { ...prev };
+      if (clamped <= 0) delete next[variant.id];
+      else next[variant.id] = clamped;
+      return next;
+    });
+  }
+
+  const totalQty = Object.values(selections).reduce((sum, q) => sum + q, 0);
+  const totalPrice = picked ? picked.amount * totalQty : 0;
+
+  function handleAddToCart() {
+    if (!picked || totalQty === 0) return;
+    for (const [variantId, qty] of Object.entries(selections)) {
+      const variant = variantById.get(variantId);
+      if (!variant || qty <= 0) continue;
+      addItem(
+        {
+          variantId: variant.id,
+          productSlug: product.slug,
+          title: product.title,
+          color: variant.color,
+          size: variant.size,
+          pricing: product.pricing!,
+        },
+        qty
       );
     }
-    return false;
+    setSelections({});
+    setAdded(true);
   }
 
-  // Colors available for the currently selected size (out-of-stock colors for this size are hidden)
-  const availableColors = useMemo(() => {
-    if (!size) return product.colors;
-    const filtered = product.colors.filter((c) => isComboAvailable(size, c));
-    return filtered.length > 0 ? filtered : product.colors;
-  }, [product.colors, size, isComboAvailable]);
-
-  const selectedVariant = useMemo(() => {
-    if (!size) return undefined;
-    const key = `${size.trim().toLowerCase()}::${(color ?? "").trim().toLowerCase()}`;
-    return variantIndex.get(key);
-  }, [size, color, variantIndex]);
-
-  const priceLabel = product.pricing ? formatPicked(product.pricing, currency) : null;
-
-  const [quantity, setQuantity] = useState(1);
-
-  function handleSizeSelect(newSize: string) {
-    setSize(newSize);
-    setAdded(false);
-    setQuantity(1);
-    // Switch to first available color for newSize if current color is not in available colors
-    if (color && !isComboAvailable(newSize, color)) {
-      const firstAvailableColor = product.colors.find((c) => isComboAvailable(newSize, c));
-      if (firstAvailableColor) {
-        setColor(firstAvailableColor);
-      }
-    }
-  }
-
-  function handleColorSelect(newColor: string) {
-    setColor(newColor);
-    setAdded(false);
-    setQuantity(1);
-    if (size && !isComboAvailable(size, newColor)) {
-      const firstAvailableSize = product.sizes.find((s) => isComboAvailable(s, newColor));
-      if (firstAvailableSize) {
-        setSize(firstAvailableSize);
-      }
-    }
-  }
+  if (!picked) return null;
 
   return (
     <div>
-      {product.sizes.length > 0 && (
-        <div className="mb-4">
-          <p className="text-xs uppercase tracking-wide text-muted mb-2">{t("size")}</p>
-          <div className="flex flex-wrap gap-2">
-            {product.sizes.map((s) => {
-              const available = isComboAvailable(s, null);
-              const isSelected = s === size;
-              const sampleVariant = product.variants.find((v) => v.size === s);
-              const displayLabel =
-                currency === "USD" && sampleVariant?.sizeUs
-                  ? `${s} (US ${sampleVariant.sizeUs})`
-                  : currency === "EUR" && sampleVariant?.sizeEu
-                  ? `${s} (EU ${sampleVariant.sizeEu})`
-                  : s;
+      <p className="text-2xl font-semibold mb-1">{formatCurrency(picked.amount, picked.currency)}</p>
+      <p className="text-xs text-muted mb-6">{t("installmentsLabel")}</p>
 
-              return (
-                <button
-                  key={s}
-                  disabled={!available}
-                  onClick={() => handleSizeSelect(s)}
-                  className={`text-xs border px-3 py-1 font-medium transition-colors ${
-                    isSelected
-                      ? "border-accent text-accent bg-accent/5 font-semibold"
-                      : "border-border hover:border-gray-400"
-                  } ${!available ? "opacity-30 cursor-not-allowed line-through" : ""}`}
-                >
-                  {displayLabel}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {availableColors.length > 0 && (
+      {product.sizes.length > 0 && product.colors.length > 0 && (
         <div className="mb-6">
-          <p className="text-xs uppercase tracking-wide text-muted mb-2">{t("color")}</p>
-          <div className="flex flex-wrap gap-2">
-            {availableColors.map((c) => {
-              const isSelected = c === color;
-              return (
-                <button
-                  key={c}
-                  onClick={() => handleColorSelect(c)}
-                  className={`text-xs border px-3 py-1 font-medium transition-colors ${
-                    isSelected
-                      ? "border-accent text-accent bg-accent/5 font-semibold"
-                      : "border-border hover:border-gray-400"
-                  }`}
-                >
-                  {c}
-                </button>
-              );
-            })}
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-xs uppercase tracking-wide text-muted">{t("size")} / {t("color")}</p>
+            <p className="text-xs text-muted">{t("chooseVariants")}</p>
+          </div>
+
+          <div className="overflow-x-auto border border-border">
+            <table className="border-collapse text-sm w-full">
+              <thead>
+                <tr>
+                  <th className="sticky left-0 bg-background text-left text-xs font-medium text-muted px-3 py-2 border-b border-border" />
+                  {product.sizes.map((s) => (
+                    <th
+                      key={s}
+                      className="text-xs font-medium text-muted px-2 py-2 border-b border-l border-border whitespace-nowrap"
+                    >
+                      {sizeLabel.get(s)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {product.colors.map((c) => (
+                  <tr key={c}>
+                    <td className="sticky left-0 bg-background px-3 py-2 border-t border-border whitespace-nowrap">
+                      <span className="inline-flex items-center gap-2 text-xs font-medium">
+                        <span
+                          className="inline-block w-4 h-4 rounded-full border border-border/70 shrink-0"
+                          style={{ backgroundColor: swatchHex(c) }}
+                          aria-hidden
+                        />
+                        {c}
+                      </span>
+                    </td>
+                    {product.sizes.map((s) => {
+                      const variant = variantByKey.get(`${s.trim().toLowerCase()}::${c.trim().toLowerCase()}`);
+                      const available = !!variant && variant.stock > 0;
+                      const qty = variant ? selections[variant.id] ?? 0 : 0;
+
+                      return (
+                        <td key={s} className="border-t border-l border-border p-1 text-center">
+                          {!available ? (
+                            <div
+                              className="w-10 h-9 mx-auto bg-surface/70"
+                              aria-hidden
+                              title={t("outOfStock")}
+                            />
+                          ) : qty === 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setCellQty(variant!, 1)}
+                              className="w-10 h-9 mx-auto flex items-center justify-center border border-border hover:border-accent hover:text-accent text-sm font-medium transition-colors"
+                              aria-label={`${s} / ${c}`}
+                            >
+                              +
+                            </button>
+                          ) : (
+                            <div className="w-10 h-9 mx-auto flex items-center justify-between border border-accent bg-accent/5 px-1">
+                              <button
+                                type="button"
+                                onClick={() => setCellQty(variant!, qty - 1)}
+                                className="w-4 h-full text-xs font-semibold text-accent"
+                                aria-label="-"
+                              >
+                                −
+                              </button>
+                              <span className="text-xs font-semibold text-accent w-3 text-center">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={() => setCellQty(variant!, qty + 1)}
+                                disabled={qty >= variant!.stock}
+                                className="w-4 h-full text-xs font-semibold text-accent disabled:opacity-30"
+                                aria-label="+"
+                              >
+                                +
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Quantity Selector */}
-      <div className="mb-6">
-        <p className="text-xs uppercase tracking-wide text-muted mb-2">{t("quantity")}</p>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center border border-border rounded-sm overflow-hidden bg-background">
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              disabled={quantity <= 1}
-              className="w-9 h-9 flex items-center justify-center text-sm font-semibold hover:bg-surface disabled:opacity-40 transition-colors"
-              aria-label="Decrease quantity"
-            >
-              −
-            </button>
-            <input
-              type="number"
-              min={1}
-              max={selectedVariant?.stock ?? 99}
-              value={quantity}
-              onChange={(e) => {
-                const val = Math.max(1, Math.min(Number(e.target.value) || 1, selectedVariant?.stock ?? 99));
-                setQuantity(val);
-              }}
-              className="w-12 h-9 text-center text-sm font-medium border-x border-border focus:outline-none bg-transparent"
-            />
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => Math.min(selectedVariant?.stock ?? 99, q + 1))}
-              disabled={selectedVariant ? quantity >= selectedVariant.stock : false}
-              className="w-9 h-9 flex items-center justify-center text-sm font-semibold hover:bg-surface disabled:opacity-40 transition-colors"
-              aria-label="Increase quantity"
-            >
-              +
-            </button>
-          </div>
-          {selectedVariant && (
-            <span className="text-xs text-muted">
-              ({selectedVariant.stock} {selectedVariant.stock === 1 ? "unidade em estoque" : "unidades em estoque"})
-            </span>
-          )}
-        </div>
+      <div className="flex items-center justify-between mb-3 text-sm">
+        <span className="text-muted">
+          {totalQty} {totalQty === 1 ? t("piece") : t("pieces")}
+        </span>
+        {totalQty > 0 && <span className="font-semibold">{formatCurrency(totalPrice, picked.currency)}</span>}
       </div>
 
-      {priceLabel && (
-        <div>
-          <p className="text-2xl font-semibold mb-1">{priceLabel}</p>
-          <p className="text-xs text-muted mb-4">{t("installmentsLabel")}</p>
+      <button
+        disabled={totalQty === 0}
+        onClick={handleAddToCart}
+        className="btn-primary w-full py-3 text-sm uppercase tracking-wide font-medium"
+      >
+        {totalQty > 0 ? `${t("buy")} (${totalQty})` : t("selectVariant")}
+      </button>
 
-          <button
-            disabled={!selectedVariant || selectedVariant.stock === 0 || !product.pricing}
-            onClick={() => {
-              if (!selectedVariant || !product.pricing) return;
-              addItem(
-                {
-                  variantId: selectedVariant.id,
-                  productSlug: product.slug,
-                  title: product.title,
-                  color: selectedVariant.color,
-                  size: selectedVariant.size,
-                  pricing: product.pricing,
-                },
-                quantity
-              );
-              setAdded(true);
-            }}
-            className="w-full bg-accent text-white py-3 text-sm uppercase tracking-wide font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent/90 transition-colors"
-          >
-            {selectedVariant && selectedVariant.stock > 0
-              ? `${t("buy")} (${quantity})`
-              : t("selectVariant")}
+      {added && (
+        <p className="text-xs text-muted mt-2">
+          {t("addedToCart")}{" "}
+          <button onClick={() => router.push("/carrinho")} className="text-accent underline font-medium">
+            {t("viewCart")}
           </button>
-
-          {added && (
-            <p className="text-xs text-muted mt-2">
-              {t("addedToCart")}{" "}
-              <button onClick={() => router.push("/carrinho")} className="text-accent underline font-medium">
-                {t("viewCart")}
-              </button>
-            </p>
-          )}
-        </div>
+        </p>
       )}
     </div>
   );

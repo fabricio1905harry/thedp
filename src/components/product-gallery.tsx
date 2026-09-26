@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
 
 export function ProductGallery({
@@ -12,6 +13,7 @@ export function ProductGallery({
   slug: string;
   title: string;
 }) {
+  const t = useTranslations("common");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const displayImages = images.length > 0 ? images : [`/images/products/${slug}.png`];
@@ -44,14 +46,14 @@ export function ProductGallery({
           <>
             <button
               onClick={handlePrev}
-              aria-label="Anterior"
+              aria-label={t("previous")}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-foreground flex items-center justify-center shadow-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 border border-border hover:scale-105 active:scale-95 text-lg font-bold"
             >
               ‹
             </button>
             <button
               onClick={handleNext}
-              aria-label="Próximo"
+              aria-label={t("next")}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-foreground flex items-center justify-center shadow-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 border border-border hover:scale-105 active:scale-95 text-lg font-bold"
             >
               ›
@@ -74,7 +76,7 @@ export function ProductGallery({
               <button
                 key={`${imgUrl}-${idx}`}
                 onClick={() => setSelectedIndex(idx)}
-                aria-label={`Ver foto ${idx + 1}`}
+                aria-label={t("viewPhoto", { n: idx + 1 })}
                 className={`relative aspect-[3/4] w-20 sm:w-24 shrink-0 overflow-hidden rounded-sm border transition-all duration-300 ${
                   isSelected
                     ? "border-accent ring-2 ring-accent/40 scale-105 shadow-md opacity-100"
@@ -89,7 +91,7 @@ export function ProductGallery({
                       ? imgUrl
                       : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${imgUrl}`
                   }
-                  alt={`${title} - Foto ${idx + 1}`}
+                  alt={`${title} - ${t("photo", { n: idx + 1 })}`}
                   className="w-full h-full object-cover object-top"
                 />
               </button>

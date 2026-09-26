@@ -7,6 +7,7 @@ import {
   updateProduct,
   setProductStatus,
   setProductFeatured,
+  deleteProducts,
   type UpdateProductInput,
 } from "@/app/admin/produtos/actions";
 
@@ -51,6 +52,8 @@ export function ProductEditForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>(initialConnectorIds);
 
   const [form, setForm] = useState({
@@ -123,6 +126,23 @@ export function ProductEditForm({
     });
   }
 
+  function handleDelete() {
+    setConfirmDelete(true);
+  }
+
+  function runConfirmedDelete() {
+    setConfirmDelete(false);
+    setDeleteError(null);
+    startTransition(async () => {
+      const result = await deleteProducts([product.id]);
+      if (result.blockedCount > 0) {
+        setDeleteError("Can't delete — this product already has orders. Archive it instead.");
+      } else {
+        router.push("/admin/produtos");
+      }
+    });
+  }
+
   return (
     <div className="max-w-xl">
       <div className="flex items-center gap-2 mb-2">
@@ -144,7 +164,16 @@ export function ProductEditForm({
           onClick={() => changeStatus("archived")}
           disabled={pending}
         />
+        <button
+          type="button"
+          disabled={pending}
+          onClick={handleDelete}
+          className="ml-auto text-xs border border-red-600 text-red-600 px-3 py-1.5 disabled:opacity-50"
+        >
+          Delete product
+        </button>
       </div>
+      {deleteError && <p className="text-xs text-red-600 mb-4">{deleteError}</p>}
       <label className="flex items-center gap-2 text-xs text-muted mb-6">
         <input
           type="checkbox"
@@ -194,7 +223,7 @@ export function ProductEditForm({
           {connectors.length === 0 ? (
             <p className="text-xs text-muted">No connectors registered yet.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 border border-border p-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 border border-border rounded-sm p-3">
               {connectors.map((c) => {
                 const isSelected = selectedConnectorIds.includes(c.id);
                 return (
@@ -323,13 +352,41 @@ export function ProductEditForm({
           <button
             type="submit"
             disabled={pending}
-            className="bg-accent text-white px-4 py-2 text-sm uppercase tracking-wide disabled:opacity-50"
+            className="btn-primary px-4 py-2 text-sm uppercase tracking-wide"
           >
             {pending ? "Saving..." : "Save"}
           </button>
           {saved && !pending && <span className="text-xs text-muted">Saved.</span>}
         </div>
       </form>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background max-w-md w-full p-6 rounded-sm border border-border shadow-xl space-y-4">
+            <h3 className="font-serif text-lg font-bold">Delete permanently?</h3>
+            <p className="text-sm text-muted">
+              Delete &quot;{product.title}&quot; permanently? This cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="text-xs border border-border px-3 py-1.5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={runConfirmedDelete}
+                className="text-xs border border-red-600 text-red-600 px-3 py-1.5 disabled:opacity-50"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

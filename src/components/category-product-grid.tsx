@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ProductCard } from "@/components/product-card";
 import type { CatalogProduct } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
@@ -14,6 +15,8 @@ export function CategoryProductGrid({
   products: CatalogProduct[];
   siteMode: SiteMode;
 }) {
+  const t = useTranslations("category");
+  const tProduct = useTranslations("product");
   const [columns, setColumns] = useState<2 | 3 | 4>(4);
   const [sortBy, setSortBy] = useState<"featured" | "price-asc" | "price-desc" | "title">("featured");
 
@@ -44,7 +47,7 @@ export function CategoryProductGrid({
         <div className="flex items-center justify-center gap-2">
           <span className="w-8 h-[1px] bg-gold" />
           <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-accent">
-            Haute Couture Collection
+            {t("eyebrow")}
           </span>
           <span className="w-8 h-[1px] bg-gold" />
         </div>
@@ -54,30 +57,30 @@ export function CategoryProductGrid({
         </h1>
 
         <p className="text-xs sm:text-sm text-muted tracking-wider font-light max-w-md mx-auto">
-          Confira nossa seleção exclusiva de vestidos de festa, alfaiataria e modelos de alta costura.
+          {t("subtitle")}
         </p>
       </div>
 
       {/* Grid Controls Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-4 border-b border-border/80 text-xs text-muted">
         <span className="font-medium tracking-wider">
-          Exibindo <strong className="text-foreground">{products.length}</strong> {products.length === 1 ? "peça" : "peças exclusivas"}
+          {t("showing")} <strong className="text-foreground">{products.length}</strong> {products.length === 1 ? tProduct("piece") : tProduct("pieces")}
         </span>
 
         <div className="flex items-center gap-6">
           {/* Sort Selector */}
           <div className="flex items-center gap-2">
-            <label htmlFor="sort-by" className="hidden sm:inline tracking-wider font-medium">Ordenar por:</label>
+            <label htmlFor="sort-by" className="hidden sm:inline tracking-wider font-medium">{t("sortByLabel")}</label>
             <select
               id="sort-by"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               className="bg-white border border-border/80 rounded px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-accent shadow-2xs font-medium cursor-pointer"
             >
-              <option value="featured">Destaques</option>
-              <option value="price-asc">Menor Preço</option>
-              <option value="price-desc">Maior Preço</option>
-              <option value="title">Nome (A-Z)</option>
+              <option value="featured">{t("sortFeatured")}</option>
+              <option value="price-asc">{t("sortPriceAsc")}</option>
+              <option value="price-desc">{t("sortPriceDesc")}</option>
+              <option value="title">{t("sortTitle")}</option>
             </select>
           </div>
 
@@ -85,30 +88,30 @@ export function CategoryProductGrid({
           <div className="hidden sm:flex items-center gap-1 bg-surface p-1 rounded border border-border/60">
             <button
               onClick={() => setColumns(2)}
-              title="2 colunas"
+              title={t("columns2")}
               className={`px-2.5 py-1 text-xs font-semibold rounded transition-all ${
                 columns === 2 ? "bg-white text-accent shadow-xs" : "text-muted hover:text-foreground"
               }`}
             >
-              2 Colunas
+              {t("columns2")}
             </button>
             <button
               onClick={() => setColumns(3)}
-              title="3 colunas"
+              title={t("columns3")}
               className={`px-2.5 py-1 text-xs font-semibold rounded transition-all ${
                 columns === 3 ? "bg-white text-accent shadow-xs" : "text-muted hover:text-foreground"
               }`}
             >
-              3 Colunas
+              {t("columns3")}
             </button>
             <button
               onClick={() => setColumns(4)}
-              title="4 colunas"
+              title={t("columns4")}
               className={`px-2.5 py-1 text-xs font-semibold rounded transition-all ${
                 columns === 4 ? "bg-white text-accent shadow-xs" : "text-muted hover:text-foreground"
               }`}
             >
-              4 Colunas
+              {t("columns4")}
             </button>
           </div>
         </div>
@@ -120,9 +123,9 @@ export function CategoryProductGrid({
           <div className="w-16 h-16 rounded-full bg-white mx-auto flex items-center justify-center shadow-xs text-accent text-2xl font-serif">
             ✨
           </div>
-          <h3 className="font-serif text-xl text-foreground font-medium">Nenhum vestido encontrado nesta categoria</h3>
+          <h3 className="font-serif text-xl text-foreground font-medium">{t("emptyTitle")}</h3>
           <p className="text-xs text-muted max-w-sm mx-auto">
-            Novos modelos são adicionados semanalmente ao nosso catálogo de alta costura.
+            {t("emptyBody")}
           </p>
         </div>
       ) : (

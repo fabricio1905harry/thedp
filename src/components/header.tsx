@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { MegaMenu } from "@/components/mega-menu";
 import { CartLink } from "@/components/cart-link";
 import { MobileNav } from "@/components/mobile-nav";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { getAllCategories } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
 
@@ -75,6 +76,9 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
         </nav>
 
         <div className="flex items-center gap-3">
+          {/* TEMP: testing-only language switcher, remove once locale
+              detection/marketing copy is finalized. */}
+          <LocaleSwitcher />
           {!isNacional && <CartLink />}
           {!isNacional && (
             <>
@@ -87,10 +91,10 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
                     <span
                       className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${
                         customer.status === "approved"
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300"
+                          ? "bg-foreground text-background border-foreground"
                           : customer.status === "pending"
-                          ? "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300"
-                          : "bg-red-50 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300"
+                          ? "bg-surface text-muted border-border"
+                          : "bg-background text-foreground border-foreground border-2"
                       }`}
                     >
                       {customer.status === "approved"
@@ -120,7 +124,7 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
                   </Link>
                   <Link
                     href="/cadastro"
-                    className="text-sm bg-accent text-white px-4 py-2 hover:opacity-90 transition-opacity"
+                    className="btn-primary text-sm px-4 py-2"
                   >
                     {t("nav.cadastro")}
                   </Link>

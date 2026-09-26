@@ -65,11 +65,11 @@ export function DhlShipmentReviewPanel({
               Automação de Envio DHL
             </span>
             {hasReviewRequired ? (
-              <span className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300">
+              <span className="bg-background text-foreground text-[10px] font-semibold px-2 py-0.5 rounded border-2 border-foreground">
                 PACKAGING_REVIEW_REQUIRED
               </span>
             ) : (
-              <span className="bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300">
+              <span className="bg-foreground text-background text-[10px] font-semibold px-2 py-0.5 rounded border border-foreground">
                 PRONTO PARA COTAÇÃO DHL
               </span>
             )}
@@ -96,7 +96,7 @@ export function DhlShipmentReviewPanel({
       </div>
 
       {hasReviewRequired && (
-        <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs rounded-sm space-y-1">
+        <div className="p-4 bg-surface border-2 border-foreground text-foreground text-xs rounded-sm space-y-1">
           <p className="font-semibold">⚠️ REVISÃO DE EMBALAGEM NECESSÁRIA (PACKAGING_REVIEW_REQUIRED):</p>
           <p>
             Uma ou mais embalagens selecionadas possuem dimensões (comprimento, largura ou altura) zeradas no cadastro oficial DHL ou excedem o limite de peso.
@@ -114,7 +114,7 @@ export function DhlShipmentReviewPanel({
             key={idx}
             className={`p-4 border rounded-sm transition-colors space-y-3 ${
               pkg.length_cm <= 0 || pkg.width_cm <= 0 || pkg.height_cm <= 0
-                ? "border-amber-400 bg-amber-50/20"
+                ? "border-foreground bg-surface"
                 : "border-border bg-surface/30"
             }`}
           >
@@ -126,7 +126,7 @@ export function DhlShipmentReviewPanel({
                 <button
                   type="button"
                   onClick={() => removePackage(idx)}
-                  className="text-red-600 hover:underline font-medium text-[11px]"
+                  className="text-foreground hover:underline font-semibold text-[11px]"
                 >
                   Remover Volume
                 </button>
@@ -180,7 +180,7 @@ export function DhlShipmentReviewPanel({
                     className="w-full border border-border px-2 py-1 bg-background"
                   />
                 ) : (
-                  <span className={pkg.length_cm <= 0 ? "text-amber-600 font-bold" : ""}>
+                  <span className={pkg.length_cm <= 0 ? "text-foreground underline decoration-2 font-bold" : ""}>
                     {pkg.length_cm} cm
                   </span>
                 )}
@@ -199,7 +199,7 @@ export function DhlShipmentReviewPanel({
                     className="w-full border border-border px-2 py-1 bg-background"
                   />
                 ) : (
-                  <span className={pkg.width_cm <= 0 ? "text-amber-600 font-bold" : ""}>
+                  <span className={pkg.width_cm <= 0 ? "text-foreground underline decoration-2 font-bold" : ""}>
                     {pkg.width_cm} cm
                   </span>
                 )}
@@ -218,7 +218,7 @@ export function DhlShipmentReviewPanel({
                     className="w-full border border-border px-2 py-1 bg-background"
                   />
                 ) : (
-                  <span className={pkg.height_cm <= 0 ? "text-amber-600 font-bold" : ""}>
+                  <span className={pkg.height_cm <= 0 ? "text-foreground underline decoration-2 font-bold" : ""}>
                     {pkg.height_cm} cm
                   </span>
                 )}
@@ -274,14 +274,14 @@ export function DhlShipmentReviewPanel({
           type="button"
           disabled={hasReviewRequired}
           onClick={() => setCreatedSuccess(true)}
-          className="bg-accent text-white px-6 py-3 text-xs uppercase tracking-wider font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent/90 transition-colors shadow-md"
+          className="btn-primary px-6 py-3 text-xs uppercase tracking-wider font-semibold"
         >
           Confirmar & Gerar Shipment DHL Express
         </button>
       </div>
 
       {createdSuccess && (
-        <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs rounded-sm font-medium">
+        <div className="p-4 bg-foreground border border-foreground text-background text-xs rounded-sm font-medium">
           ✅ Dados de embalagem validados e enviados com sucesso para cotação/shipment DHL Express!
         </div>
       )}

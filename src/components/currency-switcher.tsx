@@ -11,7 +11,7 @@ export function CurrencySwitcher() {
       aria-label="Currency"
       value={currency}
       onChange={(e) => setCurrency(e.target.value as Currency)}
-      className="text-sm border border-border bg-background px-2 py-1 rounded-none"
+      className="text-sm border border-border bg-background px-2 py-1 rounded-sm"
     >
       {AVAILABLE_CURRENCIES.map((c) => (
         <option key={c} value={c}>

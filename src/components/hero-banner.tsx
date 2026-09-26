@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 const DESKTOP_BANNERS = [
@@ -10,6 +11,7 @@ const DESKTOP_BANNERS = [
 ];
 
 export function HeroBanner({ ctaLabel }: { ctaLabel: string }) {
+  const t = useTranslations("home");
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export function HeroBanner({ ctaLabel }: { ctaLabel: string }) {
       {/* Editorial Luxury Badge */}
       <div className="absolute top-6 left-6 sm:left-8 z-10 hidden sm:block">
         <span className="text-[10px] uppercase tracking-[0.25em] text-white/90 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20">
-          Alta Costura · Edição Limitada
+          {t("heroBadge")}
         </span>
       </div>
 

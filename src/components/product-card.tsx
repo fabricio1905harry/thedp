@@ -60,14 +60,14 @@ export function ProductCard({
             {product.title}
           </h3>
           <p className="text-[10px] uppercase tracking-[0.15em] text-muted font-normal pt-0.5">
-            Alta Costura • Exclusivo
+            {t("cardTagline")}
           </p>
         </div>
 
         <div className="pt-2 border-t border-border/50 flex items-baseline justify-between">
           {siteMode === "nacional" ? (
             <span className="text-[11px] font-medium text-accent hover-underline-link">
-              Consulte Atacado
+              {t("consultWholesale")}
             </span>
           ) : priceLabel ? (
             <div>

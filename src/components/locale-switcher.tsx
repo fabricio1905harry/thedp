@@ -23,7 +23,7 @@ export function LocaleSwitcher() {
           router.replace(pathname, { locale: nextLocale });
         });
       }}
-      className="text-sm border border-border bg-background px-2 py-1 rounded-none"
+      className="text-sm border border-border bg-background px-2 py-1 rounded-sm"
     >
       {routing.locales.map((l) => (
         <option key={l} value={l}>

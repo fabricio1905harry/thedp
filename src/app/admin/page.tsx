@@ -49,7 +49,7 @@ export default async function AdminOverviewPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border border-border p-4">
+    <div className="border border-border rounded-sm p-4">
       <p className="text-2xl font-semibold">{value}</p>
       <p className="text-xs text-muted mt-1">{label}</p>
     </div>

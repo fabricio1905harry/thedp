@@ -38,7 +38,7 @@ export function CustomerApprovalRow({
         <button
           disabled={pending}
           onClick={() => startTransition(() => setCustomerStatus(customer.id, "approved"))}
-          className="text-xs bg-accent text-white px-3 py-1.5 disabled:opacity-50"
+          className="btn-primary text-xs px-3 py-1.5"
         >
           Aprovar
         </button>

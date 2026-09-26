@@ -85,7 +85,7 @@ export function AddressForm() {
       <button
         type="submit"
         disabled={pending}
-        className="bg-accent text-white px-4 py-2 text-sm uppercase tracking-wide font-medium disabled:opacity-50"
+        className="btn-primary px-4 py-2 text-sm uppercase tracking-wide font-medium"
       >
         {pending ? t("saving") : t("save")}
       </button>

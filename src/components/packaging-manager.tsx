@@ -93,7 +93,7 @@ export function PackagingManager({
                   active: true,
                 })
               }
-              className="bg-accent text-white px-4 py-2 text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity"
+              className="btn-primary px-4 py-2 text-xs font-semibold uppercase tracking-wider"
             >
               + Nova Embalagem DHL
             </button>
@@ -128,7 +128,7 @@ export function PackagingManager({
                         <td className="p-3 font-medium">{t.name}</td>
                         <td className="p-3">
                           {hasZeroDims ? (
-                            <span className="text-amber-700 dark:text-amber-400 font-semibold">
+                            <span className="text-foreground underline decoration-2 font-semibold">
                               ⚠️ {t.lengthCm} × {t.widthCm} × {t.heightCm} cm (Pendente)
                             </span>
                           ) : (
@@ -144,8 +144,8 @@ export function PackagingManager({
                             onClick={() => togglePackagingType(t.id, !t.active)}
                             className={`px-2.5 py-0.5 rounded text-[10px] font-semibold border ${
                               t.active
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                                : "bg-gray-100 text-gray-600 border-gray-300"
+                                ? "bg-foreground text-background border-foreground"
+                                : "bg-surface text-muted border-border"
                             }`}
                           >
                             {t.active ? "Ativo" : "Inativo"}
@@ -186,7 +186,7 @@ export function PackagingManager({
                   active: true,
                 })
               }
-              className="bg-accent text-white px-4 py-2 text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity"
+              className="btn-primary px-4 py-2 text-xs font-semibold uppercase tracking-wider"
             >
               + Nova Regra de Capacidade
             </button>
@@ -228,8 +228,8 @@ export function PackagingManager({
                           onClick={() => toggleCapacityRule(r.id, !r.active)}
                           className={`px-2.5 py-0.5 rounded text-[10px] font-semibold border ${
                             r.active
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                              : "bg-gray-100 text-gray-600 border-gray-300"
+                              ? "bg-foreground text-background border-foreground"
+                              : "bg-surface text-muted border-border"
                           }`}
                         >
                           {r.active ? "Ativo" : "Inativo"}
@@ -379,7 +379,7 @@ export function PackagingManager({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-accent text-white px-5 py-2 font-semibold uppercase tracking-wider hover:opacity-90 disabled:opacity-50"
+                  className="btn-primary px-5 py-2 font-semibold uppercase tracking-wider"
                 >
                   {loading ? "Salvando..." : "Salvar Embalagem"}
                 </button>
@@ -484,7 +484,7 @@ export function PackagingManager({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-accent text-white px-5 py-2 font-semibold uppercase tracking-wider hover:opacity-90 disabled:opacity-50"
+                  className="btn-primary px-5 py-2 font-semibold uppercase tracking-wider"
                 >
                   {loading ? "Salvando..." : "Salvar Regra"}
                 </button>

@@ -26,6 +26,50 @@ export async function setProductStatus(
   revalidatePath("/admin/produtos");
 }
 
+/**
+ * Permanently deletes one or more products (cascades variants, images,
+ * connector links). Refuses to delete a product that already has orders
+ * against it — archive it instead so order history stays intact.
+ */
+export async function deleteProducts(productIds: string[]) {
+  await requireStaff();
+  const supabase = await createClient();
+
+  const { data: variantRows } = await supabase
+    .from("variants")
+    .select("id, product_id")
+    .in("product_id", productIds);
+
+  const variantIds = (variantRows ?? []).map((v) => v.id);
+  const blockedProductIds = new Set<string>();
+
+  if (variantIds.length > 0) {
+    const { data: orderedVariants } = await supabase
+      .from("order_items")
+      .select("variant_id")
+      .in("variant_id", variantIds);
+
+    const orderedVariantIds = new Set((orderedVariants ?? []).map((o) => o.variant_id));
+    for (const v of variantRows ?? []) {
+      if (orderedVariantIds.has(v.id)) blockedProductIds.add(v.product_id);
+    }
+  }
+
+  const deletableIds = productIds.filter((id) => !blockedProductIds.has(id));
+
+  if (deletableIds.length > 0) {
+    const { error } = await supabase.from("products").delete().in("id", deletableIds);
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/produtos");
+
+  return {
+    deletedCount: deletableIds.length,
+    blockedCount: blockedProductIds.size,
+  };
+}
+
 export interface UpdateProductInput {
   title: string;
   titleEn: string;
@@ -121,6 +165,43 @@ export async function setVariantStock(variantId: string, stock: number) {
 
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/produtos/${data.product_id}`);
+}
+
+/** Adds one image (by URL or storage path) to a product's gallery, at the end. */
+export async function addProductImage(productId: string, storagePath: string) {
+  await requireStaff();
+  const path = storagePath.trim();
+  if (!path) throw new Error("Image URL cannot be empty.");
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("product_images")
+    .select("position")
+    .eq("product_id", productId)
+    .order("position", { ascending: false })
+    .limit(1);
+
+  const nextPosition = (existing?.[0]?.position ?? -1) + 1;
+
+  const { error } = await supabase.from("product_images").insert({
+    product_id: productId,
+    storage_path: path,
+    hash: `hash-manual-${Date.now()}`,
+    position: nextPosition,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/produtos/${productId}`);
+}
+
+/** Removes one image from a product's gallery. */
+export async function removeProductImage(imageId: string, productId: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error } = await supabase.from("product_images").delete().eq("id", imageId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/produtos/${productId}`);
 }
 
 /**

@@ -26,7 +26,7 @@ export function MegaMenu({
         {label}
       </button>
       {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-full w-[min(90vw,640px)] bg-background border border-border shadow-lg p-6 grid grid-cols-3 gap-4 z-40">
+        <div className="absolute left-1/2 -translate-x-1/2 top-full w-[min(90vw,640px)] bg-background border border-border rounded-md shadow-lg p-6 grid grid-cols-3 gap-4 z-40">
           {categories.map((category) => (
             <Link
               key={category}

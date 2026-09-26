@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
-import { getHomeCatalogSections, getPublicProductsList, SECTION_TITLES } from "@/lib/catalog";
+import { getHomeCatalogSections, getPublicProductsList } from "@/lib/catalog";
 import { ProductCarousel } from "@/components/product-carousel";
 import { HeroBanner } from "@/components/hero-banner";
 import { BenefitsBanner } from "@/components/benefits-banner";
@@ -36,7 +36,7 @@ export default async function HomePage() {
       {/* 4. First Carousel: Lançamentos & Novidades */}
       {sections.length > 0 && sections[0] && (
         <ProductCarousel
-          title={SECTION_TITLES[sections[0].key] ?? "Lançamentos de Alta Costura"}
+          title={t(`sections.${sections[0].key}`)}
           products={sections[0].products}
           siteMode={siteMode}
         />
@@ -51,7 +51,7 @@ export default async function HomePage() {
       {/* 7. Second Carousel: Destaques & Mais Desejados */}
       {sections.length > 1 && sections[1] && sections[1].products.length > 0 && (
         <ProductCarousel
-          title={SECTION_TITLES[sections[1].key] ?? "Modelos Destaques Exclusivos"}
+          title={t(`sections.${sections[1].key}`)}
           products={sections[1].products}
           siteMode={siteMode}
         />

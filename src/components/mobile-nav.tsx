@@ -74,10 +74,10 @@ export function MobileNav({
                   <span
                     className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${
                       customer.status === "approved"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                        ? "bg-foreground text-background border-foreground"
                         : customer.status === "pending"
-                        ? "bg-amber-50 text-amber-700 border-amber-300"
-                        : "bg-red-50 text-red-700 border-red-300"
+                        ? "bg-surface text-muted border-border"
+                        : "bg-background text-foreground border-foreground border-2"
                     }`}
                   >
                     {customer.status === "approved"

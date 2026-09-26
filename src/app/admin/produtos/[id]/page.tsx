@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProductEditForm } from "@/components/product-edit-form";
 import { VariantStockTable } from "@/components/variant-stock-table";
+import { ProductImagesManager } from "@/components/product-images-manager";
 
 export default async function AdminProductEditPage({
   params,
@@ -27,6 +28,12 @@ export default async function AdminProductEditPage({
     .eq("product_id", id)
     .order("size");
 
+  const { data: images } = await supabase
+    .from("product_images")
+    .select("id, storage_path, position")
+    .eq("product_id", id)
+    .order("position");
+
   const { data: connectors } = await supabase
     .from("connectors")
     .select("id, supplier_name, status, included_in_contract")
@@ -48,6 +55,12 @@ export default async function AdminProductEditPage({
         ← Products
       </Link>
       <h1 className="font-serif text-2xl mt-2 mb-6">{product.title}</h1>
+
+      <h2 className="text-sm font-medium uppercase tracking-wide mb-4">Photos</h2>
+      <div className="max-w-xl mb-10">
+        <ProductImagesManager productId={id} images={images ?? []} />
+      </div>
+
       <ProductEditForm
         product={product}
         connectors={connectors ?? []}

@@ -5,10 +5,8 @@ import { getCurrentCustomer } from "@/lib/auth";
 import { calculateShipmentPackages } from "@/lib/dhl-packaging";
 import {
   calculateShipSmartQuote,
-  createShipSmartShipment,
   mapOrderPackagesToShipSmart,
   ShipSmartAddress,
-  ShipSmartInvoiceItem,
 } from "@/lib/shipsmart";
 
 export interface PlaceOrderInput {
@@ -226,57 +224,23 @@ export async function placeOrderServerAction(
     }
 
     // 5. Insert Order Items into order_items table
-    const invoiceItems: ShipSmartInvoiceItem[] = [];
-    const itemRecords = [];
-
-    for (const item of input.items) {
-      itemRecords.push({
-        order_id: order.id,
-        variant_id: item.variantId,
-        qty: item.qty,
-        unit_price: item.price,
-      });
-
-      invoiceItems.push({
-        description: `Vestido ${item.title} (${item.color} / ${item.size})`,
-        hsCode: "6204.43.00",
-        quantity: item.qty,
-        unitValue: item.price,
-        totalValue: item.price * item.qty,
-      });
-    }
+    const itemRecords = input.items.map((item) => ({
+      order_id: order.id,
+      variant_id: item.variantId,
+      qty: item.qty,
+      unit_price: item.price,
+    }));
 
     await supabase.from("order_items").insert(itemRecords);
 
-    // 6. Create DHL Shipment via ShipSmart API
-    const shipmentRes = await createShipSmartShipment({
-      orderId: order.id,
-      orderNumber: orderNum,
-      recipient: address,
-      packages: shipSmartPackages,
-      items: invoiceItems,
-      declaredValueAmount: subtotal,
-      isDdp: input.isDdp ?? false,
-    });
-
-    // 7. Insert Shipment Tracking record in shipments table
-    if (shipmentRes.trackingNumber) {
-      await supabase.from("shipments").insert({
-        order_id: order.id,
-        dhl_tracking: shipmentRes.trackingNumber,
-        label_url: shipmentRes.labelUrl || null,
-        invoice_url: shipmentRes.invoiceUrl || null,
-        status: shipmentRes.status || "CONFIRMED",
-      });
-    }
-
+    // DHL/ShipSmart shipment (AWB + label) is NOT created here — the order
+    // is placed with status "processing" (shown as "Em Separação") and only
+    // the shipping/duties estimate is stored. Staff trigger the actual DHL
+    // shipment manually from /admin/pedidos/[id] once the order is packed.
     return {
       success: true,
       orderId: order.id,
       orderNumber: orderNum,
-      trackingNumber: shipmentRes.trackingNumber,
-      labelUrl: shipmentRes.labelUrl,
-      invoiceUrl: shipmentRes.invoiceUrl,
     };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Erro ao finalizar pedido";

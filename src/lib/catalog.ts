@@ -224,8 +224,3 @@ export async function getProductDetail(
     })),
   };
 }
-
-export const SECTION_TITLES: Record<string, string> = {
-  novidades: "Novidades",
-  destaques: "Destaques",
-};

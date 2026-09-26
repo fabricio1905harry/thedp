@@ -15,7 +15,7 @@ export function SignupForm({ defaultCustomerType = "individual" }: { defaultCust
 
   if (state.status === "success") {
     return (
-      <p className="text-sm bg-surface border border-border p-4">
+      <p className="text-sm bg-surface border border-border rounded-sm p-4">
         {t("success")}
       </p>
     );
@@ -103,7 +103,7 @@ export function SignupForm({ defaultCustomerType = "individual" }: { defaultCust
       <button
         type="submit"
         disabled={pending}
-        className="w-full bg-accent text-white py-3 text-sm uppercase tracking-wide font-medium disabled:opacity-50"
+        className="btn-primary w-full py-3 text-sm uppercase tracking-wide font-medium"
       >
         {pending ? t("submitting") : t("submit")}
       </button>

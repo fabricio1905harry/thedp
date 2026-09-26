@@ -22,14 +22,21 @@ interface Address {
   postal_code: string | null;
 }
 
+const COUNTRY_CODES = ["US", "PT", "ES", "FR", "DE", "IT", "GB", "CA", "MX"] as const;
+
 export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
   const tCart = useTranslations("cart");
+  const t = useTranslations("checkout");
+  const tProduct = useTranslations("product");
   const router = useRouter();
   const { items, clear } = useCart();
   const { currency } = useCurrency();
 
+  // Import-duty (DDP) estimate is mandatory and always shown in the total,
+  // in every locale — no opt-out toggle.
+  const isDdp = true;
+
   const [selectedAddressId, setSelectedAddressId] = useState(addresses[0]?.id ?? "new");
-  const [isDdp, setIsDdp] = useState(false);
   const [loadingShipping, setLoadingShipping] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -151,11 +158,11 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
         clear();
         router.push(`/pedidos/${res.orderId}`);
       } else {
-        setErrorMsg(res.error || "Não foi possível finalizar o pedido.");
+        setErrorMsg(res.error || t("orderFailedGeneric"));
         setPlacingOrder(false);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro inesperado ao finalizar pedido";
+      const msg = err instanceof Error ? err.message : t("unexpectedError");
       setErrorMsg(msg);
       setPlacingOrder(false);
     }
@@ -168,7 +175,7 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
         {/* Address Selection */}
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-4 pb-2 border-b border-border">
-            1. Endereço de Entrega Internacional
+            {t("step1Title")}
           </h2>
 
           {addresses.length > 0 && (
@@ -208,26 +215,26 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
           <div className="space-y-3 pt-2">
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-muted font-medium mb-1">
-                Nome Completo do Destinatário
+                {t("recipientName")}
               </label>
               <input
                 type="text"
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
-                placeholder="Ex: Jane Doe"
+                placeholder={t("recipientNamePlaceholder")}
                 className="w-full px-3 py-2 text-xs border border-border rounded focus:outline-none focus:border-accent bg-background"
               />
             </div>
 
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-muted font-medium mb-1">
-                Endereço / Logradouro
+                {t("addressLine")}
               </label>
               <input
                 type="text"
                 value={addressLine}
                 onChange={(e) => setAddressLine(e.target.value)}
-                placeholder="Ex: 5th Avenue, 100"
+                placeholder={t("addressLinePlaceholder")}
                 className="w-full px-3 py-2 text-xs border border-border rounded focus:outline-none focus:border-accent bg-background"
               />
             </div>
@@ -235,26 +242,26 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] uppercase tracking-wider text-muted font-medium mb-1">
-                  Cidade
+                  {t("city")}
                 </label>
                 <input
                   type="text"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  placeholder="Ex: Nova York"
+                  placeholder={t("cityPlaceholder")}
                   className="w-full px-3 py-2 text-xs border border-border rounded focus:outline-none focus:border-accent bg-background"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] uppercase tracking-wider text-muted font-medium mb-1">
-                  Estado / Província
+                  {t("state")}
                 </label>
                 <input
                   type="text"
                   value={state}
                   onChange={(e) => setState(e.target.value)}
-                  placeholder="Ex: NY"
+                  placeholder={t("statePlaceholder")}
                   className="w-full px-3 py-2 text-xs border border-border rounded focus:outline-none focus:border-accent bg-background"
                 />
               </div>
@@ -263,35 +270,31 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] uppercase tracking-wider text-muted font-medium mb-1">
-                  Código Postal / CEP
+                  {t("postalCode")}
                 </label>
                 <input
                   type="text"
                   value={postalCode}
                   onChange={(e) => setPostalCode(e.target.value)}
-                  placeholder="Ex: 10001"
+                  placeholder={t("postalCodePlaceholder")}
                   className="w-full px-3 py-2 text-xs border border-border rounded focus:outline-none focus:border-accent bg-background"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] uppercase tracking-wider text-muted font-medium mb-1">
-                  País (Código ISO)
+                  {t("country")}
                 </label>
                 <select
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-border rounded focus:outline-none focus:border-accent bg-background cursor-pointer"
                 >
-                  <option value="US">Estados Unidos (US)</option>
-                  <option value="PT">Portugal (PT)</option>
-                  <option value="ES">Espanha (ES)</option>
-                  <option value="FR">França (FR)</option>
-                  <option value="DE">Alemanha (DE)</option>
-                  <option value="IT">Itália (IT)</option>
-                  <option value="GB">Reino Unido (UK)</option>
-                  <option value="CA">Canadá (CA)</option>
-                  <option value="MX">México (MX)</option>
+                  {COUNTRY_CODES.map((code) => (
+                    <option key={code} value={code}>
+                      {t(`countries.${code}`)}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -301,24 +304,24 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
         {/* Real-time DHL Shipping Calculation Card */}
         <div className="border-t border-border pt-6">
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-4">
-            2. Opção de Envio Expresso DHL
+            {t("step2Title")}
           </h2>
 
-          <div className="bg-gradient-to-r from-amber-950/5 to-amber-900/10 border border-gold/40 rounded-sm p-4 space-y-3">
+          <div className="bg-surface border border-border rounded-sm p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gold/20 text-gold flex items-center justify-center text-base">
+                <div className="w-9 h-9 rounded-full bg-foreground text-background flex items-center justify-center text-base">
                   ✈
                 </div>
                 <div>
                   <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                    DHL Express Worldwide
+                    {t("dhlExpressWorldwide")}
                   </h4>
                   <p className="text-[11px] text-muted">
                     {loadingShipping ? (
-                      <span className="animate-pulse">Calculando cotação em tempo real...</span>
+                      <span className="animate-pulse">{t("calculatingQuote")}</span>
                     ) : (
-                      `Prazo de entrega: ~${shippingQuote?.deliveryDays || 3} dias úteis`
+                      t("deliveryEstimate", { days: shippingQuote?.deliveryDays || 3 })
                     )}
                   </p>
                 </div>
@@ -334,28 +337,24 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
             {shippingQuote && (
               <div className="pt-2 border-t border-gold/20 flex flex-wrap items-center justify-between text-[11px] text-muted gap-2">
                 <span>
-                  Embalagem: <strong className="text-foreground">{shippingQuote.packageName}</strong> ({shippingQuote.dimensionsText})
+                  {t("packagingLabel")} <strong className="text-foreground">{shippingQuote.packageName}</strong> ({shippingQuote.dimensionsText})
                 </span>
                 <span>
-                  Peso Final: <strong className="text-foreground">{shippingQuote.totalWeightKg} kg</strong>
+                  {t("finalWeightLabel")} <strong className="text-foreground">{shippingQuote.totalWeightKg} kg</strong>
                 </span>
               </div>
             )}
           </div>
 
-          {/* DDP vs DDU Checkbox */}
+          {/* DDP is mandatory in every locale — fixed, non-toggleable, and
+              its estimate always shows in the order summary below. */}
           <div className="pt-4">
-            <label className="flex items-start gap-2.5 text-xs text-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isDdp}
-                onChange={(e) => setIsDdp(e.target.checked)}
-                className="mt-0.5 accent-accent"
-              />
+            <p className="flex items-start gap-2.5 text-xs text-foreground">
+              <input type="checkbox" checked readOnly disabled className="mt-0.5 accent-accent" />
               <span>
-                <strong>Incluir Estimativa de Impostos de Importação (DDP)</strong> — Pague os impostos antecipadamente para liberação alfandegária expressa sem retenções.
+                <strong>{t("ddpTitle")}</strong> — {t("ddpDescriptionMandatory")}
               </span>
-            </label>
+            </p>
           </div>
         </div>
       </div>
@@ -363,7 +362,7 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
       {/* Right Column: Order Summary & Place Order */}
       <div className="lg:col-span-5 space-y-6 bg-white p-6 rounded-sm border border-border/80 shadow-xs">
         <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-accent pb-2 border-b border-border">
-          Resumo do Pedido ({items.length} {items.length === 1 ? "peça" : "peças"})
+          {t("orderSummary")} ({items.length} {items.length === 1 ? tProduct("piece") : tProduct("pieces")})
         </h2>
 
         {/* Items List */}
@@ -375,7 +374,7 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
                 <div>
                   <h4 className="font-serif text-sm font-medium text-foreground">{item.title}</h4>
                   <p className="text-[11px] text-muted">
-                    Cor: {item.color} • Tam: {item.size} • Qtd: {item.qty}
+                    {t("colorLabel")} {item.color} • {t("sizeLabel")} {item.size} • {t("qtyLabel")} {item.qty}
                   </p>
                 </div>
                 <div className="text-right font-semibold text-foreground">
@@ -389,32 +388,30 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
         {/* Pricing Totals Breakdown */}
         <div className="space-y-2.5 pt-4 border-t border-border text-xs">
           <div className="flex justify-between text-muted">
-            <span>Subtotal dos Vestidos:</span>
+            <span>{t("subtotalDresses")}</span>
             <span className="font-medium text-foreground">{formatCurrency(subtotal, currency)}</span>
           </div>
 
           <div className="flex justify-between text-muted">
-            <span>Frete DHL Express:</span>
+            <span>{t("shippingDhl")}</span>
             <span className="font-medium text-foreground">
               {loadingShipping ? "..." : formatCurrency(shippingCost, currency)}
             </span>
           </div>
 
-          {isDdp && (
-            <div className="flex justify-between text-muted">
-              <span>Estimativa Impostos DDP:</span>
-              <span className="font-medium text-foreground">{formatCurrency(dutiesEstimate, currency)}</span>
-            </div>
-          )}
+          <div className="flex justify-between text-muted">
+            <span>{t("ddpEstimateLabel")}</span>
+            <span className="font-medium text-foreground">{formatCurrency(dutiesEstimate, currency)}</span>
+          </div>
 
           <div className="flex justify-between pt-3 border-t border-border font-serif text-lg font-bold text-foreground">
-            <span>Total Final:</span>
+            <span>{t("totalFinal")}</span>
             <span className="text-accent">{formatCurrency(grandTotal, currency)}</span>
           </div>
         </div>
 
         {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          <div className="p-3 bg-surface border-2 border-foreground rounded text-xs text-foreground font-semibold">
             {errorMsg}
           </div>
         )}
@@ -423,20 +420,20 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
         <button
           onClick={handlePlaceOrder}
           disabled={placingOrder || loadingShipping}
-          className="w-full bg-accent hover:bg-accent-hover text-white py-4 text-xs uppercase tracking-[0.2em] font-semibold transition-all shadow-lg hover:shadow-xl rounded-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="btn-primary w-full py-4 text-xs uppercase tracking-[0.2em] font-semibold flex items-center justify-center gap-2"
         >
           {placingOrder ? (
             <>
               <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-              <span>Gerando Remessa DHL...</span>
+              <span>{t("placingOrder")}</span>
             </>
           ) : (
-            <span>Finalizar Pedido via DHL Express →</span>
+            <span>{t("placeOrderCta")} →</span>
           )}
         </button>
 
         <p className="text-[10px] text-center text-muted leading-relaxed">
-          Ao clicar em finalizar, a sua remessa e o código AWB DHL serão gerados automaticamente.
+          {t("placeOrderNotice")}
         </p>
       </div>
     </div>

@@ -15,7 +15,7 @@ export default async function AdminCambioPage() {
       </p>
 
       {hasStaleRate && (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-300 text-amber-900 text-sm rounded-md max-w-2xl">
+        <div className="mb-6 p-4 bg-surface border-2 border-foreground text-foreground text-sm rounded-md max-w-2xl">
           <strong>⚠️ Alerta de Câmbio Desatualizado:</strong> Uma ou mais cotações de moeda não são atualizadas há mais de {FX_STALE_DAYS} dias. Verifique os valores abaixo e salve a nova taxa para garantir a precificação correta.
         </div>
       )}

@@ -71,7 +71,7 @@ export default function CartPage() {
 
       <Link
         href="/checkout"
-        className="block text-center mt-8 bg-accent text-white py-3 text-sm uppercase tracking-wide hover:opacity-90 font-medium"
+        className="btn-primary block text-center mt-8 py-3 text-sm uppercase tracking-wide font-medium"
       >
         {t("proceedToCheckout")}
       </Link>

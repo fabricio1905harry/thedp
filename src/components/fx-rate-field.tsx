@@ -23,20 +23,20 @@ export function FxRateField({
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <div className={`border p-5 rounded-md max-w-md ${stale ? "border-amber-400 bg-amber-50/20" : "border-border"}`}>
+    <div className={`border p-5 rounded-md max-w-md ${stale ? "border-2 border-foreground bg-surface" : "border-border"}`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-foreground">
           Cotação {quote} <span className="text-xs font-normal text-muted">(BRL por {quote})</span>
         </h3>
         {stale && (
-          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-amber-100 text-amber-800 rounded">
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-foreground text-background rounded">
             Desatualizado
           </span>
         )}
       </div>
 
       {stale && (
-        <div className="mb-3 p-2.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded">
+        <div className="mb-3 p-2.5 bg-surface border border-foreground text-foreground text-xs rounded">
           ⚠️ <strong>Alerta:</strong> Esta cotação não é atualizada há mais de 3 dias. Atualize o valor manualmente para manter os preços internacionais corretos.
         </div>
       )}
@@ -68,7 +68,7 @@ export function FxRateField({
         <button
           type="submit"
           disabled={pending}
-          className="bg-accent text-white px-4 py-2 text-sm font-medium rounded disabled:opacity-50 hover:bg-accent/90 transition-colors"
+          className="btn-primary px-4 py-2 text-sm font-medium"
         >
           {pending ? "Salvando..." : "Salvar Cotação"}
         </button>
@@ -77,7 +77,7 @@ export function FxRateField({
         <p className="text-xs text-accent font-medium mt-2">{state.message}</p>
       )}
       {state.status === "success" && (
-        <p className="text-xs text-emerald-600 font-medium mt-2">Cotação atualizada com sucesso!</p>
+        <p className="text-xs text-foreground font-semibold mt-2">Cotação atualizada com sucesso!</p>
       )}
     </div>
   );

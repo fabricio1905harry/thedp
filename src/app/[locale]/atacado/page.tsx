@@ -12,11 +12,11 @@ export default async function AtacadoPage() {
       </p>
       <Link
         href="/cadastro?tipo=pj"
-        className="inline-block bg-accent text-white px-6 py-3 text-sm uppercase tracking-wide hover:opacity-90 mb-6 font-medium"
+        className="btn-primary inline-block px-6 py-3 text-sm uppercase tracking-wide mb-6 font-medium"
       >
         {t("createCta")}
       </Link>
-      <div className="border border-dashed border-border p-4 text-sm text-muted">
+      <div className="border border-dashed border-border rounded-sm p-4 text-sm text-muted">
         {t("notice")}
       </div>
     </InstitutionalPage>
