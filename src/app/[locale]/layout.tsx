@@ -10,6 +10,8 @@ import { SITE_MODE_HEADER, type SiteMode } from "@/lib/site-mode";
 import { SiteChrome } from "@/components/site-chrome";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { CartProvider } from "@/components/cart-provider";
+import { WhatsAppFloatingButton, WhatsAppProvider } from "@/components/whatsapp-button";
+import { getWhatsAppSettings } from "@/lib/settings";
 import "../globals.css";
 
 const display = Cormorant_Garamond({
@@ -47,6 +49,7 @@ export default async function LocaleLayout({
 
   const headerList = await headers();
   const siteMode = (headerList.get(SITE_MODE_HEADER) as SiteMode) ?? "internacional";
+  const whatsapp = await getWhatsAppSettings();
 
   return (
     <html lang={locale} className={`${display.variable} ${body.variable} h-full`}>
@@ -54,7 +57,10 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
           <CurrencyProvider>
             <CartProvider>
-              <SiteChrome siteMode={siteMode}>{children}</SiteChrome>
+              <WhatsAppProvider settings={whatsapp}>
+                <SiteChrome siteMode={siteMode}>{children}</SiteChrome>
+                <WhatsAppFloatingButton />
+              </WhatsAppProvider>
             </CartProvider>
           </CurrencyProvider>
         </NextIntlClientProvider>

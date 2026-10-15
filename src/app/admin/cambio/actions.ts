@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentStaff } from "@/lib/admin-auth";
 import type { FxQuote } from "@/lib/fx";
+import { updateFxRatesNow } from "@/lib/fx-auto";
 
 export interface SetFxRateState {
   status: "idle" | "success" | "error";
@@ -47,4 +48,15 @@ export async function setUsdRate(prevState: SetFxRateState, formData: FormData) 
 
 export async function setEurRate(prevState: SetFxRateState, formData: FormData) {
   return setFxRate("EUR", prevState, formData);
+}
+
+/** "UPDATE FX NOW" — same automatic fetch as the daily job, on demand. */
+export async function updateFxNow(): Promise<SetFxRateState> {
+  const staff = await getCurrentStaff();
+  if (!staff) return { status: "error", message: "Not authorized" };
+  const result = await updateFxRatesNow("manual", staff.id);
+  revalidatePath("/admin/cambio");
+  return result.ok
+    ? { status: "success", message: `USD ${result.rates.USD} · EUR ${result.rates.EUR}` }
+    : { status: "error", message: result.error };
 }

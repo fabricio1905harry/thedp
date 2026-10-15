@@ -3,7 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProductEditForm } from "@/components/product-edit-form";
 import { VariantStockTable } from "@/components/variant-stock-table";
-import { ProductImagesManager } from "@/components/product-images-manager";
+import { ProductImagesManager, type ImageRow } from "@/components/product-images-manager";
+import { SyncLocksPanel } from "@/components/sync-locks-panel";
 
 export default async function AdminProductEditPage({
   params,
@@ -15,7 +16,7 @@ export default async function AdminProductEditPage({
   const { data: product } = await supabase
     .from("products")
     .select(
-      "id, title, title_en, title_es, category, status, is_featured, connector_id, original_price, markup, price_brl, price_usd, price_eur, hs_code, weight_g, dims_cm, sizes, colors, default_stock"
+      "id, title, title_en, title_es, category, status, is_featured, connector_id, original_price, markup, price_brl, price_usd, price_eur, hs_code, weight_g, dims_cm, sizes, colors, default_stock, locked_fields, last_synced_at, source_snapshot"
     )
     .eq("id", id)
     .single();
@@ -24,13 +25,13 @@ export default async function AdminProductEditPage({
 
   const { data: variants } = await supabase
     .from("variants")
-    .select("id, size, size_br, size_us, size_eu, color, sku, stock")
+    .select("id, size, size_br, size_us, size_eu, color, sku, stock, source_stock, stock_override")
     .eq("product_id", id)
     .order("size");
 
   const { data: images } = await supabase
     .from("product_images")
-    .select("id, storage_path, position")
+    .select("id, product_id, storage_path, position, review_status, origin, is_cover, crop, replaces_image_id")
     .eq("product_id", id)
     .order("position");
 
@@ -56,9 +57,16 @@ export default async function AdminProductEditPage({
       </Link>
       <h1 className="font-serif text-2xl mt-2 mb-6">{product.title}</h1>
 
+      <SyncLocksPanel
+        productId={id}
+        lockedFields={(product.locked_fields as string[]) ?? []}
+        lastSyncedAt={product.last_synced_at}
+        sourceSnapshot={product.source_snapshot as Record<string, unknown> | null}
+      />
+
       <h2 className="text-sm font-medium uppercase tracking-wide mb-4">Photos</h2>
-      <div className="max-w-xl mb-10">
-        <ProductImagesManager productId={id} images={images ?? []} />
+      <div className="mb-10">
+        <ProductImagesManager productId={id} images={(images ?? []) as ImageRow[]} />
       </div>
 
       <ProductEditForm

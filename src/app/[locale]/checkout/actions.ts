@@ -203,7 +203,9 @@ export async function placeOrderServerAction(
       .insert({
         customer_id: customer.id,
         order_number: orderNum,
-        status: "processing",
+        // Order Request: the TDP confirms stock with the supplier, adjusts
+        // the composition and releases the Confirmed Order for payment.
+        status: "order_request",
         currency: input.currency || "BRL",
         subtotal,
         shipping_cost: shippingCost,
@@ -234,9 +236,9 @@ export async function placeOrderServerAction(
     await supabase.from("order_items").insert(itemRecords);
 
     // DHL/ShipSmart shipment (AWB + label) is NOT created here — the order
-    // is placed with status "processing" (shown as "Em Separação") and only
-    // the shipping/duties estimate is stored. Staff trigger the actual DHL
-    // shipment manually from /admin/pedidos/[id] once the order is packed.
+    // is placed as an Order Request and only the shipping/duties estimate
+    // is stored. Staff confirm stock, release the Confirmed Order for
+    // payment and trigger the DHL shipment from /admin/pedidos/[id].
     return {
       success: true,
       orderId: order.id,
