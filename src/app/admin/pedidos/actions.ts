@@ -29,23 +29,63 @@ async function assertEditable(orderId: string) {
 }
 
 /**
- * Subtotal = lines still in the order (available/requested). Shipping,
- * duties and the DHL quote are recalculated separately before releasing.
+ * Subtotal = lines still in the order (available/requested). Freight,
+ * duties and total are derived by the orders_compute_charges trigger.
  */
 async function recalcTotals(orderId: string) {
   const supabase = await createClient();
-  const [{ data: items }, { data: order }] = await Promise.all([
-    supabase.from("order_items").select("qty, unit_price, item_status").eq("order_id", orderId),
-    supabase.from("orders").select("shipping_cost, duties_estimate").eq("id", orderId).single(),
-  ]);
+  const { data: items } = await supabase.from("order_items").select("qty, unit_price, item_status").eq("order_id", orderId);
   const subtotal = (items ?? [])
     .filter((i) => i.item_status === "available" || i.item_status === "requested")
     .reduce((sum, i) => sum + Number(i.qty) * Number(i.unit_price), 0);
-  const total = subtotal + Number(order?.shipping_cost ?? 0) + Number(order?.duties_estimate ?? 0);
-  await supabase
+  await supabase.from("orders").update({ subtotal: Math.round(subtotal * 100) / 100 }).eq("id", orderId);
+}
+
+export interface OrderChargesInput {
+  freightAmount: number;
+  insuranceAmount: number;
+  fuelSurchargeAmount: number;
+  demandSurchargeAmount: number;
+  exportDeclarationAmount: number;
+  otherDhlAmount: number;
+  dutiesTaxesAmount: number;
+  otherChargesAmount: number;
+  deliveryDays: number | null;
+  note: string;
+}
+
+/**
+ * Freight & import duties informed by the TDP after stock confirmation
+ * (in the order currency). Closes "DHL Quote Required" in the Action
+ * Center; required before generating the Confirmed Order.
+ */
+export async function setOrderCharges(orderId: string, input: OrderChargesInput) {
+  const staff = await requireStaff();
+  const supabase = await assertEditable(orderId);
+  const n = (v: number) => {
+    const x = Number(v);
+    if (!Number.isFinite(x) || x < 0) throw new Error("Values must be zero or positive.");
+    return Math.round(x * 100) / 100;
+  };
+  const { error } = await supabase
     .from("orders")
-    .update({ subtotal: Math.round(subtotal * 100) / 100, total: Math.round(total * 100) / 100 })
+    .update({
+      freight_amount: n(input.freightAmount),
+      insurance_amount: n(input.insuranceAmount),
+      fuel_surcharge_amount: n(input.fuelSurchargeAmount),
+      demand_surcharge_amount: n(input.demandSurchargeAmount),
+      export_declaration_amount: n(input.exportDeclarationAmount),
+      other_dhl_amount: n(input.otherDhlAmount),
+      duties_taxes_amount: n(input.dutiesTaxesAmount),
+      other_charges_amount: n(input.otherChargesAmount),
+      delivery_days: input.deliveryDays && input.deliveryDays > 0 ? Math.round(input.deliveryDays) : null,
+      charges_note: input.note.trim() || null,
+      charges_informed_at: new Date().toISOString(),
+      charges_informed_by: staff.id,
+    })
     .eq("id", orderId);
+  if (error) throw new Error(error.message);
+  revalidateOrder(orderId);
 }
 
 export type ItemStatus =
@@ -169,7 +209,13 @@ export async function releaseOrderForPayment(
   await requireStaff();
   const supabase = await createClient();
 
-  const { data: items } = await supabase.from("order_items").select("item_status").eq("order_id", orderId);
+  const [{ data: items }, { data: order }] = await Promise.all([
+    supabase.from("order_items").select("item_status").eq("order_id", orderId),
+    supabase.from("orders").select("charges_informed_at").eq("id", orderId).single(),
+  ]);
+  if (!order?.charges_informed_at) {
+    throw new Error("Inform freight & import duties (after stock confirmation) before generating the Confirmed Order.");
+  }
   if ((items ?? []).some((i) => i.item_status === "requested")) {
     throw new Error("Confirm every line (AVAILABLE / UNAVAILABLE) before generating the Confirmed Order.");
   }

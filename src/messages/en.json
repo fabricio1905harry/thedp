@@ -98,7 +98,10 @@
     "totalFinal": "Grand Total:",
     "placingOrder": "Generating DHL Shipment...",
     "placeOrderCta": "Place Order via DHL Express",
-    "placeOrderNotice": "When you click place order, your shipment and DHL AWB code are generated automatically.",
+    "placeOrderNotice": "Placing the order sends an Order Request: we confirm stock, then inform freight and duties before payment.",
+    "chargesAfterStockConfirmation": "DHL freight and import duties will be informed after we confirm stock availability. You only pay after reviewing the final amounts.",
+    "toBeInformed": "To be informed after stock confirmation",
+    "totalProducts": "Products total:",
     "orderFailedGeneric": "We could not complete your order.",
     "unexpectedError": "Unexpected error while placing the order.",
     "countries": {
@@ -243,7 +246,8 @@
     "inventoryReservedUntil": "Inventory Reserved Until {date}",
     "paymentWindowExpired": "The payment window for this order has expired. Availability needs to be reconfirmed before payment can be reopened.",
     "coordinationRequired": "All items are available, but they cannot be held while payment is pending. Contact us when you are ready to pay and we will reconfirm availability and release payment.",
-    "contactToComplete": "CONTACT US TO COMPLETE YOUR ORDER"
+    "contactToComplete": "CONTACT US TO COMPLETE YOUR ORDER",
+    "orderTotal": "Order total:"
   },
   "common": {
     "previous": "Previous",

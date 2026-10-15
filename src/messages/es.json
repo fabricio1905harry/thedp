@@ -98,7 +98,10 @@
     "totalFinal": "Total Final:",
     "placingOrder": "Generando Envío DHL...",
     "placeOrderCta": "Finalizar Pedido vía DHL Express",
-    "placeOrderNotice": "Al hacer clic en finalizar, tu envío y el código AWB DHL se generarán automáticamente.",
+    "placeOrderNotice": "Al finalizar envías un Order Request: confirmamos el stock e informamos flete e impuestos antes del pago.",
+    "chargesAfterStockConfirmation": "El flete DHL y los impuestos de importación se informarán después de confirmar la disponibilidad del stock. Solo pagas después de revisar los valores finales.",
+    "toBeInformed": "Se informará tras confirmar el stock",
+    "totalProducts": "Total de productos:",
     "orderFailedGeneric": "No fue posible finalizar el pedido.",
     "unexpectedError": "Error inesperado al finalizar el pedido.",
     "countries": {
@@ -243,7 +246,8 @@
     "inventoryReservedUntil": "Inventario reservado hasta {date}",
     "paymentWindowExpired": "El plazo de pago de este pedido venció. Necesitamos reconfirmar la disponibilidad antes de reabrir el pago.",
     "coordinationRequired": "Todos los artículos están disponibles, pero no pueden reservarse mientras el pago está pendiente. Contáctanos cuando estés listo para pagar y reconfirmaremos la disponibilidad.",
-    "contactToComplete": "CONTÁCTANOS PARA COMPLETAR TU PEDIDO"
+    "contactToComplete": "CONTÁCTANOS PARA COMPLETAR TU PEDIDO",
+    "orderTotal": "Total del pedido:"
   },
   "common": {
     "previous": "Anterior",

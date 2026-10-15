@@ -64,6 +64,7 @@ export default async function OrderConfirmationPage({
     paid: "order.statusPaid",
     processing: "order.statusProcessing",
   };
+  const chargesInformed = Boolean(order.charges_informed_at);
   const statusLabel = statusKeys[order.status] ? t(statusKeys[order.status]) : order.status;
   const holdUntil =
     order.status === "confirmed_awaiting_payment" && order.stock_hold_until
@@ -216,20 +217,37 @@ export default async function OrderConfirmationPage({
               <span className="text-muted">{t("checkout.subtotalDresses")}</span>
               <span className="font-medium">{formatCurrency(Number(order.subtotal), order.currency)}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-4">
               <span className="text-muted">{t("checkout.shippingDhl")}</span>
-              <span className="font-medium">{formatCurrency(Number(order.shipping_cost), order.currency)}</span>
+              <span className="font-medium text-right">
+                {chargesInformed ? formatCurrency(Number(order.shipping_cost), order.currency) : t("checkout.toBeInformed")}
+              </span>
             </div>
-            {Number(order.duties_estimate) > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted">{t("order.dutiesEstimate")}</span>
-                <span className="font-medium">{formatCurrency(Number(order.duties_estimate), order.currency)}</span>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted">{t("order.dutiesEstimate")}</span>
+              <span className="font-medium text-right">
+                {chargesInformed ? formatCurrency(Number(order.duties_estimate), order.currency) : t("checkout.toBeInformed")}
+              </span>
+            </div>
+            {chargesInformed && Number(order.other_charges_amount) > 0 && (
+              <div className="flex justify-between gap-4">
+                <span className="text-muted">+</span>
+                <span className="font-medium">{formatCurrency(Number(order.other_charges_amount), order.currency)}</span>
               </div>
             )}
             <div className="flex justify-between pt-2 border-t border-border font-serif text-base font-semibold text-foreground">
-              <span>{t("order.totalPaid")}</span>
+              <span>
+                {!chargesInformed
+                  ? t("checkout.totalProducts")
+                  : ["paid", "processing", "shipped", "delivered"].includes(order.status)
+                    ? t("order.totalPaid")
+                    : t("order.orderTotal")}
+              </span>
               <span className="text-accent">{formatCurrency(Number(order.total), order.currency)}</span>
             </div>
+            {!chargesInformed && (
+              <p className="text-[11px] text-muted leading-relaxed">{t("checkout.chargesAfterStockConfirmation")}</p>
+            )}
           </div>
         </div>
       </div>
