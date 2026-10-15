@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { croppedImageStyle, type ImageCrop } from "@/lib/image-crop";
 
 function hueFromSlug(slug: string): number {
   let hash = 0;
@@ -11,17 +12,25 @@ function hueFromSlug(slug: string): number {
   return hash;
 }
 
-/** Displays product photograph for dresses with high-fashion object-top positioning and smooth fallback. */
+/**
+ * Product photograph in the 2:3 product standard. Never auto-crops: without
+ * a TDP-defined crop the whole photo is shown (contained), so heads, hems
+ * and trains are never cut. Smooth fallback when the image is missing.
+ */
 export function ProductImagePlaceholder({
   slug,
   label,
   imageUrl,
   secondaryImageUrl,
+  crop = null,
+  secondaryCrop = null,
 }: {
   slug: string;
   label: string;
   imageUrl?: string | null;
   secondaryImageUrl?: string | null;
+  crop?: ImageCrop | null;
+  secondaryCrop?: ImageCrop | null;
 }) {
   const t = useTranslations("product");
   const [error, setError] = useState(false);
@@ -54,7 +63,7 @@ export function ProductImagePlaceholder({
   if (!error) {
     return (
       <div
-        className="relative aspect-[3/4] w-full overflow-hidden bg-surface group/img transition-all duration-500 rounded-t-sm"
+        className="relative aspect-[2/3] w-full overflow-hidden bg-surface group/img transition-all duration-500 rounded-t-sm"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -69,7 +78,8 @@ export function ProductImagePlaceholder({
           alt={label}
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
-          className={`w-full h-full object-cover object-top transition-all duration-700 ease-out ${
+          style={croppedImageStyle(isHovered && secondarySrc ? secondaryCrop : crop)}
+          className={`transition-all duration-700 ease-out ${
             loaded ? "opacity-100 scale-100" : "opacity-0 scale-105"
           } group-hover/img:scale-108`}
         />
@@ -83,7 +93,7 @@ export function ProductImagePlaceholder({
   // High-fashion fallback layout when image loading fails or image is missing
   return (
     <div
-      className="aspect-[3/4] w-full flex flex-col justify-between p-4 relative overflow-hidden group/fallback rounded-t-sm"
+      className="aspect-[2/3] w-full flex flex-col justify-between p-4 relative overflow-hidden group/fallback rounded-t-sm"
       style={{
         background: `radial-gradient(circle at 50% 30%, hsl(${hue} 30% 94%), hsl(${hue} 40% 82%))`,
       }}

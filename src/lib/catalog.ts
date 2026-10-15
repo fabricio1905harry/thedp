@@ -1,5 +1,6 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import type { ProductPricing, Variant } from "@/lib/types";
+import { parseCrop, type ImageCrop } from "@/lib/image-crop";
 
 export interface CatalogProduct {
   id: string;
@@ -12,6 +13,7 @@ export interface CatalogProduct {
   createdAt: string;
   pricing: ProductPricing | null;
   imageUrl: string | null;
+  imageCrop: ImageCrop | null;
 }
 
 async function getPublicProducts(limit = 50) {
@@ -20,8 +22,9 @@ async function getPublicProducts(limit = 50) {
     .from("products_public")
     .select(`
       id, slug, title, title_en, title_es, category, is_featured, created_at,
-      product_images ( storage_path, position )
+      product_images ( storage_path, position, is_cover, crop )
     `)
+    .eq("product_images.review_status", "approved")
     .order("created_at", { ascending: false })
     .limit(limit);
   return data ?? [];
@@ -50,8 +53,11 @@ function toCatalogProduct(
   row: Awaited<ReturnType<typeof getPublicProducts>>[number],
   pricingMap: Map<string, ProductPricing>
 ): CatalogProduct {
+  // Buyers only see APPROVED images; the MAIN IMAGE/COVER leads.
   const sortedImages = Array.isArray(row.product_images)
-    ? [...row.product_images].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    ? [...row.product_images].sort(
+        (a, b) => Number(b.is_cover) - Number(a.is_cover) || (a.position ?? 0) - (b.position ?? 0)
+      )
     : [];
   const primaryImage = sortedImages[0]?.storage_path ?? null;
 
@@ -66,6 +72,7 @@ function toCatalogProduct(
     createdAt: row.created_at,
     pricing: pricingMap.get(row.id) ?? null,
     imageUrl: primaryImage,
+    imageCrop: parseCrop(sortedImages[0]?.crop),
   };
 }
 
@@ -101,8 +108,9 @@ export async function getCategoryProducts(
       .from("products_public")
       .select(`
         id, slug, title, title_en, title_es, category, is_featured, created_at,
-        product_images ( storage_path, position )
+        product_images ( storage_path, position, is_cover, crop )
       `)
+      .eq("product_images.review_status", "approved")
       .ilike("category", category)
       .order("created_at", { ascending: false }),
     getPricingMap(approved),
@@ -127,6 +135,7 @@ export interface ProductDetail {
   pricing: ProductPricing | null;
   imageUrl: string | null;
   images: string[];
+  imageCrops: (ImageCrop | null)[];
   sizes: string[];
   colors: string[];
   variants: Variant[];
@@ -160,12 +169,15 @@ export async function getProductDetail(
       .maybeSingle(),
     serviceClient
       .from("product_images")
-      .select("storage_path, position")
+      .select("storage_path, position, is_cover, crop")
       .eq("product_id", pub.id)
+      .eq("review_status", "approved")
+      .order("is_cover", { ascending: false })
       .order("position", { ascending: true }),
   ]);
 
   const images = (imageRows ?? []).map((img) => img.storage_path);
+  const imageCrops = (imageRows ?? []).map((img) => parseCrop(img.crop));
   const primaryImage = images[0] ?? null;
 
   if (!approved) {
@@ -178,6 +190,7 @@ export async function getProductDetail(
       pricing: null,
       imageUrl: primaryImage,
       images,
+      imageCrops,
       sizes: [],
       colors: [],
       variants: [],
@@ -210,6 +223,7 @@ export async function getProductDetail(
       : null,
     imageUrl: primaryImage,
     images,
+    imageCrops,
     sizes: priced?.sizes ?? [],
     colors: priced?.colors ?? [],
     variants: (variantRows ?? []).map((v) => ({

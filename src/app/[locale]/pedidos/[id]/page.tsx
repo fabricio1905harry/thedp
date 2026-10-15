@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getCurrentCustomer } from "@/lib/auth";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/currency";
+import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp-button";
 
 export default async function OrderConfirmationPage({
   params,
@@ -18,26 +19,27 @@ export default async function OrderConfirmationPage({
   const t = await getTranslations();
   const dateLocale = { pt: "pt-BR", en: "en-US", es: "es-ES" }[locale] ?? locale;
 
-  // Fetch order, items, and shipments
-  const [{ data: order }, { data: items }, { data: shipment }] = await Promise.all([
-    supabase
-      .from("orders")
-      .select("*")
-      .eq("id", id)
-      .single(),
-    supabase
-      .from("order_items")
-      .select(`
-        id, qty, unit_price,
-        variants ( color, size, sku, products ( title, slug ) )
-      `)
-      .eq("order_id", id),
-    supabase
-      .from("shipments")
-      .select("*")
-      .eq("order_id", id)
-      .maybeSingle(),
-  ]);
+  // The service-role client bypasses RLS, so the order is scoped to the
+  // signed-in buyer first; lines/shipment are only read once it matches.
+  const { data: order } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("id", id)
+    .eq("customer_id", customer.id)
+    .maybeSingle();
+
+  const [{ data: items }, { data: shipment }] = order
+    ? await Promise.all([
+        supabase
+          .from("order_items")
+          .select(`
+            id, qty, unit_price, item_status,
+            variants ( color, size, sku, products ( title, slug ) )
+          `)
+          .eq("order_id", id),
+        supabase.from("shipments").select("*").eq("order_id", id).maybeSingle(),
+      ])
+    : [{ data: null }, { data: null }];
 
   if (!order) {
     return (
@@ -49,6 +51,24 @@ export default async function OrderConfirmationPage({
       </div>
     );
   }
+
+  const statusKeys: Record<string, string> = {
+    created: "order.statusOrderRequest",
+    order_request: "order.statusOrderRequest",
+    stock_confirmation: "order.statusStockConfirmation",
+    awaiting_buyer_decision: "order.statusAwaitingDecision",
+    confirmed_awaiting_payment: "order.statusAwaitingPayment",
+    payment_coordination_required: "order.statusCoordination",
+    payment_window_expired: "order.statusExpired",
+    reserved: "order.statusReserved",
+    paid: "order.statusPaid",
+    processing: "order.statusProcessing",
+  };
+  const statusLabel = statusKeys[order.status] ? t(statusKeys[order.status]) : order.status;
+  const holdUntil =
+    order.status === "confirmed_awaiting_payment" && order.stock_hold_until
+      ? new Date(order.stock_hold_until).toLocaleString(dateLocale, { dateStyle: "medium", timeStyle: "short" })
+      : null;
 
   const shippingAddr = (order.shipping_address as Record<string, string>) || {};
   const packagingSnapshot = (order.quote_snapshot as Record<string, unknown>)?.packaging as Record<string, unknown>;
@@ -75,10 +95,25 @@ export default async function OrderConfirmationPage({
 
         <div className="flex items-center gap-3">
           <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-accent/10 text-accent border border-accent/20">
-            {order.status === "processing" ? t("order.statusProcessing") : order.status}
+            {statusLabel}
           </span>
         </div>
       </div>
+
+      <WhatsAppContextSetter context={{ kind: "order", orderNumber: order.order_number || order.id.slice(0, 8) }} />
+
+      {(holdUntil || order.status === "payment_window_expired" || order.status === "payment_coordination_required") && (
+        <div className="border border-border p-4 text-sm space-y-3">
+          {holdUntil && <p className="font-semibold">{t("order.inventoryReservedUntil", { date: holdUntil })}</p>}
+          {order.status === "payment_window_expired" && <p>{t("order.paymentWindowExpired")}</p>}
+          {order.status === "payment_coordination_required" && <p>{t("order.coordinationRequired")}</p>}
+          {(order.status === "payment_window_expired" || order.status === "payment_coordination_required") && (
+            <WhatsAppInlineLink source="order:contact_to_complete" className="btn-primary inline-block px-4 py-2 text-xs tracking-wider">
+              {t("order.contactToComplete")}
+            </WhatsAppInlineLink>
+          )}
+        </div>
+      )}
 
       {/* DHL Express Shipping Card */}
       <div className="bg-surface border border-gold/40 rounded-sm p-6 space-y-5 shadow-xs">

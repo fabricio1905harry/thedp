@@ -1,5 +1,6 @@
 import { getLatestFxRates, isStale, FX_STALE_DAYS } from "@/lib/fx";
 import { FxRateField } from "@/components/fx-rate-field";
+import { FxUpdateNowButton } from "@/components/fx-update-now-button";
 
 export default async function AdminCambioPage() {
   const rates = await getLatestFxRates();
@@ -11,8 +12,13 @@ export default async function AdminCambioPage() {
     <div>
       <h1 className="font-serif text-2xl mb-2">Configurações Financeiras & Câmbio</h1>
       <p className="text-sm text-muted mb-6 max-w-xl">
-        Cotações manuais para conversão de moedas internacionais. O preço exibido para os compradores é sempre calculado com base na última cotação salva abaixo. Cotações sem atualização há mais de {FX_STALE_DAYS} dias são sinalizadas com um alerta.
+        A cotação é atualizada automaticamente 1x por dia (referência BCE via Frankfurter) e pode ser
+        atualizada na hora com UPDATE FX NOW ou digitada manualmente abaixo. O preço exibido para os
+        compradores usa sempre a última cotação salva. Cotações sem atualização há mais de {FX_STALE_DAYS} dias
+        são sinalizadas com um alerta; falhas na atualização automática entram no Action Center.
       </p>
+
+      <FxUpdateNowButton />
 
       {hasStaleRate && (
         <div className="mb-6 p-4 bg-surface border-2 border-foreground text-foreground text-sm rounded-md max-w-2xl">

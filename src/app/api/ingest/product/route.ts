@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { applyLocks, type SyncableField } from "@/lib/product-sync";
 
 function parseList(input: unknown): string[] {
   if (!input) return [];
@@ -33,11 +34,55 @@ function parseList(input: unknown): string[] {
   return [];
 }
 
+function firstDefined(body: Record<string, unknown>, keys: string[]): unknown {
+  for (const key of keys) {
+    if (body[key] !== undefined && body[key] !== null) return body[key];
+  }
+  return undefined;
+}
+
+function toNumber(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+interface SourceVariantStock {
+  size: string;
+  color: string | null;
+  stock: number;
+}
+
+function parseVariantStock(input: unknown): SourceVariantStock[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((row) => {
+      const r = (row ?? {}) as Record<string, unknown>;
+      const size = String(r.size ?? r.tamanho ?? "").trim();
+      const colorRaw = r.color ?? r.cor;
+      const stock = toNumber(r.stock ?? r.estoque ?? r.qty);
+      if (!size || stock === undefined) return null;
+      return { size, color: colorRaw ? String(colorRaw).trim() : null, stock: Math.max(0, Math.floor(stock)) };
+    })
+    .filter((v): v is SourceVariantStock => v !== null);
+}
+
 /**
- * n8n automated ingestion endpoint.
- * Accepts raw supplier product data (with sizes/colors as comma-separated text or arrays).
- * Normalizes sizes/colors arrays, stores in products, and triggers price calculation
- * (original_price, price_brl, price_usd, price_eur) & size x color variant matrix generation.
+ * n8n automated ingestion endpoint (supplier sync).
+ *
+ * Sync rules:
+ * - Only fields present in the payload are written, and never the ones the
+ *   TDP edited by hand (products.locked_fields). The full supplier payload
+ *   is kept in products.source_snapshot for "Reset to source".
+ * - New products always land as DRAFT (Products to Review); an existing
+ *   product's status is never changed by a sync.
+ * - Images are only appended to products.images; the DB trigger adds new
+ *   photos as PENDING REVIEW and never deletes, re-imports rejected ones or
+ *   touches the approved gallery/cover (migration 0024).
+ * - Per-variant supplier stock (payload `variants: [{size,color,stock}]`)
+ *   goes to variants.source_stock; a manual override keeps winning until
+ *   "Reset to Source Stock". Stock coming back on a variant with lost sales
+ *   raises a Restock Opportunity (migration 0026).
  */
 export async function POST(request: Request) {
   try {
@@ -61,132 +106,175 @@ export async function POST(request: Request) {
     }
 
     const rawBody = await request.json();
-    const body =
-      rawBody.data ??
+    const body = (rawBody.data ??
       rawBody.json ??
       rawBody.product ??
       rawBody.payload ??
       rawBody.fields ??
       rawBody.record ??
       rawBody.body ??
-      rawBody;
+      rawBody) as Record<string, unknown>;
 
-    const slug = body.slug || body.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const title = typeof body.title === "string" ? body.title : undefined;
+    const slug =
+      (typeof body.slug === "string" && body.slug) ||
+      title?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     if (!slug) {
       return NextResponse.json({ error: "Product slug or title is required" }, { status: 400 });
     }
 
-    const rawPrice = body.original_price ?? body.valor ?? body.price ?? 0;
-    const originalPrice = Number(rawPrice);
-    const markup = Number(body.markup ?? 0);
-
-    const sizes = parseList(body.sizes ?? body.tamanhos ?? body.tamanho);
-    const colors = parseList(body.colors ?? body.cores ?? body.cor);
-    const defaultStock = Number(body.default_stock ?? body.stock ?? 0);
-
     const supabase = createServiceRoleClient();
 
-    // Look up connector IDs if supplier names or IDs are passed
-    const supplierInput = parseList(body.suppliers ?? body.supplier ?? body.fornecedor ?? body.fornecedores ?? body.supplier_name);
-    let primaryConnectorId: string | null = body.connector_id || null;
-    const connectorIdsToLink: string[] = [];
+    // ---- supplier values (only what the payload actually carries) ----
+    const sourceValues: Partial<Record<SyncableField, unknown>> = {};
+    if (title !== undefined) sourceValues.title = title;
+    for (const key of ["title_en", "title_es", "description", "category", "brand", "hs_code"] as const) {
+      if (typeof body[key] === "string") sourceValues[key] = body[key];
+    }
+    const originalPrice = toNumber(firstDefined(body, ["original_price", "valor", "price"]));
+    if (originalPrice !== undefined) sourceValues.original_price = originalPrice;
+    const markup = toNumber(body.markup);
+    if (markup !== undefined) sourceValues.markup = markup;
+    const weight = toNumber(body.weight_g);
+    if (weight !== undefined) sourceValues.weight_g = Math.round(weight);
+    if (body.dims_cm && typeof body.dims_cm === "object") sourceValues.dims_cm = body.dims_cm;
+    const sizesRaw = firstDefined(body, ["sizes", "tamanhos", "tamanho"]);
+    if (sizesRaw !== undefined) sourceValues.sizes = parseList(sizesRaw);
+    const colorsRaw = firstDefined(body, ["colors", "cores", "cor"]);
+    if (colorsRaw !== undefined) sourceValues.colors = parseList(colorsRaw);
 
+    const imageList = parseList(
+      firstDefined(body, [
+        "images", "image", "image_url", "image_urls", "fotos", "foto", "foto_url", "foto_urls",
+        "imagem", "imagens", "photo", "photos", "picture", "pictures", "storage_path",
+        "source_url", "url", "urls", "link", "links",
+      ])
+    );
+    const defaultStock = toNumber(firstDefined(body, ["default_stock", "stock"]));
+    const variantStock = parseVariantStock(firstDefined(body, ["variants", "variantes", "stock_by_variant"]));
+
+    // ---- suppliers ----
+    const supplierInput = parseList(
+      firstDefined(body, ["suppliers", "supplier", "fornecedor", "fornecedores", "supplier_name"])
+    );
+    let primaryConnectorId: string | null = typeof body.connector_id === "string" ? body.connector_id : null;
+    const connectorIdsToLink: string[] = [];
     if (supplierInput.length > 0) {
       const { data: matchedConnectors } = await supabase
         .from("connectors")
         .select("id, supplier_name")
         .in("supplier_name", supplierInput);
-
-      if (matchedConnectors && matchedConnectors.length > 0) {
-        if (!primaryConnectorId) {
-          primaryConnectorId = matchedConnectors[0].id;
-        }
-        for (const c of matchedConnectors) {
-          connectorIdsToLink.push(c.id);
-        }
+      for (const c of matchedConnectors ?? []) {
+        primaryConnectorId ??= c.id;
+        connectorIdsToLink.push(c.id);
       }
     }
 
-    // Parse image list across all common field names
-    const imageList = parseList(
-      body.images ??
-        body.image ??
-        body.image_url ??
-        body.image_urls ??
-        body.fotos ??
-        body.foto ??
-        body.foto_url ??
-        body.foto_urls ??
-        body.imagem ??
-        body.imagens ??
-        body.photo ??
-        body.photos ??
-        body.picture ??
-        body.pictures ??
-        body.storage_path ??
-        body.source_url ??
-        body.url ??
-        body.urls ??
-        body.link ??
-        body.links
-    );
+    const { data: existing } = await supabase
+      .from("products")
+      .select("id, images, locked_fields, source_snapshot")
+      .eq("slug", slug)
+      .maybeSingle();
 
-    const primaryImageUrl = imageList[0] || body.source_url || null;
-
-    const payload = {
-      slug,
-      title: body.title || slug,
-      title_en: body.title_en || null,
-      title_es: body.title_es || null,
-      category: body.category || null,
-      connector_id: primaryConnectorId,
-      original_price: Number.isFinite(originalPrice) ? originalPrice : 0,
-      markup: Number.isFinite(markup) ? markup : 0,
-      sizes,
-      colors,
-      default_stock: Number.isFinite(defaultStock) && defaultStock >= 0 ? defaultStock : 0,
-      status: body.status || "published",
-      images: imageList,
-      source_url: primaryImageUrl,
-      updated_at: new Date().toISOString(),
+    const now = new Date().toISOString();
+    const snapshot = {
+      ...((existing?.source_snapshot as Record<string, unknown> | null) ?? {}),
+      ...sourceValues,
+      ...(imageList.length > 0 ? { images: imageList } : {}),
     };
 
-    const { data, error } = await supabase
+    let productId: string;
+    let skippedLockedFields: string[] = [];
+
+    if (existing) {
+      const locked = (existing.locked_fields as string[] | null) ?? [];
+      const writable = applyLocks(sourceValues, locked);
+      skippedLockedFields = Object.keys(sourceValues).filter((f) => !(f in writable));
+
+      // Append-only image list: previously known URLs stay in the array so
+      // the trigger never sees them as missing (it never deletes anyway).
+      const knownImages = parseList(existing.images);
+      const mergedImages = [...knownImages, ...imageList.filter((u) => !knownImages.includes(u))];
+
+      const { error } = await supabase
+        .from("products")
+        .update({
+          ...writable,
+          ...(primaryConnectorId ? { connector_id: primaryConnectorId } : {}),
+          ...(imageList.length > 0 ? { images: mergedImages } : {}),
+          source_snapshot: snapshot,
+          last_synced_at: now,
+          updated_at: now,
+        })
+        .eq("id", existing.id);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      productId = existing.id;
+    } else {
+      const { data: created, error } = await supabase
+        .from("products")
+        .insert({
+          slug,
+          title: title || slug,
+          ...sourceValues,
+          connector_id: primaryConnectorId,
+          default_stock: defaultStock !== undefined && defaultStock >= 0 ? defaultStock : 0,
+          // New supplier products always go to review first: publishing
+          // needs at least one APPROVED image + cover (migration 0024).
+          status: "draft",
+          images: imageList,
+          source_url: typeof body.source_url === "string" ? body.source_url : null,
+          source_snapshot: snapshot,
+          last_synced_at: now,
+          updated_at: now,
+        })
+        .select("id")
+        .single();
+      if (error || !created) {
+        return NextResponse.json({ error: error?.message ?? "Insert failed" }, { status: 500 });
+      }
+      productId = created.id;
+    }
+
+    if (connectorIdsToLink.length > 0) {
+      await supabase.from("product_connectors").upsert(
+        connectorIdsToLink.map((cid) => ({ product_id: productId, connector_id: cid })),
+        { onConflict: "product_id,connector_id" }
+      );
+    }
+
+    // Supplier stock per color + size → source_stock (override still wins).
+    let variantsUpdated = 0;
+    for (const v of variantStock) {
+      let query = supabase
+        .from("variants")
+        .update({ source_stock: v.stock })
+        .eq("product_id", productId)
+        .eq("size", v.size);
+      query = v.color ? query.eq("color", v.color) : query.is("color", null);
+      const { data } = await query.select("id");
+      variantsUpdated += data?.length ?? 0;
+    }
+
+    const { data: product } = await supabase
       .from("products")
-      .upsert(payload, { onConflict: "slug" })
-      .select("id, slug, title, connector_id, original_price, markup, price_brl, price_usd, price_eur, sizes, colors, images, source_url")
+      .select("id, slug, title, status, connector_id, original_price, markup, price_brl, price_usd, price_eur, sizes, colors, locked_fields")
+      .eq("id", productId)
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    // Link suppliers in product_connectors junction table
-    if (data && connectorIdsToLink.length > 0) {
-      const links = connectorIdsToLink.map((cid) => ({
-        product_id: data.id,
-        connector_id: cid,
-      }));
-      await supabase.from("product_connectors").upsert(links, { onConflict: "product_id,connector_id" });
-    }
-
-    // Save image paths/urls into product_images table if passed
-    if (data && imageList.length > 0) {
-      await supabase.from("product_images").delete().eq("product_id", data.id);
-      const imgRecords = imageList.map((imgUrl, idx) => ({
-        product_id: data.id,
-        storage_path: imgUrl,
-        hash: `hash-${data.slug}-${idx}`,
-        position: idx,
-      }));
-      await supabase.from("product_images").insert(imgRecords);
-    }
+    const { count: pendingImages } = await supabase
+      .from("product_images")
+      .select("id", { count: "exact", head: true })
+      .eq("product_id", productId)
+      .eq("review_status", "pending_review");
 
     return NextResponse.json({
       success: true,
-      product: data,
+      created: !existing,
+      product,
       linkedConnectors: connectorIdsToLink,
-      imagesSaved: imageList.length,
+      skippedLockedFields,
+      variantsStockUpdated: variantsUpdated,
+      imagesPendingReview: pendingImages ?? 0,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";

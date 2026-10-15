@@ -231,7 +231,19 @@
     "itemsConfirmedTitle": "Confirmed Items ({count})",
     "defaultProductTitle": "Haute Couture Dress",
     "sizeFullLabel": "Size:",
-    "continueBrowsing": "Continue Browsing"
+    "continueBrowsing": "Continue Browsing",
+    "statusOrderRequest": "Order Request received — confirming availability",
+    "statusStockConfirmation": "Confirming availability with the atelier",
+    "statusAwaitingDecision": "Waiting for your decision on substitutions",
+    "statusAwaitingPayment": "Confirmed Order — awaiting payment",
+    "statusCoordination": "Availability confirmed — payment coordination required",
+    "statusExpired": "Payment window expired",
+    "statusReserved": "Reserved",
+    "statusPaid": "Paid",
+    "inventoryReservedUntil": "Inventory Reserved Until {date}",
+    "paymentWindowExpired": "The payment window for this order has expired. Availability needs to be reconfirmed before payment can be reopened.",
+    "coordinationRequired": "All items are available, but they cannot be held while payment is pending. Contact us when you are ready to pay and we will reconfirm availability and release payment.",
+    "contactToComplete": "CONTACT US TO COMPLETE YOUR ORDER"
   },
   "common": {
     "previous": "Previous",
@@ -249,5 +261,8 @@
     "privacy": "Privacy",
     "returns": "Returns & exchanges",
     "nationalNotice": "This is the institutional catalog of the Brazilian site. To buy, visit our international store."
+  },
+  "whatsapp": {
+    "label": "Chat on WhatsApp"
   }
 }

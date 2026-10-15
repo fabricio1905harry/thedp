@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
+import type { ImageCrop } from "@/lib/image-crop";
 
 export function ProductGallery({
   images,
+  crops = [],
   slug,
   title,
 }: {
   images: string[];
+  crops?: (ImageCrop | null)[];
   slug: string;
   title: string;
 }) {
@@ -31,13 +34,15 @@ export function ProductGallery({
   return (
     <div className="space-y-5 animate-fade-in-up">
       {/* Main Dress Image Slider Container */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface group border border-border/70 rounded-sm shadow-md">
+      <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface group border border-border/70 rounded-sm shadow-md">
         <div key={activeImage} className="w-full h-full animate-fade-in">
           <ProductImagePlaceholder
             slug={slug}
             label={title}
             imageUrl={activeImage}
             secondaryImageUrl={secondaryImage}
+            crop={crops[selectedIndex] ?? null}
+            secondaryCrop={crops[1] ?? null}
           />
         </div>
 

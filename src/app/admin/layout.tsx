@@ -4,6 +4,10 @@ import { getCurrentStaff } from "@/lib/admin-auth";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import "../globals.css";
 
+// The admin is per-user (staff session + live data): never prerender it at
+// build time, where there is no session and possibly no Supabase env.
+export const dynamic = "force-dynamic";
+
 const body = Inter({ variable: "--font-body", subsets: ["latin"] });
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

@@ -43,6 +43,7 @@ export function ProductCard({
           slug={product.slug}
           label={product.title}
           imageUrl={product.imageUrl}
+          crop={product.imageCrop}
         />
 
         {/* Hover Glassmorphism Quick Action CTA */}

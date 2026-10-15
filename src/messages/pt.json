@@ -231,7 +231,19 @@
     "itemsConfirmedTitle": "Peças Confirmadas no Pedido ({count})",
     "defaultProductTitle": "Vestido de Alta Costura",
     "sizeFullLabel": "Tamanho:",
-    "continueBrowsing": "Continuar Navegando"
+    "continueBrowsing": "Continuar Navegando",
+    "statusOrderRequest": "Order Request recebido — confirmando disponibilidade",
+    "statusStockConfirmation": "Confirmando disponibilidade com o ateliê",
+    "statusAwaitingDecision": "Aguardando sua decisão sobre substituições",
+    "statusAwaitingPayment": "Pedido confirmado — aguardando pagamento",
+    "statusCoordination": "Disponibilidade confirmada — coordenação de pagamento necessária",
+    "statusExpired": "Prazo de pagamento expirado",
+    "statusReserved": "Reservado",
+    "statusPaid": "Pago",
+    "inventoryReservedUntil": "Estoque reservado até {date}",
+    "paymentWindowExpired": "O prazo de pagamento deste pedido expirou. A disponibilidade precisa ser reconfirmada antes de reabrirmos o pagamento.",
+    "coordinationRequired": "Todos os itens estão disponíveis, mas não podem ser reservados enquanto o pagamento está pendente. Fale conosco quando estiver pronto para pagar e reconfirmaremos a disponibilidade.",
+    "contactToComplete": "FALE CONOSCO PARA CONCLUIR SEU PEDIDO"
   },
   "common": {
     "previous": "Anterior",
@@ -249,5 +261,8 @@
     "privacy": "Privacidade",
     "returns": "Trocas e devoluções",
     "nationalNotice": "Este é o catálogo institucional do site nacional. Para comprar, visite nossa loja internacional."
+  },
+  "whatsapp": {
+    "label": "Conversar no WhatsApp"
   }
 }

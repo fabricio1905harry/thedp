@@ -9,13 +9,14 @@ import { SITE_MODE_HEADER, type SiteMode } from "@/lib/site-mode";
 import { ProductPurchasePanel } from "@/components/product-purchase-panel";
 
 import { BenefitsBanner } from "@/components/benefits-banner";
+import { WhatsAppContextSetter } from "@/components/whatsapp-button";
 
 export default async function ProductPage({
   params,
 }: {
   params: Promise<{ slug: string; locale: string }>;
 }) {
-  const { slug } = await params;
+  const { slug, locale } = await params;
   const t = await getTranslations("product");
   const headerList = await headers();
   const siteMode = (headerList.get(SITE_MODE_HEADER) as SiteMode) ?? "internacional";
@@ -25,9 +26,16 @@ export default async function ProductPage({
   const product = await getProductDetail(slug, approved);
   if (!product) notFound();
 
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "";
+  const proto = headerList.get("x-forwarded-proto") ?? "https";
+  const productUrl = `${proto}://${host}/${locale}/produtos/${product.slug}`;
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 grid md:grid-cols-2 gap-10">
-      <ProductGallery images={product.images} slug={product.slug} title={product.title} />
+      <WhatsAppContextSetter
+        context={{ kind: "product", product: { name: product.title, code: product.slug, url: productUrl } }}
+      />
+      <ProductGallery images={product.images} crops={product.imageCrops} slug={product.slug} title={product.title} />
 
       <div>
         <p className="text-xs uppercase tracking-wide text-muted">{product.category}</p>
