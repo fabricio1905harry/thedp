@@ -5,6 +5,7 @@ import type { ReactElement } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { adminLogout } from "@/app/admin/auth-actions";
 
 type IconProps = { className?: string };
 
@@ -163,6 +164,11 @@ function NavGroups({ pathname, onLinkClick }: { pathname: string; onLinkClick?: 
           </div>
         </div>
       ))}
+      <form action={adminLogout} className="mt-6 px-2">
+        <button type="submit" className="text-xs text-muted hover:text-accent underline">
+          Sair
+        </button>
+      </form>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { isApiBlocked } from "@/lib/app-target";
 
 /** Whitelisted first-party analytics events (e.g. whatsapp_click). */
 const ALLOWED_EVENTS = new Set(["whatsapp_click"]);
@@ -9,6 +10,7 @@ function clip(value: unknown, max: number): string | null {
 }
 
 export async function POST(request: Request) {
+  if (isApiBlocked("/api/events")) return new NextResponse("Not found", { status: 404 });
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const event = clip(body.event, 64);
