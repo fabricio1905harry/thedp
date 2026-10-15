@@ -5,13 +5,25 @@ import { getCurrentCustomer } from "@/lib/auth";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/currency";
 import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp-button";
+import { OrderPayPanel } from "@/components/order-pay-panel";
+import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
+import { getSetting } from "@/lib/settings";
+import type { Currency } from "@/lib/types";
+
+function currentTime() {
+  return Date.now();
+}
 
 export default async function OrderConfirmationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; locale: string }>;
+  searchParams: Promise<{ paid?: string }>;
 }) {
   const { id, locale } = await params;
+  const { paid: paidFlag } = await searchParams;
+  const requestedAt = currentTime();
   const customer = await getCurrentCustomer();
   if (!customer) redirect("/login");
 
@@ -28,18 +40,24 @@ export default async function OrderConfirmationPage({
     .eq("customer_id", customer.id)
     .maybeSingle();
 
-  const [{ data: items }, { data: shipment }] = order
+  const [{ data: items }, { data: shipment }, { data: payments }, { data: methods }, bankInstructions] = order
     ? await Promise.all([
         supabase
           .from("order_items")
           .select(`
-            id, qty, unit_price, item_status,
+            id, qty, unit_price, item_status, original_qty, original_unit_price, added_by_tdp,
             variants ( color, size, sku, products ( title, slug ) )
           `)
           .eq("order_id", id),
         supabase.from("shipments").select("*").eq("order_id", id).maybeSingle(),
+        supabase
+          .from("payments")
+          .select(`status, kind, merchandise_amount, ${ORDER_CHARGE_COLUMNS.join(", ")}`)
+          .eq("order_id", id),
+        supabase.rpc("available_payment_methods", { p_order_id: id }),
+        getSetting<string>("bank_transfer_instructions"),
       ])
-    : [{ data: null }, { data: null }];
+    : [{ data: null }, { data: null }, { data: null }, { data: null }, null];
 
   if (!order) {
     return (
@@ -71,6 +89,17 @@ export default async function OrderConfirmationPage({
       ? new Date(order.stock_hold_until).toLocaleString(dateLocale, { dateStyle: "medium", timeStyle: "short" })
       : null;
 
+  const holdValid = !order.stock_hold_until || new Date(order.stock_hold_until).getTime() > requestedAt;
+  const payOpen =
+    Boolean(order.charges_informed_at) &&
+    ((order.status === "confirmed_awaiting_payment" && Boolean(order.payment_released_at) && holdValid) ||
+      order.status === "reserved");
+  const due = payOpen
+    ? computeAmountDue(order, (payments ?? []) as unknown as Parameters<typeof computeAmountDue>[1])
+    : null;
+  const enabledMethods = new Set(
+    ((methods ?? []) as { method_code: string; enabled: boolean }[]).filter((m) => m.enabled).map((m) => m.method_code)
+  );
   const shippingAddr = (order.shipping_address as Record<string, string>) || {};
   const packagingSnapshot = (order.quote_snapshot as Record<string, unknown>)?.packaging as Record<string, unknown>;
   const packagesList = (packagingSnapshot?.packages as Array<Record<string, unknown>>) || [];
@@ -114,6 +143,25 @@ export default async function OrderConfirmationPage({
             </WhatsAppInlineLink>
           )}
         </div>
+      )}
+
+      {paidFlag === "1" && order.status !== "paid" && (
+        <div className="border border-border p-4 text-sm bg-surface">{t("order.paymentProcessing")}</div>
+      )}
+
+      {due && (enabledMethods.has("stripe_card") || enabledMethods.has("bank_transfer")) && (
+        <OrderPayPanel
+          orderId={order.id}
+          locale={locale}
+          currency={order.currency as Currency}
+          kind={due.kind}
+          total={due.total}
+          merchandise={due.merchandise}
+          charges={Math.round((due.total - due.merchandise) * 100) / 100}
+          stripeEnabled={enabledMethods.has("stripe_card")}
+          bankEnabled={enabledMethods.has("bank_transfer")}
+          bankInstructions={typeof bankInstructions === "string" ? bankInstructions : ""}
+        />
       )}
 
       {/* DHL Express Shipping Card */}
@@ -261,18 +309,37 @@ export default async function OrderConfirmationPage({
           {(items ?? []).map((item) => {
             const variant = Array.isArray(item.variants) ? item.variants[0] : item.variants;
             const product = Array.isArray(variant?.products) ? variant?.products[0] : variant?.products;
+            const inactive = item.item_status !== "available" && item.item_status !== "requested";
+            const priceChanged =
+              item.original_unit_price !== null && Number(item.original_unit_price) !== Number(item.unit_price);
             return (
-              <div key={item.id} className="py-3 flex items-center justify-between text-xs">
+              <div key={item.id} className={`py-3 flex items-center justify-between text-xs ${inactive ? "opacity-60" : ""}`}>
                 <div>
-                  <h4 className="font-serif text-sm font-medium text-foreground">
+                  <h4 className={`font-serif text-sm font-medium text-foreground ${inactive ? "line-through" : ""}`}>
                     {product?.title || t("order.defaultProductTitle")}
                   </h4>
                   <p className="text-[11px] text-muted">
                     {t("checkout.colorLabel")} {variant?.color} • {t("order.sizeFullLabel")} {variant?.size} • {t("checkout.qtyLabel")} {item.qty}
+                    {item.original_qty !== null && item.original_qty !== item.qty ? ` (${t("order.itemWas")} ${item.original_qty})` : ""}
                   </p>
+                  {inactive && (
+                    <p className="text-[11px] font-semibold text-accent">
+                      {item.item_status === "removed" ? t("order.itemRemoved") : t("order.itemUnavailable")}
+                    </p>
+                  )}
+                  {item.added_by_tdp && !inactive && <p className="text-[11px] text-muted">{t("order.itemAdded")}</p>}
                 </div>
                 <div className="text-right font-medium">
-                  {formatCurrency(Number(item.unit_price) * item.qty, order.currency)}
+                  {inactive ? (
+                    <span className="line-through">{formatCurrency(Number(item.unit_price) * item.qty, order.currency)}</span>
+                  ) : (
+                    formatCurrency(Number(item.unit_price) * item.qty, order.currency)
+                  )}
+                  {priceChanged && !inactive && (
+                    <span className="block text-[10px] text-muted line-through">
+                      {formatCurrency(Number(item.original_unit_price) * item.qty, order.currency)}
+                    </span>
+                  )}
                 </div>
               </div>
             );

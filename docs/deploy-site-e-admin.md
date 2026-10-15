@@ -39,3 +39,19 @@ Build único, subindo com cada `APP_TARGET`:
 - `APP_TARGET` é lida em tempo de execução: trocar o valor exige apenas Redeploy.
 - O painel envia `X-Robots-Tag: noindex` e `robots: noindex`.
 - Separar também o **código** em dois apps (monorepo) continua possível depois; esta etapa já isola domínio, rotas, login e crons.
+
+## Stripe (pagamento por cartão)
+
+O pagamento acontece no **site**. No projeto do site, na Vercel, adicione:
+
+| Variável | Valor |
+|---|---|
+| `STRIPE_SECRET_KEY` | chave secreta do Stripe (`sk_live_…` ou `sk_test_…`) |
+| `STRIPE_WEBHOOK_SECRET` | segredo do webhook (`whsec_…`), veja abaixo |
+
+No painel do Stripe → Developers → Webhooks → *Add endpoint*:
+- URL: `https://<dominio-do-site>/api/stripe/webhook`
+- Eventos: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.created`
+- Copie o *Signing secret* para `STRIPE_WEBHOOK_SECRET` e faça Redeploy.
+
+No Admin: habilite o Stripe por canal/cliente/pedido (Pagamentos, ou na página do pedido → "Enable Stripe for this order"). O cartão confirmado marca o pedido como **Pago** automaticamente; reembolso e chargeback do Stripe atualizam o pagamento sozinhos.

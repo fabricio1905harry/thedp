@@ -19,7 +19,7 @@ export function getAppTarget(): AppTarget {
 
 /** API route prefixes, by the deployment that owns them. */
 const ADMIN_API = ["/api/cron", "/api/ingest"];
-const SITE_API = ["/api/events"];
+const SITE_API = ["/api/events", "/api/stripe"];
 
 export function apiOwner(pathname: string): "admin" | "site" | null {
   if (ADMIN_API.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return "admin";

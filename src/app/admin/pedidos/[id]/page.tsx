@@ -8,6 +8,7 @@ import { CHANNEL_LABELS } from "@/lib/payments";
 import {
   OrderManagementPanel,
   type MethodAvailability,
+  type OrderEventRow,
   type OrderItemRow,
   type OrderSummary,
   type PaymentRow,
@@ -24,18 +25,18 @@ export default async function AdminOrderDetailPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, customers ( email, name, company_name )"
+      "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customers ( email, name, company_name )"
     )
     .eq("id", id)
     .maybeSingle();
 
   if (!order) notFound();
 
-  const [{ data: items }, { data: payments }, { data: methods }, { data: rules }, { data: feeSetting }] =
+  const [{ data: items }, { data: payments }, { data: methods }, { data: rules }, { data: feeSetting }, { data: events }] =
     await Promise.all([
       supabase
         .from("order_items")
-        .select("id, qty, unit_price, item_status, unavailable_note, product_title, sku, color, size, substitutes_item_id, added_by_tdp")
+        .select("id, qty, unit_price, item_status, unavailable_note, product_title, sku, color, size, substitutes_item_id, added_by_tdp, original_qty, original_unit_price")
         .eq("order_id", id)
         .order("id"),
       supabase
@@ -46,7 +47,18 @@ export default async function AdminOrderDetailPage({
       supabase.rpc("available_payment_methods", { p_order_id: id }),
       supabase.from("payment_method_rules").select("method_code, enabled").eq("scope", "order").eq("order_id", id),
       supabase.from("app_settings").select("value").eq("key", "bank_processing_fee_brl").maybeSingle(),
+      supabase
+        .from("order_events")
+        .select("id, event_type, summary, created_at, customers!order_events_actor_id_fkey ( email )")
+        .eq("order_id", id)
+        .order("created_at", { ascending: false })
+        .limit(200),
     ]);
+
+  const paidMerchandise = (payments ?? [])
+    .filter((p) => p.status === "confirmed")
+    .reduce((sum, p) => sum + Number(p.merchandise_amount), 0);
+  const outstandingMerchandise = Math.max(0, Math.round((Number(order.subtotal) - paidMerchandise) * 100) / 100);
 
   const activeQty = (items ?? [])
     .filter((i) => i.item_status === "available" || i.item_status === "requested")
@@ -82,6 +94,8 @@ export default async function AdminOrderDetailPage({
         methods={(methods ?? []) as MethodAvailability[]}
         orderRules={Object.fromEntries((rules ?? []).map((r) => [r.method_code, r.enabled]))}
         bankFeeBrl={Number(feeSetting?.value ?? 0)}
+        events={(events ?? []) as unknown as OrderEventRow[]}
+        outstandingMerchandise={outstandingMerchandise}
       />
 
       <DhlShipmentReviewPanel initialCalculation={initialCalculation} orderId={order.id} />
