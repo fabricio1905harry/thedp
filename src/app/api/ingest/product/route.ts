@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { applyLocks, type SyncableField } from "@/lib/product-sync";
+import { isApiBlocked } from "@/lib/app-target";
 
 function parseList(input: unknown): string[] {
   if (!input) return [];
@@ -85,6 +86,7 @@ function parseVariantStock(input: unknown): SourceVariantStock[] {
  *   raises a Restock Opportunity (migration 0026).
  */
 export async function POST(request: Request) {
+  if (isApiBlocked("/api/ingest")) return new NextResponse("Not found", { status: 404 });
   try {
     const authHeader = request.headers.get("authorization");
     const apiKey = request.headers.get("x-api-key");
