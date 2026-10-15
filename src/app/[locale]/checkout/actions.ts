@@ -3,11 +3,7 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentCustomer } from "@/lib/auth";
 import { calculateShipmentPackages } from "@/lib/dhl-packaging";
-import {
-  calculateShipSmartQuote,
-  mapOrderPackagesToShipSmart,
-  ShipSmartAddress,
-} from "@/lib/shipsmart";
+import type { ShipSmartAddress } from "@/lib/shipsmart";
 
 export interface PlaceOrderInput {
   addressId?: string;
@@ -35,115 +31,11 @@ export interface PlaceOrderResult {
   error?: string;
 }
 
-export interface CalculateShippingResult {
-  success: boolean;
-  packageCount: number;
-  packageName: string;
-  dimensionsText: string;
-  totalWeightKg: number;
-  shippingPriceBrl: number;
-  shippingPricePicked: number;
-  deliveryDays: number;
-  dutiesEstimateBrl: number;
-  hasReviewRequired: boolean;
-  error?: string;
-}
-
 /**
- * Calculates real-time DHL Express shipping rate via ShipSmart for checkout.
- */
-export async function calculateCheckoutShippingAction(
-  input: PlaceOrderInput
-): Promise<CalculateShippingResult> {
-  try {
-    if (!input.items || input.items.length === 0) {
-      return {
-        success: false,
-        packageCount: 0,
-        packageName: "",
-        dimensionsText: "",
-        totalWeightKg: 0,
-        shippingPriceBrl: 0,
-        shippingPricePicked: 0,
-        deliveryDays: 0,
-        dutiesEstimateBrl: 0,
-        hasReviewRequired: false,
-        error: "Carrinho vazio",
-      };
-    }
-
-    const totalQty = input.items.reduce((sum, item) => sum + item.qty, 0);
-
-    // 1. Run DHL Packaging Algorithm
-    const packaging = await calculateShipmentPackages({
-      quantity: totalQty,
-      category: "Vestidos",
-      unitWeightKg: 1.6,
-    });
-
-    const primaryPkg = packaging.packages[0];
-    const dimensionsText = primaryPkg
-      ? `${primaryPkg.length_cm}x${primaryPkg.width_cm}x${primaryPkg.height_cm} cm`
-      : "Medidas Padrão DHL";
-
-    // 2. Prepare Destination Address
-    const address: ShipSmartAddress = input.customAddress || {
-      name: "Cliente The Dress",
-      address: "Rua Exemplo, 100",
-      city: "Nova York",
-      state: "NY",
-      postalCode: "10001",
-      countryCode: "US",
-    };
-
-    const shipSmartPackages = mapOrderPackagesToShipSmart(packaging.packages);
-    const declaredValue = input.items.reduce((sum, i) => sum + i.price * i.qty, 0);
-
-    // 3. Call ShipSmart Quote Engine
-    const quote = await calculateShipSmartQuote({
-      destination: address,
-      packages: shipSmartPackages,
-      declaredValueAmount: declaredValue,
-      isDdp: input.isDdp ?? false,
-    });
-
-    const primaryRate = quote.rates[0];
-    const shippingPriceBrl = primaryRate?.priceBrl ?? 250.0;
-    const deliveryDays = primaryRate?.estimatedDeliveryDays ?? 3;
-    const dutiesBrl = primaryRate?.ddpEstimatedDutiesBrl ?? 0;
-
-    return {
-      success: true,
-      packageCount: packaging.number_of_packages,
-      packageName: primaryPkg?.packaging_name ?? "DHL Express Box",
-      dimensionsText,
-      totalWeightKg: primaryPkg?.final_weight_kg ?? 2.0,
-      shippingPriceBrl,
-      shippingPricePicked: shippingPriceBrl,
-      deliveryDays,
-      dutiesEstimateBrl: dutiesBrl,
-      hasReviewRequired: packaging.has_review_required,
-    };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Erro ao calcular frete DHL";
-    return {
-      success: false,
-      packageCount: 0,
-      packageName: "",
-      dimensionsText: "",
-      totalWeightKg: 0,
-      shippingPriceBrl: 0,
-      shippingPricePicked: 0,
-      deliveryDays: 0,
-      dutiesEstimateBrl: 0,
-      hasReviewRequired: false,
-      error: msg,
-    };
-  }
-}
-
-/**
- * Places real order in database, generates DHL shipment AWB and label.
+ * Places the Order Request. Freight and import duties are NOT calculated
+ * here — the TDP informs them in the Admin after confirming stock (orders
+ * table charge columns, migration 0029), so the order starts with only the
+ * merchandise subtotal.
  */
 export async function placeOrderServerAction(
   input: PlaceOrderInput
@@ -180,24 +72,9 @@ export async function placeOrderServerAction(
       countryCode: "US",
     };
 
-    const shipSmartPackages = mapOrderPackagesToShipSmart(packaging.packages);
-
-    // 3. Calculate DHL Shipping Rate
-    const quote = await calculateShipSmartQuote({
-      destination: address,
-      packages: shipSmartPackages,
-      declaredValueAmount: subtotal,
-      isDdp: input.isDdp ?? false,
-    });
-
-    const primaryRate = quote.rates[0];
-    const shippingCost = primaryRate?.priceBrl ?? 250.0;
-    const dutiesEstimate = primaryRate?.ddpEstimatedDutiesBrl ?? 0;
-    const total = subtotal + shippingCost + dutiesEstimate;
-
     const orderNum = `TD-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    // 4. Create Order record in Database
+    // 3. Create Order record in Database
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .insert({
@@ -208,15 +85,11 @@ export async function placeOrderServerAction(
         status: "order_request",
         currency: input.currency || "BRL",
         subtotal,
-        shipping_cost: shippingCost,
-        duties_estimate: dutiesEstimate,
-        total,
+        total: subtotal,
         incoterm: input.isDdp ? "DDP" : "DDU",
         shipping_address: address,
-        quote_snapshot: {
-          packaging,
-          quote: primaryRate,
-        },
+        // suggested packaging only, to help the TDP quote DHL
+        quote_snapshot: { packaging },
       })
       .select("id")
       .single();
@@ -225,7 +98,7 @@ export async function placeOrderServerAction(
       return { success: false, error: orderErr?.message || "Erro ao criar pedido no banco" };
     }
 
-    // 5. Insert Order Items into order_items table
+    // 4. Insert Order Items into order_items table
     const itemRecords = input.items.map((item) => ({
       order_id: order.id,
       variant_id: item.variantId,

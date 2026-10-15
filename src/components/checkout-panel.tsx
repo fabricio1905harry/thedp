@@ -1,17 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useCart } from "@/components/cart-provider";
 import { useCurrency } from "@/components/currency-provider";
 import { formatCurrency, pickPrice } from "@/lib/currency";
-import {
-  calculateCheckoutShippingAction,
-  placeOrderServerAction,
-  CalculateShippingResult,
-} from "@/app/[locale]/checkout/actions";
+import { placeOrderServerAction } from "@/app/[locale]/checkout/actions";
 import { ShipSmartAddress } from "@/lib/shipsmart";
 
 interface Address {
@@ -32,12 +28,12 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
   const { items, clear } = useCart();
   const { currency } = useCurrency();
 
-  // Import-duty (DDP) estimate is mandatory and always shown in the total,
-  // in every locale — no opt-out toggle.
+  // Orders are DDP (duties prepaid). Freight and import duties are NOT
+  // calculated here: the TDP informs them after confirming stock with the
+  // supplier, before releasing the Confirmed Order for payment.
   const isDdp = true;
 
   const [selectedAddressId, setSelectedAddressId] = useState(addresses[0]?.id ?? "new");
-  const [loadingShipping, setLoadingShipping] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -49,61 +45,10 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
   const [postalCode, setPostalCode] = useState(addresses[0]?.postal_code ?? "");
   const [countryCode, setCountryCode] = useState(addresses[0]?.country ?? "US");
 
-  // Shipping Quote state
-  const [shippingQuote, setShippingQuote] = useState<CalculateShippingResult | null>(null);
-
   const subtotal = items.reduce((sum, item) => {
     const picked = pickPrice(item.pricing, currency);
     return sum + (picked?.amount ?? 0) * item.qty;
   }, 0);
-
-  // Recalculate DHL shipping whenever address or items change
-  useEffect(() => {
-    if (items.length === 0) return;
-
-    let isMounted = true;
-    setLoadingShipping(true);
-
-    const customAddress: ShipSmartAddress = {
-      name: recipientName || "Cliente",
-      address: addressLine || "Rua Exemplo, 100",
-      city: city || "Nova York",
-      state: state || "NY",
-      postalCode: postalCode || "10001",
-      countryCode: countryCode || "US",
-    };
-
-    const cartItems = items.map((item) => {
-      const picked = pickPrice(item.pricing, currency);
-      return {
-        variantId: item.variantId,
-        productSlug: item.productSlug,
-        title: item.title,
-        color: item.color,
-        size: item.size,
-        qty: item.qty,
-        price: picked?.amount ?? 0,
-      };
-    });
-
-    calculateCheckoutShippingAction({
-      customAddress,
-      currency,
-      items: cartItems,
-      isDdp,
-    }).then((res) => {
-      if (isMounted) {
-        if (res.success) {
-          setShippingQuote(res);
-        }
-        setLoadingShipping(false);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [items, selectedAddressId, addressLine, city, state, postalCode, countryCode, currency, isDdp, recipientName]);
 
   if (items.length === 0) {
     return (
@@ -115,9 +60,6 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
     );
   }
 
-  const shippingCost = shippingQuote?.shippingPriceBrl ?? 0;
-  const dutiesEstimate = isDdp ? (shippingQuote?.dutiesEstimateBrl ?? 0) : 0;
-  const grandTotal = subtotal + shippingCost + dutiesEstimate;
 
   async function handlePlaceOrder() {
     try {
@@ -307,43 +249,16 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
             {t("step2Title")}
           </h2>
 
-          <div className="bg-surface border border-border rounded-sm p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-foreground text-background flex items-center justify-center text-base">
-                  ✈
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                    {t("dhlExpressWorldwide")}
-                  </h4>
-                  <p className="text-[11px] text-muted">
-                    {loadingShipping ? (
-                      <span className="animate-pulse">{t("calculatingQuote")}</span>
-                    ) : (
-                      t("deliveryEstimate", { days: shippingQuote?.deliveryDays || 3 })
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <span className="text-sm font-bold text-accent">
-                  {loadingShipping ? "..." : formatCurrency(shippingCost, currency)}
-                </span>
-              </div>
+          <div className="bg-surface border border-border rounded-sm p-4 flex items-start gap-3">
+            <div className="w-9 h-9 shrink-0 rounded-full bg-foreground text-background flex items-center justify-center text-base">
+              ✈
             </div>
-
-            {shippingQuote && (
-              <div className="pt-2 border-t border-gold/20 flex flex-wrap items-center justify-between text-[11px] text-muted gap-2">
-                <span>
-                  {t("packagingLabel")} <strong className="text-foreground">{shippingQuote.packageName}</strong> ({shippingQuote.dimensionsText})
-                </span>
-                <span>
-                  {t("finalWeightLabel")} <strong className="text-foreground">{shippingQuote.totalWeightKg} kg</strong>
-                </span>
-              </div>
-            )}
+            <div>
+              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                {t("dhlExpressWorldwide")}
+              </h4>
+              <p className="text-[11px] text-muted mt-1 leading-relaxed">{t("chargesAfterStockConfirmation")}</p>
+            </div>
           </div>
 
           {/* DDP is mandatory in every locale — fixed, non-toggleable, and
@@ -394,20 +309,19 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
 
           <div className="flex justify-between text-muted">
             <span>{t("shippingDhl")}</span>
-            <span className="font-medium text-foreground">
-              {loadingShipping ? "..." : formatCurrency(shippingCost, currency)}
-            </span>
+            <span className="font-medium text-foreground text-right">{t("toBeInformed")}</span>
           </div>
 
           <div className="flex justify-between text-muted">
             <span>{t("ddpEstimateLabel")}</span>
-            <span className="font-medium text-foreground">{formatCurrency(dutiesEstimate, currency)}</span>
+            <span className="font-medium text-foreground text-right">{t("toBeInformed")}</span>
           </div>
 
           <div className="flex justify-between pt-3 border-t border-border font-serif text-lg font-bold text-foreground">
-            <span>{t("totalFinal")}</span>
-            <span className="text-accent">{formatCurrency(grandTotal, currency)}</span>
+            <span>{t("totalProducts")}</span>
+            <span className="text-accent">{formatCurrency(subtotal, currency)}</span>
           </div>
+          <p className="text-[11px] text-muted leading-relaxed">{t("chargesAfterStockConfirmation")}</p>
         </div>
 
         {errorMsg && (
@@ -419,7 +333,7 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
         {/* Place Order Button */}
         <button
           onClick={handlePlaceOrder}
-          disabled={placingOrder || loadingShipping}
+          disabled={placingOrder}
           className="btn-primary w-full py-4 text-xs uppercase tracking-[0.2em] font-semibold flex items-center justify-center gap-2"
         >
           {placingOrder ? (

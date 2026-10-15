@@ -12,8 +12,10 @@ import {
   setOrderPaymentRule,
   setOrderStage,
   setPaymentStatus,
+  setOrderCharges,
   setReserveMode,
   type ItemStatus,
+  type OrderChargesInput,
   type PaymentInput,
 } from "@/app/admin/pedidos/actions";
 import { EDITABLE_ORDER_STATUSES, ITEM_STATUS_LABELS, STOCK_HOLD_LABELS } from "@/lib/order-status";
@@ -67,6 +69,20 @@ export interface OrderSummary {
   reserve_pct_of_sale: number | null;
   stock_hold_type: string | null;
   stock_hold_until: string | null;
+  shipping_cost: number;
+  duties_estimate: number;
+  freight_amount: number;
+  insurance_amount: number;
+  fuel_surcharge_amount: number;
+  demand_surcharge_amount: number;
+  export_declaration_amount: number;
+  other_dhl_amount: number;
+  duties_taxes_amount: number;
+  other_charges_amount: number;
+  delivery_days: number | null;
+  charges_note: string | null;
+  charges_informed_at: string | null;
+  quote_snapshot: { packaging?: { number_of_packages?: number; packages?: { packaging_name?: string; final_weight_kg?: number }[] } } | null;
 }
 
 function money(v: number | null | undefined, currency: string) {
@@ -125,6 +141,8 @@ export function OrderManagementPanel({
         </div>
         <ItemsTable order={order} items={items} editable={editable} pending={pending} run={run} />
       </section>
+
+      <ChargesPanel key={order.charges_informed_at ?? "none"} order={order} editable={editable} pending={pending} run={run} />
 
       <ReleasePanel order={order} editable={editable} pending={pending} run={run} />
 
@@ -266,6 +284,99 @@ function ItemsTable({
         </form>
       )}
     </div>
+  );
+}
+
+const CHARGE_FIELDS: { key: keyof OrderChargesInput; column: keyof OrderSummary; label: string }[] = [
+  { key: "freightAmount", column: "freight_amount", label: "Freight (DHL)" },
+  { key: "fuelSurchargeAmount", column: "fuel_surcharge_amount", label: "Fuel surcharge" },
+  { key: "demandSurchargeAmount", column: "demand_surcharge_amount", label: "Demand surcharge" },
+  { key: "otherDhlAmount", column: "other_dhl_amount", label: "Other DHL charges" },
+  { key: "insuranceAmount", column: "insurance_amount", label: "Insurance" },
+  { key: "exportDeclarationAmount", column: "export_declaration_amount", label: "Export declaration" },
+  { key: "dutiesTaxesAmount", column: "duties_taxes_amount", label: "Import duties & taxes (DDP)" },
+  { key: "otherChargesAmount", column: "other_charges_amount", label: "Other operational charges" },
+];
+
+/**
+ * Freight & import duties, informed by the TDP after confirming stock.
+ * The buyer sees "to be informed after stock confirmation" until saved.
+ */
+function ChargesPanel({ order, editable, pending, run }: { order: OrderSummary; editable: boolean; pending: boolean; run: Run }) {
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      CHARGE_FIELDS.map((f) => [f.key, order.charges_informed_at ? String(Number(order[f.column] ?? 0)) : ""])
+    )
+  );
+  const [deliveryDays, setDeliveryDays] = useState(order.delivery_days ? String(order.delivery_days) : "");
+  const [note, setNote] = useState(order.charges_note ?? "");
+  const pkg = order.quote_snapshot?.packaging;
+  const charges = CHARGE_FIELDS.reduce((sum, f) => sum + Number(values[f.key] || 0), 0);
+
+  return (
+    <section id="charges" className="border border-border p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h2 className="text-sm font-medium uppercase tracking-wide">Freight & import duties ({order.currency})</h2>
+        <span className={`text-[11px] px-2 py-0.5 ${order.charges_informed_at ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>
+          {order.charges_informed_at
+            ? `Informed ${new Date(order.charges_informed_at).toLocaleString("pt-BR")}`
+            : "Not informed — buyer sees “to be informed after stock confirmation”"}
+        </span>
+      </div>
+      {pkg && (
+        <p className="text-[11px] text-muted mb-2">
+          Suggested packaging: {pkg.number_of_packages ?? "?"} volume(s)
+          {pkg.packages?.[0]?.packaging_name ? ` · ${pkg.packages[0].packaging_name}` : ""}
+          {pkg.packages?.[0]?.final_weight_kg ? ` · ${pkg.packages[0].final_weight_kg} kg` : ""}
+        </p>
+      )}
+      <form
+        className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const input = Object.fromEntries(CHARGE_FIELDS.map((f) => [f.key, Number(values[f.key] || 0)])) as unknown as OrderChargesInput;
+          input.deliveryDays = deliveryDays ? Number(deliveryDays) : null;
+          input.note = note;
+          run(() => setOrderCharges(order.id, input));
+        }}
+      >
+        {CHARGE_FIELDS.map((f) => (
+          <label key={f.key} className="flex flex-col">
+            {f.label}
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              disabled={!editable || pending}
+              value={values[f.key]}
+              onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+              placeholder="0.00"
+              className="border border-border px-2 py-1"
+            />
+          </label>
+        ))}
+        <label className="flex flex-col">
+          DHL delivery (business days)
+          <input type="number" min="1" disabled={!editable || pending} value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} className="border border-border px-2 py-1" />
+        </label>
+        <label className="flex flex-col col-span-2 md:col-span-3">
+          Note (internal)
+          <input disabled={!editable || pending} value={note} onChange={(e) => setNote(e.target.value)} placeholder="DHL quote ref., service…" className="border border-border px-2 py-1" />
+        </label>
+        <p className="col-span-2 md:col-span-3 self-end">
+          Products {money(order.subtotal, order.currency)} + charges {money(charges, order.currency)} ={" "}
+          <strong>{money(Number(order.subtotal) + charges, order.currency)}</strong>
+        </p>
+        {editable && (
+          <button type="submit" disabled={pending} className="btn-primary px-3 py-1.5">
+            Save freight & duties
+          </button>
+        )}
+      </form>
+      <p className="text-[11px] text-muted mt-2">
+        Required before generating the Confirmed Order. Kept separate from revenue (Dashboard → operational charges).
+      </p>
+    </section>
   );
 }
 
@@ -411,6 +522,15 @@ function PaymentsPanel({
     methodCode: enabled[0]?.method_code ?? "bank_transfer",
     kind: order.payment_mode === "reserve" ? "reserve_deposit" : "full",
     merchandiseAmount: order.payment_mode === "reserve" ? Number(order.reserve_amount ?? 0) : Number(order.subtotal),
+    // freight & duties as informed on the order (adjust if split across payments)
+    freightAmount: Number(order.freight_amount) || undefined,
+    insuranceAmount: Number(order.insurance_amount) || undefined,
+    fuelSurchargeAmount: Number(order.fuel_surcharge_amount) || undefined,
+    demandSurchargeAmount: Number(order.demand_surcharge_amount) || undefined,
+    exportDeclarationAmount: Number(order.export_declaration_amount) || undefined,
+    otherDhlAmount: Number(order.other_dhl_amount) || undefined,
+    dutiesTaxesAmount: Number(order.duties_taxes_amount) || undefined,
+    otherChargesAmount: Number(order.other_charges_amount) || undefined,
   });
   const [received, setReceived] = useState<Record<string, string>>({});
 
