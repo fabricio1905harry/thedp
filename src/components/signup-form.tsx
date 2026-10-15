@@ -1,134 +1,139 @@
 "use client";
 
-import { useState } from "react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { signUpCustomer, type SignUpState } from "@/app/[locale]/cadastro/actions";
 
 const initialState: SignUpState = { status: "idle" };
+const FIELD = "w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground";
+const LABEL = "block text-xs uppercase tracking-[0.12em] mb-1";
+const BUSINESS_TYPES = ["boutique", "multibrand", "department", "ecommerce", "showroom", "other"] as const;
 
-export function SignupForm({ defaultCustomerType = "individual" }: { defaultCustomerType?: "individual" | "business" }) {
+/** Wholesale application (international B2B). The account starts pending and needs TDP approval. */
+export function SignupForm() {
   const locale = useLocale();
-  const t = useTranslations("signup");
-  const [customerType, setCustomerType] = useState<"individual" | "business">(defaultCustomerType);
+  const t = useTranslations("apply");
   const [state, formAction, pending] = useActionState(signUpCustomer, initialState);
+  const [sameAddress, setSameAddress] = useState(true);
+  const [companyAddress, setCompanyAddress] = useState("");
 
   if (state.status === "success") {
     return (
-      <p className="text-sm bg-surface border border-border rounded-sm p-4">
-        {t("success")}
-      </p>
+      <div className="border border-border bg-surface p-6 space-y-2 max-w-xl">
+        <p className="font-serif text-2xl">{t("successTitle")}</p>
+        <p className="text-sm text-muted leading-relaxed">{t("successText")}</p>
+      </div>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-4 max-w-sm">
+    <form action={formAction} className="grid sm:grid-cols-2 gap-x-5 gap-y-4 max-w-3xl">
       <input type="hidden" name="locale" value={locale} />
-      <input type="hidden" name="customerType" value={customerType} />
 
-      <div className="flex gap-2 mb-2">
-        <TypeButton
-          label={t("individual")}
-          active={customerType === "individual"}
-          onClick={() => setCustomerType("individual")}
-        />
-        <TypeButton
-          label={t("business")}
-          active={customerType === "business"}
-          onClick={() => setCustomerType("business")}
-        />
-      </div>
+      <Field label={t("storeName")} required>
+        <input name="companyName" required className={FIELD} />
+      </Field>
+      <Field label={t("buyerName")} required>
+        <input name="name" required className={FIELD} />
+      </Field>
 
-      <div>
-        <label className="block text-sm mb-1" htmlFor="name">
-          {customerType === "business" ? t("contactName") : t("name")}
+      <Field label={t("companyAddress")} required wide>
+        <textarea name="companyAddress" required rows={2} value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} className={FIELD} />
+      </Field>
+
+      <div className="sm:col-span-2 space-y-2">
+        <label className="flex items-center gap-2 text-xs">
+          <input type="checkbox" checked={sameAddress} onChange={(e) => setSameAddress(e.target.checked)} />
+          {t("sameAddress")}
         </label>
-        <input
-          id="name"
-          name="name"
-          required
-          className="w-full border border-border px-3 py-2 text-sm"
-        />
+        {sameAddress ? (
+          <input type="hidden" name="deliveryAddress" value={companyAddress} />
+        ) : (
+          <Field label={t("deliveryAddress")} required wide>
+            <textarea name="deliveryAddress" required rows={2} className={FIELD} />
+          </Field>
+        )}
       </div>
 
-      {customerType === "business" && (
-        <>
-          <div>
-            <label className="block text-sm mb-1" htmlFor="companyName">{t("companyName")}</label>
-            <input
-              id="companyName"
-              name="companyName"
-              required
-              className="w-full border border-border px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm mb-1" htmlFor="taxId">{t("taxId")}</label>
-            <input
-              id="taxId"
-              name="taxId"
-              required
-              className="w-full border border-border px-3 py-2 text-sm"
-            />
-          </div>
-        </>
-      )}
+      <Field label={t("website")}>
+        <input name="website" type="url" placeholder="https://" className={FIELD} />
+      </Field>
+      <Field label="Instagram">
+        <input name="instagram" placeholder="@" className={FIELD} />
+      </Field>
 
-      <div>
-        <label className="block text-sm mb-1" htmlFor="email">{t("email")}</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          className="w-full border border-border px-3 py-2 text-sm"
-        />
+      <Field label={t("email")} required>
+        <input name="email" type="email" required autoComplete="email" className={FIELD} />
+      </Field>
+      <Field label={t("phone")} required>
+        <input name="phone" required className={FIELD} />
+      </Field>
+
+      <Field label={t("businessType")} required>
+        <select name="businessType" required defaultValue="" className={FIELD}>
+          <option value="" disabled>
+            {t("choose")}
+          </option>
+          {BUSINESS_TYPES.map((k) => (
+            <option key={k} value={t(`types.${k}`)}>
+              {t(`types.${k}`)}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label={t("taxId")}>
+        <input name="taxId" className={FIELD} />
+      </Field>
+
+      <Field label={t("physicalStore")}>
+        <select name="hasPhysicalStore" defaultValue="" className={FIELD}>
+          <option value="">—</option>
+          <option value="true">{t("yes")}</option>
+          <option value="false">{t("no")}</option>
+        </select>
+      </Field>
+      <Field label={t("storeCount")}>
+        <input name="storeCount" type="number" min={0} className={FIELD} />
+      </Field>
+
+      <Field label={t("brands")} wide>
+        <input name="brandsCarried" className={FIELD} />
+      </Field>
+      <Field label={t("message")} wide>
+        <textarea name="applicationMessage" rows={3} className={FIELD} />
+      </Field>
+      <Field label={t("referral")} wide>
+        <input name="referralCode" placeholder={t("referralPlaceholder")} className={FIELD} />
+      </Field>
+
+      <Field label={t("password")} required>
+        <input name="password" type="password" minLength={8} required autoComplete="new-password" className={FIELD} />
+      </Field>
+
+      <label className="sm:col-span-2 flex items-start gap-2 text-xs leading-relaxed">
+        <input type="checkbox" name="applicantConfirmed" required className="mt-0.5" />
+        {t("confirm")}
+      </label>
+
+      {state.status === "error" && <p className="sm:col-span-2 text-sm text-accent font-medium">{state.message}</p>}
+
+      <div className="sm:col-span-2">
+        <button type="submit" disabled={pending} className="bg-foreground text-background px-8 py-3.5 text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50">
+          {pending ? t("submitting") : t("submit")}
+        </button>
       </div>
-      <div>
-        <label className="block text-sm mb-1" htmlFor="password">{t("password")}</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          minLength={8}
-          required
-          className="w-full border border-border px-3 py-2 text-sm"
-        />
-      </div>
-
-      {state.status === "error" && (
-        <p className="text-sm text-accent">{state.message}</p>
-      )}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="btn-primary w-full py-3 text-sm uppercase tracking-wide font-medium"
-      >
-        {pending ? t("submitting") : t("submit")}
-      </button>
     </form>
   );
 }
 
-function TypeButton({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
+function Field({ label, required, wide, children }: { label: string; required?: boolean; wide?: boolean; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`text-xs px-3 py-1.5 border ${
-        active ? "border-accent text-accent" : "border-border text-muted"
-      }`}
-    >
-      {label}
-    </button>
+    <label className={`block ${wide ? "sm:col-span-2" : ""}`}>
+      <span className={LABEL}>
+        {label}
+        {required && " *"}
+      </span>
+      {children}
+    </label>
   );
 }

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { PaymentRulesEditor } from "@/components/payment-rules-editor";
-import { saveNumericSetting } from "./actions";
+import { saveBankInstructions, saveNumericSetting } from "./actions";
 
 const SETTINGS = [
   { key: "bank_processing_fee_brl", label: "Bank Processing Fee (BRL, charged per Bank Transfer payment)", fallback: 135 },
@@ -57,9 +57,34 @@ export default async function AdminPaymentsPage() {
             </form>
           );
         })}
+        <form action={saveBankInstructions} className="flex flex-col gap-2 text-xs max-w-xl">
+          <label className="flex flex-col">
+            Bank transfer instructions (shown to the buyer when Bank Transfer is enabled for the order)
+            <textarea
+              name="instructions"
+              rows={6}
+              defaultValue={typeof settingValue.get("bank_transfer_instructions") === "string" ? (settingValue.get("bank_transfer_instructions") as string) : ""}
+              placeholder={"Beneficiary: …\nBank: …\nIBAN / SWIFT: …"}
+              className="border border-border px-2 py-1 font-mono"
+            />
+          </label>
+          <button type="submit" className="border border-border px-3 py-1 self-start">Save instructions</button>
+        </form>
         <p className="text-[11px] text-muted">
           The bank fee is converted to the order currency with the current FX rate when each transfer is registered;
           a Reserve deposit + a later balance by transfer = two fees.
+        </p>
+      </section>
+
+      <section className="space-y-2 text-xs max-w-2xl">
+        <h2 className="text-sm font-medium uppercase tracking-wide">Stripe (card)</h2>
+        <p className="text-muted">
+          Card payments are taken on the <strong>site</strong> deployment. There, set <code>STRIPE_SECRET_KEY</code> and{" "}
+          <code>STRIPE_WEBHOOK_SECRET</code>, and create a Stripe webhook pointing to{" "}
+          <code>https://&lt;site&gt;/api/stripe/webhook</code> (events: checkout.session.completed,
+          checkout.session.async_payment_succeeded, charge.refunded, charge.dispute.created). Then enable Stripe per
+          channel above, per customer, or per order (order page → “Enable Stripe for this order”). A paid card payment
+          marks the order PAID automatically.
         </p>
       </section>
     </div>

@@ -1,61 +1,76 @@
-import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
-import { getHomeCatalogSections, getPublicProductsList } from "@/lib/catalog";
-import { ProductCarousel } from "@/components/product-carousel";
-import { HeroBanner } from "@/components/hero-banner";
-import { BenefitsBanner } from "@/components/benefits-banner";
-import { HomeCategoriesGrid } from "@/components/home-categories-grid";
-import { HomeFullCatalogGrid } from "@/components/home-full-catalog-grid";
-import { HomeWholesaleBanner } from "@/components/home-wholesale-banner";
+import { getLocale } from "next-intl/server";
+import { getShopCatalog, pickBestSellers, pickBySlugs } from "@/lib/catalog";
 import { getCurrentCustomer, isApproved } from "@/lib/auth";
+import { getPublicBlocks } from "@/lib/cms";
+import { operationForSiteMode } from "@/lib/cms-types";
 import { SITE_MODE_HEADER, type SiteMode } from "@/lib/site-mode";
+import {
+  BecomeABrandModule,
+  FeaturedVideoModule,
+  HeroModule,
+  HowItWorksModule,
+  InstitutionalBannerModule,
+  ProductsModule,
+  ReadyToShipModule,
+  StartSmallModule,
+} from "@/components/home/modules";
 
+/**
+ * Home is assembled from CMS modules (Admin → Conteúdo do site → Home):
+ * each one can be turned ON/OFF, reordered, limited by operation and edited
+ * in EN/ES/PT without a developer.
+ */
 export default async function HomePage() {
-  const t = await getTranslations();
+  const locale = await getLocale();
   const headerList = await headers();
   const siteMode = (headerList.get(SITE_MODE_HEADER) as SiteMode) ?? "internacional";
   const customer = await getCurrentCustomer();
   const approved = isApproved(customer);
 
-  const [sections, allProducts] = await Promise.all([
-    getHomeCatalogSections(approved),
-    getPublicProductsList(approved, 24),
-  ]);
+  const blocks = await getPublicBlocks("home", operationForSiteMode(siteMode), locale);
+  const needsCatalog = blocks.some((b) => b.key === "best_sellers" || b.key === "featured_products");
+  const catalog = needsCatalog ? await getShopCatalog(approved) : [];
 
   return (
-    <div className="space-y-4">
-      {/* 1. Main Luxury Hero Banner */}
-      <HeroBanner ctaLabel={t("home.heroCta")} />
-
-      {/* 2. Global Shipping & Benefits Bar */}
-      <BenefitsBanner />
-
-      {/* 3. Visual Categories Showcase Grid */}
-      <HomeCategoriesGrid />
-
-      {/* 4. First Carousel: Lançamentos & Novidades */}
-      {sections.length > 0 && sections[0] && (
-        <ProductCarousel
-          title={t(`sections.${sections[0].key}`)}
-          products={sections[0].products}
-          siteMode={siteMode}
-        />
-      )}
-
-      {/* 5. Rich Full Dress Catalog Grid with Filter Tabs */}
-      <HomeFullCatalogGrid products={allProducts} siteMode={siteMode} />
-
-      {/* 6. Wholesale & B2B Store Banner */}
-      <HomeWholesaleBanner />
-
-      {/* 7. Second Carousel: Destaques & Mais Desejados */}
-      {sections.length > 1 && sections[1] && sections[1].products.length > 0 && (
-        <ProductCarousel
-          title={t(`sections.${sections[1].key}`)}
-          products={sections[1].products}
-          siteMode={siteMode}
-        />
-      )}
+    <div>
+      {blocks.map(({ key, content }) => {
+        switch (key) {
+          case "hero":
+            return <HeroModule key={key} c={content} />;
+          case "institutional_banner":
+            return <InstitutionalBannerModule key={key} c={content} />;
+          case "ready_to_ship":
+            return <ReadyToShipModule key={key} c={content} />;
+          case "how_it_works":
+            return <HowItWorksModule key={key} c={content} />;
+          case "start_small":
+            return <StartSmallModule key={key} c={content} />;
+          case "best_sellers": {
+            const count = Number(content.count) || 6;
+            const products =
+              content.mode === "manual"
+                ? pickBySlugs(catalog, (content.slugs as string[]) ?? [], count)
+                : pickBestSellers(catalog, count);
+            return <ProductsModule key={key} c={content} products={products} siteMode={siteMode} />;
+          }
+          case "featured_products":
+            return (
+              <ProductsModule
+                key={key}
+                c={content}
+                products={pickBySlugs(catalog, (content.slugs as string[]) ?? [], Number(content.count) || 6)}
+                siteMode={siteMode}
+              />
+            );
+          case "featured_video":
+            return <FeaturedVideoModule key={key} c={content} />;
+          case "become_a_brand":
+            return <BecomeABrandModule key={key} c={content} />;
+          default:
+            return null;
+        }
+      })}
     </div>
   );
 }

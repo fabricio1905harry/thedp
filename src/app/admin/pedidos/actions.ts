@@ -18,6 +18,39 @@ function revalidateOrder(orderId: string) {
   revalidatePath("/admin");
 }
 
+/** Order change history (order_events). Never blocks the action itself. */
+async function logEvent(
+  orderId: string,
+  actorId: string,
+  eventType: string,
+  summary: string,
+  details?: Record<string, unknown>
+) {
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from("order_events")
+      .insert({ order_id: orderId, actor_id: actorId, event_type: eventType, summary, details: details ?? null });
+  } catch {
+    // history is best-effort
+  }
+}
+
+async function itemLabel(orderId: string, itemId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("order_items")
+    .select("product_title, color, size, qty, unit_price, item_status, original_qty, original_unit_price")
+    .eq("id", itemId)
+    .eq("order_id", orderId)
+    .single();
+  if (!data) throw new Error("Order line not found");
+  return {
+    ...data,
+    label: `${data.product_title ?? "Item"} ${data.color ?? "—"}/${data.size ?? "—"}`,
+  };
+}
+
 async function assertEditable(orderId: string) {
   const supabase = await createClient();
   const { data: order } = await supabase.from("orders").select("status").eq("id", orderId).single();
@@ -85,6 +118,7 @@ export async function setOrderCharges(orderId: string, input: OrderChargesInput)
     })
     .eq("id", orderId);
   if (error) throw new Error(error.message);
+  await logEvent(orderId, staff.id, "charges", "Freight & import duties informed", { ...input });
   revalidateOrder(orderId);
 }
 
@@ -98,11 +132,13 @@ export type ItemStatus =
 /**
  * Per-line confirmation. OUT OF STOCK also makes the variant unavailable in
  * the catalog and records a LOST SALE (DB trigger); ORDER ONLY / OTHER
- * REASON affects this order only.
+ * REASON affects this order only. Setting a line back from OUT OF STOCK
+ * removes its untouched lost sale.
  */
 export async function setOrderItemStatus(orderId: string, itemId: string, status: ItemStatus, note?: string) {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await assertEditable(orderId);
+  const before = await itemLabel(orderId, itemId);
   const { error } = await supabase
     .from("order_items")
     .update({ item_status: status, unavailable_note: note || null, updated_at: new Date().toISOString() })
@@ -110,13 +146,20 @@ export async function setOrderItemStatus(orderId: string, itemId: string, status
     .eq("order_id", orderId);
   if (error) throw new Error(error.message);
   await recalcTotals(orderId);
+  await logEvent(orderId, staff.id, "item_status", `${before.label}: ${before.item_status} → ${status}`, {
+    item_id: itemId,
+    from: before.item_status,
+    to: status,
+    note: note || null,
+  });
   revalidateOrder(orderId);
 }
 
 export async function setOrderItemQty(orderId: string, itemId: string, qty: number) {
-  await requireStaff();
+  const staff = await requireStaff();
   if (!Number.isInteger(qty) || qty <= 0) throw new Error("Quantity must be a positive integer.");
   const supabase = await assertEditable(orderId);
+  const before = await itemLabel(orderId, itemId);
   const { error } = await supabase
     .from("order_items")
     .update({ qty, updated_at: new Date().toISOString() })
@@ -124,21 +167,119 @@ export async function setOrderItemQty(orderId: string, itemId: string, qty: numb
     .eq("order_id", orderId);
   if (error) throw new Error(error.message);
   await recalcTotals(orderId);
+  await logEvent(orderId, staff.id, "item_qty", `${before.label}: qty ${before.qty} → ${qty}`, {
+    item_id: itemId,
+    from: before.qty,
+    to: qty,
+  });
   revalidateOrder(orderId);
+}
+
+/** Unit price of one line, in the order currency (the buyer's original price is kept). */
+export async function setOrderItemPrice(orderId: string, itemId: string, unitPrice: number) {
+  const staff = await requireStaff();
+  const price = Math.round(Number(unitPrice) * 100) / 100;
+  if (!Number.isFinite(price) || price < 0) throw new Error("Price must be zero or positive.");
+  const supabase = await assertEditable(orderId);
+  const before = await itemLabel(orderId, itemId);
+  const { error } = await supabase
+    .from("order_items")
+    .update({ unit_price: price, updated_at: new Date().toISOString() })
+    .eq("id", itemId)
+    .eq("order_id", orderId);
+  if (error) throw new Error(error.message);
+  await recalcTotals(orderId);
+  await logEvent(orderId, staff.id, "item_price", `${before.label}: unit price ${before.unit_price} → ${price}`, {
+    item_id: itemId,
+    from: Number(before.unit_price),
+    to: price,
+  });
+  revalidateOrder(orderId);
+}
+
+/** Puts a line back exactly as the buyer requested it (qty, price, status). */
+export async function restoreOrderItem(orderId: string, itemId: string) {
+  const staff = await requireStaff();
+  const supabase = await assertEditable(orderId);
+  const before = await itemLabel(orderId, itemId);
+  if (before.original_qty === null || before.original_unit_price === null) {
+    throw new Error("This line was added by the TDP — set it as removed instead.");
+  }
+  const { error } = await supabase
+    .from("order_items")
+    .update({
+      qty: before.original_qty,
+      unit_price: before.original_unit_price,
+      item_status: "requested",
+      unavailable_note: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", itemId)
+    .eq("order_id", orderId);
+  if (error) throw new Error(error.message);
+  await recalcTotals(orderId);
+  await logEvent(orderId, staff.id, "item_restore", `${before.label}: restored to the original request`, {
+    item_id: itemId,
+  });
+  revalidateOrder(orderId);
+}
+
+export interface VariantSearchResult {
+  sku: string;
+  title: string;
+  color: string | null;
+  size: string | null;
+  stock: number;
+  price: number | null;
+}
+
+/** Product/SKU search to add or substitute a line (price in the order currency). */
+export async function searchVariantsForOrder(orderId: string, query: string): Promise<VariantSearchResult[]> {
+  await requireStaff();
+  const q = query.replace(/[%,()*\\]/g, " ").trim();
+  if (q.length < 2) return [];
+  const supabase = await createClient();
+  const { data: order } = await supabase.from("orders").select("currency").eq("id", orderId).single();
+  const currency = (order?.currency ?? "USD").toUpperCase();
+
+  const select = "id, sku, color, size, stock, products!inner ( title, price_brl, price_usd, price_eur )";
+  const [bySku, byTitle] = await Promise.all([
+    supabase.from("variants").select(select).ilike("sku", `%${q}%`).limit(20),
+    supabase.from("variants").select(select).ilike("products.title", `%${q}%`).limit(20),
+  ]);
+
+  const seen = new Set<string>();
+  const results: VariantSearchResult[] = [];
+  for (const row of [...(bySku.data ?? []), ...(byTitle.data ?? [])] as unknown as {
+    id: string;
+    sku: string;
+    color: string | null;
+    size: string | null;
+    stock: number;
+    products: { title: string; price_brl: number | null; price_usd: number | null; price_eur: number | null };
+  }[]) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    const p = row.products;
+    const price = currency === "BRL" ? p.price_brl : currency === "EUR" ? p.price_eur : p.price_usd;
+    results.push({ sku: row.sku, title: p.title, color: row.color, size: row.size, stock: row.stock, price });
+  }
+  return results.slice(0, 20);
 }
 
 /**
  * Add a product (by SKU = product + color + size) to the order, optionally
  * as a substitute for another line (that line is marked removed unless it
- * already has an unavailable status).
+ * already has an unavailable status). `unitPrice` overrides the list price.
  */
 export async function addOrderItemBySku(
   orderId: string,
   sku: string,
   qty: number,
-  substitutesItemId?: string
+  substitutesItemId?: string,
+  unitPrice?: number
 ) {
-  await requireStaff();
+  const staff = await requireStaff();
   if (!Number.isInteger(qty) || qty <= 0) throw new Error("Quantity must be a positive integer.");
   const supabase = await assertEditable(orderId);
 
@@ -154,33 +295,38 @@ export async function addOrderItemBySku(
 
   const prices = variant.products as unknown as { price_brl: number | null; price_usd: number | null; price_eur: number | null } | null;
   const currency = (order?.currency ?? "USD").toUpperCase();
-  const unitPrice =
+  const listPrice =
     currency === "BRL" ? prices?.price_brl : currency === "EUR" ? prices?.price_eur : prices?.price_usd;
-  if (unitPrice === null || unitPrice === undefined) throw new Error(`No ${currency} price for ${sku}`);
+  const price = unitPrice !== undefined && Number.isFinite(unitPrice) && unitPrice >= 0 ? unitPrice : listPrice;
+  if (price === null || price === undefined) throw new Error(`No ${currency} price for ${sku} — type a unit price.`);
 
   const { error } = await supabase.from("order_items").insert({
     order_id: orderId,
     variant_id: variant.id,
     qty,
-    unit_price: unitPrice,
+    unit_price: price,
     item_status: "available",
     added_by_tdp: true,
     substitutes_item_id: substitutesItemId ?? null,
   });
   if (error) throw new Error(error.message);
 
+  let replaced = "";
   if (substitutesItemId) {
-    const { data: original } = await supabase
-      .from("order_items")
-      .select("item_status")
-      .eq("id", substitutesItemId)
-      .single();
-    if (original && (original.item_status === "requested" || original.item_status === "available")) {
+    const original = await itemLabel(orderId, substitutesItemId);
+    replaced = ` (substitutes ${original.label})`;
+    if (original.item_status === "requested" || original.item_status === "available") {
       await supabase.from("order_items").update({ item_status: "removed" }).eq("id", substitutesItemId);
     }
   }
 
   await recalcTotals(orderId);
+  await logEvent(orderId, staff.id, "item_added", `Added ${qty} × ${sku} at ${price}${replaced}`, {
+    sku,
+    qty,
+    unit_price: price,
+    substitutes_item_id: substitutesItemId ?? null,
+  });
   revalidateOrder(orderId);
 }
 
@@ -188,10 +334,45 @@ export async function setOrderStage(
   orderId: string,
   status: "order_request" | "stock_confirmation" | "awaiting_buyer_decision" | "canceled"
 ) {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await createClient();
   const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
   if (error) throw new Error(error.message);
+  await logEvent(orderId, staff.id, "status", `Status → ${status}`, { status });
+  revalidateOrder(orderId);
+}
+
+/**
+ * Takes a released Confirmed Order back to editing (stock confirmation) so
+ * lines, prices and freight/duties can be changed again. Not allowed once a
+ * payment exists (pending or confirmed) — cancel or refund it first.
+ */
+export async function reopenOrderForEditing(orderId: string) {
+  const staff = await requireStaff();
+  const supabase = await createClient();
+  const [{ data: order }, { data: payments }] = await Promise.all([
+    supabase.from("orders").select("status").eq("id", orderId).single(),
+    supabase.from("payments").select("id, status").eq("order_id", orderId),
+  ]);
+  if (!order) throw new Error("Order not found");
+  if (!["confirmed_awaiting_payment", "payment_coordination_required", "payment_window_expired"].includes(order.status)) {
+    throw new Error("Only a Confirmed Order waiting for payment can be reopened for editing.");
+  }
+  if ((payments ?? []).some((p) => p.status === "pending_verification" || p.status === "confirmed")) {
+    throw new Error("This order already has a payment — reject or refund it before editing.");
+  }
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: "stock_confirmation",
+      payment_released_at: null,
+      stock_hold_type: null,
+      stock_hold_until: null,
+      payment_window_expired_at: null,
+    })
+    .eq("id", orderId);
+  if (error) throw new Error(error.message);
+  await logEvent(orderId, staff.id, "reopened", "Confirmed Order reopened for editing");
   revalidateOrder(orderId);
 }
 
@@ -206,7 +387,7 @@ export async function releaseOrderForPayment(
   holdType: "24h" | "48h" | "custom" | "cannot_reserve",
   customUntil?: string
 ) {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await createClient();
 
   const [{ data: items }, { data: order }] = await Promise.all([
@@ -230,6 +411,10 @@ export async function releaseOrderForPayment(
     p_custom_until: holdType === "custom" && customUntil ? new Date(customUntil).toISOString() : null,
   });
   if (error) throw new Error(error.message);
+  await logEvent(orderId, staff.id, "released", `Confirmed Order released for payment (stock hold: ${holdType})`, {
+    hold_type: holdType,
+    custom_until: customUntil ?? null,
+  });
   revalidateOrder(orderId);
 }
 
@@ -248,6 +433,12 @@ export async function setOrderPaymentRule(orderId: string, methodCode: string, e
     });
     if (error) throw new Error(error.message);
   }
+  await logEvent(
+    orderId,
+    staff.id,
+    "payment_rule",
+    `${methodCode}: order exception → ${enabled === null ? "inherit" : enabled ? "allowed" : "blocked"}`
+  );
   revalidateOrder(orderId);
 }
 
@@ -256,7 +447,7 @@ export async function setOrderPaymentRule(orderId: string, methodCode: string, e
  * (Admin, default 10%), shown as the equivalent % of the sale value.
  */
 export async function setReserveMode(orderId: string, enabled: boolean) {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await createClient();
 
   if (!enabled) {
@@ -264,6 +455,7 @@ export async function setReserveMode(orderId: string, enabled: boolean) {
       .from("orders")
       .update({ payment_mode: "standard", reserve_amount: null, reserve_pct_of_sale: null })
       .eq("id", orderId);
+    await logEvent(orderId, staff.id, "reserve", "Payment mode → standard");
     revalidateOrder(orderId);
     return;
   }
@@ -300,6 +492,7 @@ export async function setReserveMode(orderId: string, enabled: boolean) {
     .update({ payment_mode: "reserve", reserve_amount: reserve.amount, reserve_pct_of_sale: reserve.pctOfSale })
     .eq("id", orderId);
   if (error) throw new Error(error.message);
+  await logEvent(orderId, staff.id, "reserve", `Payment mode → Reserve (${reserve.amount}, ${reserve.pctOfSale}% of sale)`);
   revalidateOrder(orderId);
 }
 
@@ -317,24 +510,34 @@ export interface PaymentInput {
   otherChargesAmount?: number;
   externalRef?: string;
   notes?: string;
+  /** Money already received: create the payment CONFIRMED (marks the order paid when fully covered). */
+  confirmNow?: boolean;
+  /** Amount that actually landed, when different from the expected total (Payment Difference). */
+  receivedAmount?: number;
 }
 
 /**
- * Registers a payment (PENDING VERIFICATION → Payments to Verify). A Bank
- * Transfer automatically carries one Bank Processing Fee (BRL config
+ * Registers a payment. Default: PENDING VERIFICATION (→ Payments to Verify).
+ * With confirmNow the TDP is recording money already received (e.g. a
+ * transfer seen in the bank): the payment is created CONFIRMED and the
+ * order becomes PAID once the merchandise is fully covered. That path skips
+ * the buyer-facing availability rules — the money is already in.
+ * A Bank Transfer automatically carries one Bank Processing Fee (BRL config
  * converted to the order currency) — one per transfer.
  */
 export async function registerPayment(orderId: string, input: PaymentInput) {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await createClient();
   const { data: order } = await supabase.from("orders").select("currency").eq("id", orderId).single();
   if (!order) throw new Error("Order not found");
 
-  const { data: methods } = await supabase.rpc("available_payment_methods", { p_order_id: orderId });
-  const allowed = ((methods ?? []) as { method_code: string; enabled: boolean }[]).find(
-    (m) => m.method_code === input.methodCode
-  );
-  if (!allowed?.enabled) throw new Error("This payment method is not enabled for this order.");
+  if (!input.confirmNow) {
+    const { data: methods } = await supabase.rpc("available_payment_methods", { p_order_id: orderId });
+    const allowed = ((methods ?? []) as { method_code: string; enabled: boolean }[]).find(
+      (m) => m.method_code === input.methodCode
+    );
+    if (!allowed?.enabled) throw new Error("This payment method is not enabled for this order.");
+  }
 
   const n = (v?: number) => (Number.isFinite(v) ? Number(v) : 0);
   const { error } = await supabase.from("payments").insert({
@@ -353,8 +556,24 @@ export async function registerPayment(orderId: string, input: PaymentInput) {
     other_charges_amount: n(input.otherChargesAmount),
     external_ref: input.externalRef || null,
     notes: input.notes || null,
+    ...(input.confirmNow
+      ? {
+          status: "confirmed",
+          confirmed_by: staff.id,
+          ...(input.receivedAmount !== undefined && Number.isFinite(input.receivedAmount)
+            ? { received_amount: input.receivedAmount }
+            : {}),
+        }
+      : {}),
   });
   if (error) throw new Error(error.message);
+  await logEvent(
+    orderId,
+    staff.id,
+    input.confirmNow ? "payment_received" : "payment_registered",
+    `${input.confirmNow ? "Payment received" : "Payment registered"}: ${input.methodCode} · ${input.kind} · ${n(input.merchandiseAmount)} ${order.currency} merchandise`,
+    { method: input.methodCode, kind: input.kind, confirm_now: Boolean(input.confirmNow) }
+  );
   revalidateOrder(orderId);
 }
 
@@ -372,6 +591,7 @@ export async function confirmPayment(orderId: string, paymentId: string, receive
     .eq("id", paymentId)
     .eq("order_id", orderId);
   if (error) throw new Error(error.message);
+  await logEvent(orderId, staff.id, "payment_confirmed", "Payment confirmed", { payment_id: paymentId, received: receivedAmount ?? null });
   revalidateOrder(orderId);
 }
 
@@ -380,9 +600,10 @@ export async function setPaymentStatus(
   paymentId: string,
   status: "rejected" | "refunded" | "chargeback" | "canceled"
 ) {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await createClient();
   const { error } = await supabase.from("payments").update({ status }).eq("id", paymentId).eq("order_id", orderId);
   if (error) throw new Error(error.message);
+  await logEvent(orderId, staff.id, "payment_status", `Payment → ${status}`, { payment_id: paymentId, status });
   revalidateOrder(orderId);
 }

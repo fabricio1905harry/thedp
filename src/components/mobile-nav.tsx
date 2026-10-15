@@ -3,65 +3,48 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import type { SiteMode } from "@/lib/site-mode";
-
 import type { CurrentCustomer } from "@/lib/auth";
 import { logoutAction } from "@/app/[locale]/login/actions";
 
-interface Labels {
-  novidades: string;
-  destaques: string;
-  colecoes: string;
-  atacado: string;
-  sobre: string;
+export interface MobileNavLabels {
+  menu: string;
+  close: string;
+  shop: string;
+  allProducts: string;
   login: string;
   cadastro: string;
   sair: string;
-  statusApproved: string;
-  statusPending: string;
-  statusRejected: string;
+  myOrders: string;
+  status: string;
 }
 
 export function MobileNav({
   labels,
+  items,
   categories,
-  siteMode,
+  showAccount,
   customer,
 }: {
-  labels: Labels;
+  labels: MobileNavLabels;
+  items: { key: string; label: string; href: string }[];
   categories: string[];
-  siteMode: SiteMode;
+  showAccount: boolean;
   customer?: CurrentCustomer | null;
 }) {
   const [open, setOpen] = useState(false);
-  const isNacional = siteMode === "nacional";
+  const close = () => setOpen(false);
 
   return (
     <div className="md:hidden">
-      <button
-        aria-label={open ? "Close menu" : "Open menu"}
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-        className="w-9 h-9 flex items-center justify-center border border-border"
-      >
+      <button aria-label={labels.menu} aria-expanded={open} onClick={() => setOpen(true)} className="w-9 h-9 flex items-center justify-center border border-border">
         ☰
       </button>
 
       {open && (
         <div className="fixed inset-0 bg-background z-50 flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-            <Image
-              src="/brand/logo-horizontal.png"
-              alt="The Dressing Project"
-              width={1190}
-              height={117}
-              className="h-6 w-auto"
-            />
-            <button
-              aria-label="Close menu"
-              onClick={() => setOpen(false)}
-              className="w-9 h-9 flex items-center justify-center border border-border"
-            >
+            <Image src="/brand/logo-horizontal.png" alt="The Dressing Project" width={1190} height={117} className="h-6 w-auto" />
+            <button aria-label={labels.close} onClick={close} className="w-9 h-9 flex items-center justify-center border border-border">
               ✕
             </button>
           </div>
@@ -71,63 +54,55 @@ export function MobileNav({
               <div className="p-4 bg-surface flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold truncate max-w-[200px]">{customer.email}</p>
-                  <span
-                    className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                      customer.status === "approved"
-                        ? "bg-foreground text-background border-foreground"
-                        : customer.status === "pending"
-                        ? "bg-surface text-muted border-border"
-                        : "bg-background text-foreground border-foreground border-2"
-                    }`}
-                  >
-                    {customer.status === "approved"
-                      ? labels.statusApproved
-                      : customer.status === "pending"
-                      ? labels.statusPending
-                      : labels.statusRejected}
-                  </span>
+                  <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-semibold border border-foreground">{labels.status}</span>
                 </div>
                 <form action={logoutAction}>
-                  <button
-                    type="submit"
-                    onClick={() => setOpen(false)}
-                    className="text-xs border border-border px-3 py-1.5 font-medium hover:text-accent"
-                  >
+                  <button type="submit" onClick={close} className="text-xs border border-border px-3 py-1.5 font-medium">
                     {labels.sair}
                   </button>
                 </form>
               </div>
             )}
 
-            <MobileLink href="/" onClick={() => setOpen(false)}>
-              {labels.novidades}
-            </MobileLink>
-            <MobileLink href="/" onClick={() => setOpen(false)}>
-              {labels.destaques}
-            </MobileLink>
-            {categories.map((category) => (
-              <MobileLink
-                key={category}
-                href={`/categorias/${encodeURIComponent(category.toLowerCase())}`}
-                onClick={() => setOpen(false)}
-              >
-                {category}
-              </MobileLink>
-            ))}
-            {!isNacional && (
-              <MobileLink href="/atacado" onClick={() => setOpen(false)}>
-                {labels.atacado}
+            {items.map((item) =>
+              item.key === "shop" ? (
+                <div key="shop">
+                  <MobileLink href="/shop" onClick={close}>
+                    {labels.shop}
+                  </MobileLink>
+                  <ul className="pb-3 pl-8 pr-4 -mt-2 space-y-2">
+                    <li>
+                      <Link href="/shop" onClick={close} className="text-sm text-muted">
+                        {labels.allProducts}
+                      </Link>
+                    </li>
+                    {categories.map((category) => (
+                      <li key={category}>
+                        <Link href={`/shop?category=${encodeURIComponent(category)}`} onClick={close} className="text-sm text-muted">
+                          {category}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <MobileLink key={item.key} href={item.href} onClick={close}>
+                  {item.label}
+                </MobileLink>
+              )
+            )}
+
+            {showAccount && customer && (
+              <MobileLink href="/minha-conta" onClick={close}>
+                {labels.myOrders}
               </MobileLink>
             )}
-            <MobileLink href="/sobre" onClick={() => setOpen(false)}>
-              {labels.sobre}
-            </MobileLink>
-            {!isNacional && !customer && (
+            {showAccount && !customer && (
               <>
-                <MobileLink href="/login" onClick={() => setOpen(false)}>
+                <MobileLink href="/login" onClick={close}>
                   {labels.login}
                 </MobileLink>
-                <MobileLink href="/cadastro" onClick={() => setOpen(false)}>
+                <MobileLink href="/cadastro" onClick={close}>
                   {labels.cadastro}
                 </MobileLink>
               </>
@@ -139,21 +114,9 @@ export function MobileNav({
   );
 }
 
-function MobileLink({
-  href,
-  onClick,
-  children,
-}: {
-  href: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function MobileLink({ href, onClick, children }: { href: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className="px-4 py-4 text-sm font-medium uppercase tracking-wide hover:text-accent"
-    >
+    <Link href={href} onClick={onClick} className="block px-4 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] hover:text-muted">
       {children}
     </Link>
   );

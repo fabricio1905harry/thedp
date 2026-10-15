@@ -69,12 +69,23 @@ export default function CartPage() {
         <p className="text-lg font-semibold">{formatCurrency(subtotal, currency)}</p>
       </div>
 
+      <div className="mt-6 border border-border bg-surface p-4 space-y-2 text-xs leading-relaxed">
+        <p className="font-semibold uppercase tracking-[0.15em]">{t("availabilityNote")}</p>
+        <p className="text-muted">{t("chargesNote")}</p>
+      </div>
+
       <Link
         href="/checkout"
         className="btn-primary block text-center mt-8 py-3 text-sm uppercase tracking-wide font-medium"
       >
         {t("proceedToCheckout")}
       </Link>
+      <p className="mt-4 text-center text-[11px] text-muted leading-relaxed">
+        {t("reserveHint")}{" "}
+        <Link href="/reserve-for-later-delivery" className="underline">
+          {t("reserveLearn")}
+        </Link>
+      </p>
     </div>
   );
 }

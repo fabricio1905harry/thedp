@@ -53,3 +53,15 @@ export async function saveNumericSetting(key: string, formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/admin/pagamentos");
 }
+
+/** Bank details shown to the buyer when Bank Transfer is enabled for the order. */
+export async function saveBankInstructions(formData: FormData) {
+  const staff = await requireStaff();
+  const value = String(formData.get("instructions") ?? "").slice(0, 2000);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .upsert({ key: "bank_transfer_instructions", value, updated_at: new Date().toISOString(), updated_by: staff.id });
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/pagamentos");
+}

@@ -1,27 +1,56 @@
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { MegaMenu } from "@/components/mega-menu";
 import { CartLink } from "@/components/cart-link";
 import { MobileNav } from "@/components/mobile-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { getAllCategories } from "@/lib/catalog";
+import { mainNav, statusKey } from "@/lib/nav";
 import type { SiteMode } from "@/lib/site-mode";
-
 import { getCurrentCustomer } from "@/lib/auth";
+import { getPublicBlock } from "@/lib/cms";
+import { operationForSiteMode } from "@/lib/cms-types";
+import { CmsLink } from "@/components/cms-link";
 import { logoutAction } from "@/app/[locale]/login/actions";
 
+const NAV_LINK =
+  "text-[11px] font-semibold uppercase tracking-[0.2em] py-5 text-foreground hover:text-muted transition-colors";
+
+type Bar = Record<string, unknown> | null;
+
+async function barBlocks(siteMode: SiteMode) {
+  const locale = await getLocale();
+  const op = operationForSiteMode(siteMode);
+  const [announcement, national_notice] = await Promise.all([
+    getPublicBlock("site", "announcement", op, locale).catch(() => null),
+    getPublicBlock("site", "national_notice", op, locale).catch(() => null),
+  ]);
+  return { announcement, national_notice };
+}
+
+function barText(bar: Bar, fallback: string) {
+  const text = bar && typeof bar.text === "string" && bar.text ? bar.text : fallback;
+  const link = bar && typeof bar.link === "string" ? bar.link : "";
+  return link ? <CmsLink href={link} className="hover:underline">{text}</CmsLink> : text;
+}
+
 export async function Header({ siteMode }: { siteMode: SiteMode }) {
-  const t = await getTranslations();
-  const categories = await getAllCategories();
+  const t = await getTranslations("nav");
+  const tFooter = await getTranslations("footer");
+  const categories = await getAllCategories().catch(() => [] as string[]);
   const customer = await getCurrentCustomer();
   const isNacional = siteMode === "nacional";
+  const bars = await barBlocks(siteMode);
+  const items = mainNav().map((entry) => ({ ...entry, label: t(entry.key) }));
 
   return (
-    <header className="glass-panel border-b border-border/80 sticky top-0 z-30 transition-all duration-300">
-      {isNacional && (
-        <div className="bg-surface/80 text-center text-xs py-2 px-4 border-b border-border/60 font-medium">
-          {t("footer.nationalNotice")}
+    <header className="bg-background border-b border-border sticky top-0 z-30">
+      {isNacional ? (
+        <div className="bg-surface text-center text-xs py-2 px-4 border-b border-border font-medium">{barText(bars.national_notice, tFooter("nationalNotice"))}</div>
+      ) : (
+        <div className="bg-foreground text-background text-center text-[10px] sm:text-[11px] uppercase tracking-[0.25em] py-2 px-4">
+          {barText(bars.announcement, t("announcement"))}
         </div>
       )}
 
@@ -29,109 +58,68 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
         <div className="flex items-center gap-3">
           <MobileNav
             labels={{
-              novidades: t("nav.novidades"),
-              destaques: t("nav.destaques"),
-              colecoes: t("nav.colecoes"),
-              atacado: t("nav.atacado"),
-              sobre: t("nav.sobre"),
-              login: t("nav.login"),
-              cadastro: t("nav.cadastro"),
-              sair: t("nav.sair"),
-              statusApproved: t("nav.statusApproved"),
-              statusPending: t("nav.statusPending"),
-              statusRejected: t("nav.statusRejected"),
+              menu: t("menu"),
+              close: t("close"),
+              shop: t("shop"),
+              allProducts: t("allProducts"),
+              login: t("login"),
+              cadastro: t("cadastro"),
+              sair: t("sair"),
+              myOrders: t("myOrders"),
+              status: customer ? t(statusKey(customer.status)) : "",
             }}
+            items={items}
             categories={categories}
-            siteMode={siteMode}
+            showAccount={!isNacional}
             customer={customer}
           />
-          <Link href="/" className="py-3.5 shrink-0 transition-opacity hover:opacity-90">
-            <Image
-              src="/brand/logo-horizontal.png"
-              alt="The Dressing Project"
-              width={1190}
-              height={117}
-              priority
-              className="h-6 w-auto"
-            />
+          <Link href="/" className="py-3.5 shrink-0 transition-opacity hover:opacity-80">
+            <Image src="/brand/logo-horizontal.png" alt="The Dressing Project" width={1190} height={117} priority className="h-6 w-auto" />
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center gap-7">
-          <Link href="/" className="text-xs font-semibold uppercase tracking-[0.15em] py-4 text-foreground/90 hover:text-accent hover-underline-link transition-colors">
-            {t("nav.novidades")}
-          </Link>
-          <Link href="/" className="text-xs font-semibold uppercase tracking-[0.15em] py-4 text-foreground/90 hover:text-accent hover-underline-link transition-colors">
-            {t("nav.destaques")}
-          </Link>
-          <MegaMenu label={t("nav.colecoes")} categories={categories} />
-          {!isNacional && (
-            <Link href="/atacado" className="text-xs font-semibold uppercase tracking-[0.15em] py-4 text-foreground/90 hover:text-accent hover-underline-link transition-colors">
-              {t("nav.atacado")}
-            </Link>
+        <nav className="hidden md:flex items-center gap-8">
+          {items.map((item) =>
+            item.key === "shop" ? (
+              <MegaMenu key="shop" label={item.label} allLabel={t("allProducts")} categories={categories} />
+            ) : (
+              <Link key={item.key} href={item.href} className={NAV_LINK}>
+                {item.label}
+              </Link>
+            )
           )}
-          <Link href="/sobre" className="text-xs font-semibold uppercase tracking-[0.15em] py-4 text-foreground/90 hover:text-accent hover-underline-link transition-colors">
-            {t("nav.sobre")}
-          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
-          {/* TEMP: testing-only language switcher, remove once locale
-              detection/marketing copy is finalized. */}
           <LocaleSwitcher />
           {!isNacional && <CartLink />}
-          {!isNacional && (
-            <>
-              {customer ? (
-                <div className="hidden md:flex items-center gap-3">
-                  <Link
-                    href="/minha-conta/enderecos"
-                    className="flex items-center gap-2 group text-xs text-muted hover:text-accent"
-                  >
-                    <span
-                      className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${
-                        customer.status === "approved"
-                          ? "bg-foreground text-background border-foreground"
-                          : customer.status === "pending"
-                          ? "bg-surface text-muted border-border"
-                          : "bg-background text-foreground border-foreground border-2"
-                      }`}
-                    >
-                      {customer.status === "approved"
-                        ? t("nav.statusApproved")
-                        : customer.status === "pending"
-                        ? t("nav.statusPending")
-                        : t("nav.statusRejected")}
-                    </span>
-                    <span className="hidden lg:inline truncate max-w-[140px]" title={customer.email}>
-                      {customer.email}
-                    </span>
-                  </Link>
-
-                  <form action={logoutAction}>
-                    <button
-                      type="submit"
-                      className="text-xs text-muted hover:text-accent border border-border px-2.5 py-1 transition-colors"
-                    >
-                      {t("nav.sair")}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <>
-                  <Link href="/login" className="text-sm hover:text-accent hidden sm:inline">
-                    {t("nav.login")}
-                  </Link>
-                  <Link
-                    href="/cadastro"
-                    className="btn-primary text-sm px-4 py-2"
-                  >
-                    {t("nav.cadastro")}
-                  </Link>
-                </>
-              )}
-            </>
-          )}
+          {!isNacional &&
+            (customer ? (
+              <div className="hidden md:flex items-center gap-3">
+                <Link href="/minha-conta" className="flex items-center gap-2 text-xs text-muted hover:text-foreground">
+                  <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border border-foreground text-foreground">
+                    {t(statusKey(customer.status))}
+                  </span>
+                  <span className="hidden xl:inline truncate max-w-[140px]" title={customer.email}>
+                    {t("myOrders")}
+                  </span>
+                </Link>
+                <form action={logoutAction}>
+                  <button type="submit" className="text-xs text-muted hover:text-foreground border border-border px-2.5 py-1 transition-colors">
+                    {t("sair")}
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <>
+                <Link href="/login" className="text-[11px] font-semibold uppercase tracking-[0.15em] hover:text-muted hidden sm:inline">
+                  {t("login")}
+                </Link>
+                <Link href="/cadastro" className="btn-primary text-[11px] uppercase tracking-[0.15em] font-semibold px-4 py-2 hidden sm:inline-block">
+                  {t("cadastro")}
+                </Link>
+              </>
+            ))}
         </div>
       </div>
     </header>
