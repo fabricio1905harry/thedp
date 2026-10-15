@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { MegaMenu } from "@/components/mega-menu";
 import { CartLink } from "@/components/cart-link";
@@ -9,10 +9,31 @@ import { getAllCategories } from "@/lib/catalog";
 import { mainNav, statusKey } from "@/lib/nav";
 import type { SiteMode } from "@/lib/site-mode";
 import { getCurrentCustomer } from "@/lib/auth";
+import { getPublicBlock } from "@/lib/cms";
+import { operationForSiteMode } from "@/lib/cms-types";
+import { CmsLink } from "@/components/cms-link";
 import { logoutAction } from "@/app/[locale]/login/actions";
 
 const NAV_LINK =
   "text-[11px] font-semibold uppercase tracking-[0.2em] py-5 text-foreground hover:text-muted transition-colors";
+
+type Bar = Record<string, unknown> | null;
+
+async function barBlocks(siteMode: SiteMode) {
+  const locale = await getLocale();
+  const op = operationForSiteMode(siteMode);
+  const [announcement, national_notice] = await Promise.all([
+    getPublicBlock("site", "announcement", op, locale).catch(() => null),
+    getPublicBlock("site", "national_notice", op, locale).catch(() => null),
+  ]);
+  return { announcement, national_notice };
+}
+
+function barText(bar: Bar, fallback: string) {
+  const text = bar && typeof bar.text === "string" && bar.text ? bar.text : fallback;
+  const link = bar && typeof bar.link === "string" ? bar.link : "";
+  return link ? <CmsLink href={link} className="hover:underline">{text}</CmsLink> : text;
+}
 
 export async function Header({ siteMode }: { siteMode: SiteMode }) {
   const t = await getTranslations("nav");
@@ -20,15 +41,16 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
   const categories = await getAllCategories().catch(() => [] as string[]);
   const customer = await getCurrentCustomer();
   const isNacional = siteMode === "nacional";
+  const bars = await barBlocks(siteMode);
   const items = mainNav().map((entry) => ({ ...entry, label: t(entry.key) }));
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-30">
       {isNacional ? (
-        <div className="bg-surface text-center text-xs py-2 px-4 border-b border-border font-medium">{tFooter("nationalNotice")}</div>
+        <div className="bg-surface text-center text-xs py-2 px-4 border-b border-border font-medium">{barText(bars.national_notice, tFooter("nationalNotice"))}</div>
       ) : (
         <div className="bg-foreground text-background text-center text-[10px] sm:text-[11px] uppercase tracking-[0.25em] py-2 px-4">
-          {t("announcement")}
+          {barText(bars.announcement, t("announcement"))}
         </div>
       )}
 

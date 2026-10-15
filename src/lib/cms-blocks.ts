@@ -24,6 +24,31 @@ const INTL_B2B = ["intl_b2b" as const];
 /** Drive photo supplied for the About page (shared publicly). */
 export const ABOUT_PHOTO_DRIVE_URL = "https://drive.google.com/file/d/1WwgaqwUjNE8mWy84zrF6VhXuEc67peYA/view?usp=drivesdk";
 
+/** Institutional text page: title, introduction and an ordered list of sections. */
+function pageDef(key: string, label: string, sort: number): BlockDef {
+  return {
+    scope: "pages",
+    key,
+    label,
+    description: "Leave sections empty to show the “content being prepared” notice. Sections are shown in the order listed.",
+    defaultActive: true,
+    defaultSort: sort,
+    defaultOperations: ALL_OPERATIONS,
+    fields: [
+      text("title", "Page title", "Leave empty to use the standard title."),
+      area("intro", "Introduction"),
+      {
+        key: "sections",
+        label: "Sections",
+        kind: "list",
+        itemLabel: "Section",
+        itemFields: [text("heading", "Heading"), area("body", "Text")],
+      },
+    ],
+    defaults: { title: t("", "", ""), intro: t("", "", ""), sections: [] },
+  };
+}
+
 export const BLOCK_DEFS: BlockDef[] = [
   // -------------------------------------------------------------- HOME
   {
@@ -568,6 +593,33 @@ export const BLOCK_DEFS: BlockDef[] = [
       cta_link: "/contato?subject=brand",
     },
   },
+  // -------------------------------------------------------------- SITE
+  {
+    scope: "site",
+    key: "announcement",
+    label: "Top announcement bar (international site)",
+    defaultActive: true,
+    defaultSort: 10,
+    defaultOperations: ["intl_b2b", "intl_b2c"],
+    fields: [text("text", "Text", "Leave empty to use the standard text."), url("link", "Link (optional)")],
+    defaults: { text: t("", "", ""), link: "" },
+  },
+  {
+    scope: "site",
+    key: "national_notice",
+    label: "Top notice bar (national site)",
+    defaultActive: true,
+    defaultSort: 20,
+    defaultOperations: ["br_b2b", "br_b2c"],
+    fields: [text("text", "Text", "Leave empty to use the standard text."), url("link", "Link (optional)")],
+    defaults: { text: t("", "", ""), link: "" },
+  },
+
+  // ------------------------------------------------------------- PAGES
+  pageDef("faq", "FAQ", 10),
+  pageDef("terms", "Terms of use", 20),
+  pageDef("privacy", "Privacy policy", 30),
+  pageDef("returns", "Exchanges and returns", 40),
 ];
 
 export function getBlockDef(scope: string, key: string): BlockDef | undefined {
@@ -578,4 +630,6 @@ export const CMS_SCOPE_LABELS: Record<string, string> = {
   home: "Home",
   about: "About",
   contact: "Contact",
+  site: "Site bars",
+  pages: "Pages (FAQ, terms…)",
 };

@@ -4,7 +4,7 @@ import { CMS_SCOPE_LABELS } from "@/lib/cms-blocks";
 import type { CmsScope } from "@/lib/cms-types";
 import { CmsBlockEditor, type EditorBlock } from "@/components/cms-block-editor";
 
-const SCOPES: CmsScope[] = ["home", "about", "contact"];
+const SCOPES: CmsScope[] = ["home", "about", "contact", "site", "pages"];
 
 /**
  * Site content: every Home module and About/Contact section can be turned

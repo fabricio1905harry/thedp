@@ -13,7 +13,7 @@ export const CMS_LOCALES = ["en", "es", "pt"] as const;
 export type CmsLocale = (typeof CMS_LOCALES)[number];
 export type Localized = Partial<Record<CmsLocale, string>>;
 
-export type CmsScope = "home" | "about" | "contact" | "site";
+export type CmsScope = "home" | "about" | "contact" | "site" | "pages";
 
 /** Operations / domains (same codes as sales_channels). */
 export const OPERATIONS = [

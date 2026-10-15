@@ -60,3 +60,9 @@ Reserve for Later Delivery completo (data, lembretes 14/8/7 dias, overdue, UPCOM
 
 ## 4. Pontos do documento que já estavam implementados
 Pedido original preservado + Confirmed Order · reserva temporária 24h/48h/Custom/Cannot reserve com expiração · pagamento por Bank Transfer com confirmação manual (nunca automática) e por Stripe · pagamento só liberado após o Confirmed Order · depósito do Reserve = custo + 10% mostrado como percentual · alertas de margem · Action Center · WhatsApp fixo · frete/impostos informados após conferência.
+
+## Edição total do site (super admin)
+
+- **Admin → Conteúdo do site**: abas Home, About, Contact, Site bars (barra de aviso do topo, internacional e nacional) e Pages (FAQ, Terms, Privacy, Returns: título, introdução e lista ordenável de seções). Cada bloco: ON/OFF, ordem, operação, EN/ES/PT.
+- **Admin → Textos da interface** (`/admin/textos`): qualquer string do site (menus, botões, avisos, formulários, carrinho, checkout, pedido, produto) editável em EN/ES/PT, com busca e validação de `{placeholders}`. Gravado em `cms_blocks` (`site`/`ui_texts`) e aplicado em todas as páginas em até ~10s.
+- Requer a migration **0032** (`supabase/deploy/2026-10-19_apply_0032.sql`), que apenas amplia o `check` de `scope` para incluir `pages`.
