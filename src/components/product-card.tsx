@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
 import { useCurrency } from "@/components/currency-provider";
+import { useCart } from "@/components/cart-provider";
 import { formatPicked } from "@/lib/currency";
 import type { CatalogProduct } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
@@ -17,11 +18,14 @@ export function ProductCard({
   product,
   siteMode,
 }: {
-  product: CatalogProduct;
+  product: CatalogProduct & { soldOut?: boolean };
   siteMode: SiteMode;
 }) {
   const t = useTranslations("product");
   const { currency } = useCurrency();
+  const { items } = useCart();
+  // Pieces of this style already in the buyer's order, shown wherever the card appears.
+  const inOrder = items.filter((i) => i.productSlug === product.slug).reduce((sum, i) => sum + i.qty, 0);
   const priceLabel = product.pricing ? formatPicked(product.pricing, currency) : null;
 
   return (
@@ -29,13 +33,22 @@ export function ProductCard({
       href={`/produtos/${product.slug}`}
       className="group block relative rounded-sm bg-white/90 border border-border/70 hover:border-accent/40 shadow-xs hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col h-full hover-lift"
     >
-      {/* Top Floating Badge */}
-      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-background/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-border/80 shadow-xs">
-        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+      {/* Top badges */}
+      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-background/90 backdrop-blur-md px-2.5 py-1 border border-border/80">
         <span className="text-[9px] uppercase tracking-[0.18em] font-semibold text-foreground/90">
           {product.category || "Vestidos"}
         </span>
       </div>
+      {inOrder > 0 && (
+        <div className="absolute top-2.5 right-2.5 z-10 bg-foreground text-background px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] font-semibold">
+          {t("inYourOrder", { n: inOrder })}
+        </div>
+      )}
+      {product.soldOut && (
+        <div className="absolute bottom-[4.5rem] left-2.5 z-10 bg-background/95 border border-border px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold">
+          {t("soldOut")}
+        </div>
+      )}
 
       {/* Dress Photograph Container */}
       <div className="relative overflow-hidden w-full bg-surface">

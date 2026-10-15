@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCustomer } from "@/lib/auth";
 import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
-import { createStripeCheckoutSession, stripeConfigured } from "@/lib/stripe";
+import { createStripeCheckoutSession, sessionExpiry, stripeConfigured } from "@/lib/stripe";
 
 export interface StartCheckoutResult {
   url?: string;
@@ -91,6 +91,8 @@ export async function startStripeCheckout(orderId: string, locale: string): Prom
       customerEmail: customer.email,
       clientReferenceId: order.id,
       metadata,
+      // an old payment link must stop working when the inventory reservation ends
+      expiresAt: sessionExpiry(order.stock_hold_until),
     });
     return { url: session.url };
   } catch (err) {

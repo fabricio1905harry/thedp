@@ -1,4 +1,4 @@
-export type CustomerStatus = "pending" | "approved" | "rejected";
+export type CustomerStatus = "pending" | "more_info" | "approved" | "rejected";
 
 export type Currency = "BRL" | "USD" | "EUR";
 

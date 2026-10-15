@@ -38,3 +38,17 @@ export const STOCK_HOLD_LABELS: Record<string, string> = {
   custom: "Custom (TDP sets date/time)",
   cannot_reserve: "Cannot Reserve / Reserva impossível",
 };
+
+/** Buyer-facing status → message key in the "order" namespace. */
+export const BUYER_STATUS_KEYS: Record<string, string> = {
+  created: "statusOrderRequest",
+  order_request: "statusOrderRequest",
+  stock_confirmation: "statusStockConfirmation",
+  awaiting_buyer_decision: "statusAwaitingDecision",
+  confirmed_awaiting_payment: "statusAwaitingPayment",
+  payment_coordination_required: "statusCoordination",
+  payment_window_expired: "statusExpired",
+  reserved: "statusReserved",
+  paid: "statusPaid",
+  processing: "statusProcessing",
+};

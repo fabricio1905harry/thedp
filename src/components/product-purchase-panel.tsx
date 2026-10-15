@@ -102,7 +102,8 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
   const picked = product.pricing ? pickPrice(product.pricing, currency) : null;
 
   function setCellQty(variant: Variant, qty: number) {
-    const clamped = Math.max(0, Math.min(qty, variant.stock));
+    // Supplier stock is never exposed to the buyer: the TDP confirms every item before payment.
+    const clamped = Math.max(0, Math.min(qty, 999));
     setAdded(false);
     setSelections((prev) => {
       const next = { ...prev };
@@ -140,8 +141,8 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
 
   return (
     <div>
-      <p className="text-2xl font-semibold mb-1">{formatCurrency(picked.amount, picked.currency)}</p>
-      <p className="text-xs text-muted mb-6">{t("installmentsLabel")}</p>
+      <p className="text-[11px] uppercase tracking-[0.2em] text-muted mb-1">{t("wholesalePrice")}</p>
+      <p className="text-2xl font-semibold mb-6">{formatCurrency(picked.amount, picked.currency)}</p>
 
       {product.sizes.length > 0 && product.colors.length > 0 && (
         <div className="mb-6">
@@ -214,7 +215,7 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
                               <button
                                 type="button"
                                 onClick={() => setCellQty(variant!, qty + 1)}
-                                disabled={qty >= variant!.stock}
+                                disabled={qty >= 999}
                                 className="w-4 h-full text-xs font-semibold text-accent disabled:opacity-30"
                                 aria-label="+"
                               >

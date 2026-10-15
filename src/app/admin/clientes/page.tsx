@@ -1,50 +1,41 @@
 import { createClient } from "@/lib/supabase/server";
-import { CustomerApprovalRow } from "@/components/customer-approval-row";
+import { CustomerApprovalRow, type Applicant } from "@/components/customer-approval-row";
 
-async function getPendingCustomers() {
+async function getApplicants() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
   try {
     const supabase = await createClient();
     const { data } = await supabase
       .from("customers")
-      .select("id, email, name, created_at, customer_type, company_name")
-      .eq("status", "pending")
+      .select(
+        "id, email, name, created_at, status, company_name, tax_id, company_address, delivery_address, website, instagram, phone, business_type, has_physical_store, store_count, brands_carried, application_message, referral_code, review_note, locale"
+      )
+      .in("status", ["pending", "more_info"])
+      .eq("role", "customer")
       .order("created_at", { ascending: true });
-    return data ?? [];
+    return (data ?? []) as Applicant[];
   } catch {
     return null;
   }
 }
 
 export default async function AdminClientesPage() {
-  const pending = await getPendingCustomers();
+  const applicants = await getApplicants();
 
   return (
-    <div>
-      <h1 className="font-serif text-2xl mb-6">Cadastros pendentes</h1>
-      {pending === null ? (
-        <p className="text-sm text-muted">
-          Banco ainda não provisionado (task #2) — nada para mostrar.
-        </p>
-      ) : pending.length === 0 ? (
+    <div className="max-w-4xl">
+      <h1 className="font-serif text-2xl mb-1">Pending wholesale accounts</h1>
+      <p className="text-sm text-muted mb-6">Approve, reject or ask for more information. Approval queues the “account approved” e-mail.</p>
+      {applicants === null ? (
+        <p className="text-sm text-muted">Banco ainda não provisionado — nada para mostrar.</p>
+      ) : applicants.length === 0 ? (
         <p className="text-sm text-muted">Nenhum cadastro pendente.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted uppercase border-b border-border">
-              <th className="py-2 pr-4">Nome</th>
-              <th className="py-2 pr-4">Tipo</th>
-              <th className="py-2 pr-4">E-mail</th>
-              <th className="py-2 pr-4">Criado em</th>
-              <th className="py-2">Ação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pending.map((customer) => (
-              <CustomerApprovalRow key={customer.id} customer={customer} />
-            ))}
-          </tbody>
-        </table>
+        <div className="space-y-3">
+          {applicants.map((a) => (
+            <CustomerApprovalRow key={`${a.id}-${a.status}`} customer={a} />
+          ))}
+        </div>
       )}
     </div>
   );

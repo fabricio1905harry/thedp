@@ -19,6 +19,16 @@ export interface CheckoutSessionInput {
   customerEmail?: string;
   clientReferenceId: string;
   metadata: Record<string, string>;
+  /** Unix seconds. Stripe accepts 30 min – 24 h from now; the session link stops working after it. */
+  expiresAt?: number;
+}
+
+/** Session expiry that follows the inventory reservation (Stripe limits: 30 min – 24 h). */
+export function sessionExpiry(holdUntil: string | null | undefined, nowMs = Date.now()): number | undefined {
+  if (!holdUntil) return undefined;
+  const nowSec = Math.floor(nowMs / 1000);
+  const holdSec = Math.floor(new Date(holdUntil).getTime() / 1000);
+  return Math.min(Math.max(holdSec, nowSec + 31 * 60), nowSec + 24 * 3600);
 }
 
 export function toMinorUnits(amount: number): number {
@@ -36,6 +46,7 @@ export async function createStripeCheckoutSession(input: CheckoutSessionInput): 
   body.set("cancel_url", input.cancelUrl);
   body.set("client_reference_id", input.clientReferenceId);
   if (input.customerEmail) body.set("customer_email", input.customerEmail);
+  if (input.expiresAt) body.set("expires_at", String(input.expiresAt));
   body.set("line_items[0][quantity]", "1");
   body.set("line_items[0][price_data][currency]", input.currency.toLowerCase());
   body.set("line_items[0][price_data][unit_amount]", String(toMinorUnits(input.amount)));

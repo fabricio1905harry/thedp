@@ -94,6 +94,13 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "Site",
+    items: [
+      { href: "/admin/conteudo", label: "Conteúdo do site", icon: OverviewIcon },
+      { href: "/admin/contatos", label: "Contatos recebidos", icon: CustomersIcon },
+    ],
+  },
+  {
     label: "Catálogo & Vendas",
     items: [
       { href: "/admin/produtos", label: "Produtos", icon: ProductsIcon },
@@ -113,7 +120,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Clientes & Sistema",
     items: [
-      { href: "/admin/clientes", label: "Cadastros pendentes", icon: CustomersIcon },
+      { href: "/admin/clientes", label: "Contas wholesale", icon: CustomersIcon },
       { href: "/admin/whatsapp", label: "WhatsApp", icon: CustomersIcon },
       { href: "/admin/automacao", label: "Automação", icon: AutomationIcon },
     ],

@@ -8,6 +8,7 @@ import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp
 import { OrderPayPanel } from "@/components/order-pay-panel";
 import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
+import { BUYER_STATUS_KEYS } from "@/lib/order-status";
 import type { Currency } from "@/lib/types";
 
 function currentTime() {
@@ -70,20 +71,9 @@ export default async function OrderConfirmationPage({
     );
   }
 
-  const statusKeys: Record<string, string> = {
-    created: "order.statusOrderRequest",
-    order_request: "order.statusOrderRequest",
-    stock_confirmation: "order.statusStockConfirmation",
-    awaiting_buyer_decision: "order.statusAwaitingDecision",
-    confirmed_awaiting_payment: "order.statusAwaitingPayment",
-    payment_coordination_required: "order.statusCoordination",
-    payment_window_expired: "order.statusExpired",
-    reserved: "order.statusReserved",
-    paid: "order.statusPaid",
-    processing: "order.statusProcessing",
-  };
   const chargesInformed = Boolean(order.charges_informed_at);
-  const statusLabel = statusKeys[order.status] ? t(statusKeys[order.status]) : order.status;
+  const isRequestStage = ["created", "order_request", "stock_confirmation", "awaiting_buyer_decision"].includes(order.status);
+  const statusLabel = BUYER_STATUS_KEYS[order.status] ? t(`order.${BUYER_STATUS_KEYS[order.status]}`) : order.status;
   const holdUntil =
     order.status === "confirmed_awaiting_payment" && order.stock_hold_until
       ? new Date(order.stock_hold_until).toLocaleString(dateLocale, { dateStyle: "medium", timeStyle: "short" })
@@ -112,7 +102,7 @@ export default async function OrderConfirmationPage({
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2 h-2 rounded-full bg-foreground animate-ping" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-foreground">
-              {t("order.confirmedBadge")}
+              {isRequestStage ? t("order.requestBadge") : t("order.confirmedBadge")}
             </span>
           </div>
           <h1 className="font-serif text-3xl sm:text-4xl font-normal text-foreground">
@@ -164,81 +154,96 @@ export default async function OrderConfirmationPage({
         />
       )}
 
-      {/* DHL Express Shipping Card */}
-      <div className="bg-surface border border-gold/40 rounded-sm p-6 space-y-5 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gold/20 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gold/20 text-gold flex items-center justify-center text-lg font-bold">
-              ✈
+      {isRequestStage && (
+        <div className="border border-foreground p-6 space-y-3">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em]">{t("order.requestReceivedTitle")}</h2>
+          <p className="text-sm text-muted leading-relaxed">{t("order.requestReceivedP1")}</p>
+          <p className="text-sm text-muted leading-relaxed">{t("order.requestReceivedP2")}</p>
+          <p className="text-sm font-medium">{t("order.requestReceivedNoPayment")}</p>
+          <p className="text-sm text-muted">{t("order.requestReceivedNotify")}</p>
+          <Link href="/minha-conta" className="inline-block mt-2 bg-foreground text-background px-6 py-3 text-[11px] uppercase tracking-[0.2em] font-semibold">
+            {t("order.viewMyOrders")}
+          </Link>
+        </div>
+      )}
+
+      {/* DHL Express Shipping Card (only once there is a shipment to show) */}
+      {!isRequestStage && (
+        <div className="bg-surface border border-gold/40 rounded-sm p-6 space-y-5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gold/20 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gold/20 text-gold flex items-center justify-center text-lg font-bold">
+                ✈
+              </div>
+              <div>
+                <h3 className="font-serif text-lg font-medium text-foreground">
+                  {t("order.shippingCardTitle")}
+                </h3>
+                <p className="text-xs text-muted">
+                  {t("order.modalityLabel")} <strong className="text-foreground">{order.incoterm || "DDU"}</strong> {t("order.priorityFreight")}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-serif text-lg font-medium text-foreground">
-                {t("order.shippingCardTitle")}
-              </h3>
-              <p className="text-xs text-muted">
-                {t("order.modalityLabel")} <strong className="text-foreground">{order.incoterm || "DDU"}</strong> {t("order.priorityFreight")}
-              </p>
-            </div>
+
+            {shipment?.dhl_tracking && (
+              <div className="bg-white border border-gold/50 px-4 py-2 rounded-sm shadow-2xs text-right">
+                <span className="text-[10px] uppercase tracking-widest text-muted block font-semibold">
+                  {t("order.awbCode")}
+                </span>
+                <span className="font-mono text-sm font-bold text-accent">
+                  {shipment.dhl_tracking}
+                </span>
+              </div>
+            )}
           </div>
 
-          {shipment?.dhl_tracking && (
-            <div className="bg-white border border-gold/50 px-4 py-2 rounded-sm shadow-2xs text-right">
-              <span className="text-[10px] uppercase tracking-widest text-muted block font-semibold">
-                {t("order.awbCode")}
-              </span>
-              <span className="font-mono text-sm font-bold text-accent">
-                {shipment.dhl_tracking}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Packages Breakdown */}
-        {packagesList.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-xs uppercase tracking-wider font-semibold text-muted">
-              {t("order.packagesAutoTitle", { count: packagesList.length })}
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {packagesList.map((pkg, idx) => (
-                <div key={idx} className="bg-white/80 border border-border/80 p-3 rounded-xs text-xs space-y-1">
-                  <div className="flex justify-between font-medium text-foreground">
-                    <span>{String(pkg.packaging_name || t("order.defaultBoxName"))}</span>
-                    <span className="text-accent font-semibold">{Number(pkg.final_weight_kg || 0)} kg</span>
+          {/* Packages Breakdown */}
+          {packagesList.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs uppercase tracking-wider font-semibold text-muted">
+                {t("order.packagesAutoTitle", { count: packagesList.length })}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {packagesList.map((pkg, idx) => (
+                  <div key={idx} className="bg-white/80 border border-border/80 p-3 rounded-xs text-xs space-y-1">
+                    <div className="flex justify-between font-medium text-foreground">
+                      <span>{String(pkg.packaging_name || t("order.defaultBoxName"))}</span>
+                      <span className="text-accent font-semibold">{Number(pkg.final_weight_kg || 0)} kg</span>
+                    </div>
+                    <p className="text-[11px] text-muted">
+                      {t("order.measurementsLabel")} {Number(pkg.length_cm)}x{Number(pkg.width_cm)}x{Number(pkg.height_cm)} cm • {Number(pkg.quantity)} {t("product.pieces")}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-muted">
-                    {t("order.measurementsLabel")} {Number(pkg.length_cm)}x{Number(pkg.width_cm)}x{Number(pkg.height_cm)} cm • {Number(pkg.quantity)} {t("product.pieces")}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Labels & Documents */}
-        <div className="flex flex-wrap gap-3 pt-2">
-          {shipment?.labelUrl && (
-            <a
-              href={shipment.labelUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-xs uppercase tracking-wider font-semibold"
-            >
-              <span>📄 {t("order.downloadLabel")}</span>
-            </a>
-          )}
-          {shipment?.invoiceUrl && (
-            <a
-              href={shipment.invoiceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-white border border-border text-foreground hover:border-gold px-5 py-2.5 text-xs uppercase tracking-wider font-medium transition-all rounded-xs shadow-xs"
-            >
-              <span>📋 {t("order.downloadInvoice")}</span>
-            </a>
-          )}
+          {/* Labels & Documents */}
+          <div className="flex flex-wrap gap-3 pt-2">
+            {shipment?.labelUrl && (
+              <a
+                href={shipment.labelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-xs uppercase tracking-wider font-semibold"
+              >
+                <span>📄 {t("order.downloadLabel")}</span>
+              </a>
+            )}
+            {shipment?.invoiceUrl && (
+              <a
+                href={shipment.invoiceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-white border border-border text-foreground hover:border-gold px-5 py-2.5 text-xs uppercase tracking-wider font-medium transition-all rounded-xs shadow-xs"
+              >
+                <span>📋 {t("order.downloadInvoice")}</span>
+              </a>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Grid: Delivery Address & Order Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

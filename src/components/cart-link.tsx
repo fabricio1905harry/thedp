@@ -9,7 +9,7 @@ export function CartLink() {
   const { count } = useCart();
 
   return (
-    <Link href="/carrinho" className="relative text-sm hover:text-accent font-medium uppercase tracking-wide" aria-label={t("cartLink")}>
+    <Link href="/carrinho" className="relative text-[11px] font-semibold uppercase tracking-[0.15em] hover:text-muted" aria-label={t("cartLink")}>
       {t("cartLink")}
       {count > 0 && (
         <span className="absolute -top-2 -right-3 bg-accent text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">

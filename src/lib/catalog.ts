@@ -16,7 +16,10 @@ export interface CatalogProduct {
   imageCrop: ImageCrop | null;
 }
 
+const hasDb = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+
 async function getPublicProducts(limit = 50) {
+  if (!hasDb()) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("products_public")
@@ -39,7 +42,7 @@ interface PricedCatalogRow {
 
 async function getPricingMap(approved: boolean) {
   const map = new Map<string, ProductPricing>();
-  if (!approved) return map;
+  if (!approved || !hasDb()) return map;
 
   const supabase = await createClient();
   const { data } = await supabase.rpc("get_priced_catalog");
@@ -119,6 +122,7 @@ export async function getCategoryProducts(
 }
 
 export function getAllCategories(): Promise<string[]> {
+  if (!hasDb()) return Promise.resolve([]);
   return createClient().then(async (supabase) => {
     const { data } = await supabase.from("products_public").select("category");
     const set = new Set((data ?? []).map((r) => r.category).filter(Boolean) as string[]);
@@ -136,6 +140,8 @@ export interface ProductDetail {
   imageUrl: string | null;
   images: string[];
   imageCrops: (ImageCrop | null)[];
+  /** Buyer-facing reference: TDP + supplier reference (never the supplier name). */
+  reference: string | null;
   sizes: string[];
   colors: string[];
   variants: Variant[];
@@ -164,7 +170,7 @@ export async function getProductDetail(
   const [{ data: full }, { data: imageRows }] = await Promise.all([
     supabase
       .from("products")
-      .select("description")
+      .select("description, source_id")
       .eq("id", pub.id)
       .maybeSingle(),
     serviceClient
@@ -191,6 +197,7 @@ export async function getProductDetail(
       imageUrl: primaryImage,
       images,
       imageCrops,
+      reference: full?.source_id ? `TDP${full.source_id}` : null,
       sizes: [],
       colors: [],
       variants: [],
@@ -224,6 +231,7 @@ export async function getProductDetail(
     imageUrl: primaryImage,
     images,
     imageCrops,
+    reference: full?.source_id ? `TDP${full.source_id}` : null,
     sizes: priced?.sizes ?? [],
     colors: priced?.colors ?? [],
     variants: (variantRows ?? []).map((v) => ({
@@ -234,7 +242,92 @@ export async function getProductDetail(
       sizeEu: v.size_eu,
       color: v.color,
       sku: v.sku,
-      stock: v.stock,
+      // availability flag only (1 = can be requested) — real quantities never reach the buyer
+      stock: Number(v.stock) > 0 ? 1 : 0,
     })),
   };
+}
+
+
+// ---------------------------------------------------------------------
+// Shop / Home modules
+// ---------------------------------------------------------------------
+
+export interface ShopProduct extends CatalogProduct {
+  /** Sizes / colors that still have stock (never the quantities). */
+  sizes: string[];
+  colors: string[];
+  soldOut: boolean;
+  /** All-time units sold (paid orders) — drives Best Sellers. */
+  sales: number;
+}
+
+const SOLD_STATUSES = ["reserved", "paid", "processing", "shipped", "delivered"];
+
+/**
+ * Published catalog with the facets the Shop filters need and the sales
+ * ranking behind Best Sellers. Supplier stock numbers are only used to
+ * decide availability here — they are never sent to the buyer.
+ */
+export async function getShopCatalog(approved: boolean): Promise<ShopProduct[]> {
+  const [publicProducts, pricingMap] = await Promise.all([getPublicProducts(500), getPricingMap(approved)]);
+  const base = publicProducts.map((row) => toCatalogProduct(row, pricingMap));
+  if (base.length === 0) return [];
+
+  const ids = base.map((p) => p.id);
+  const sizes = new Map<string, Set<string>>();
+  const colors = new Map<string, Set<string>>();
+  const inStock = new Set<string>();
+  const sales = new Map<string, number>();
+
+  try {
+    const service = createServiceRoleClient();
+    const [{ data: variants }, { data: sold }] = await Promise.all([
+      service.from("variants").select("product_id, size, color, stock").in("product_id", ids),
+      service
+        .from("order_items")
+        .select("product_id, qty, item_status, orders!inner ( status )")
+        .in("orders.status", SOLD_STATUSES)
+        .in("item_status", ["available", "requested"])
+        .limit(20000),
+    ]);
+    for (const v of variants ?? []) {
+      if (Number(v.stock) <= 0) continue;
+      inStock.add(v.product_id);
+      if (v.size) (sizes.get(v.product_id) ?? sizes.set(v.product_id, new Set()).get(v.product_id)!).add(v.size);
+      if (v.color) (colors.get(v.product_id) ?? colors.set(v.product_id, new Set()).get(v.product_id)!).add(v.color);
+    }
+    for (const row of sold ?? []) {
+      if (row.product_id) sales.set(row.product_id, (sales.get(row.product_id) ?? 0) + Number(row.qty));
+    }
+  } catch {
+    // facets/ranking are best-effort; the catalog still renders
+  }
+
+  return base.map((p) => ({
+    ...p,
+    sizes: [...(sizes.get(p.id) ?? [])],
+    colors: [...(colors.get(p.id) ?? [])],
+    soldOut: !inStock.has(p.id),
+    sales: sales.get(p.id) ?? 0,
+  }));
+}
+
+/** Best Sellers, automatic: all-time sales among products with stock now; fills with newest. */
+export function pickBestSellers(catalog: ShopProduct[], count: number): ShopProduct[] {
+  const available = catalog.filter((p) => !p.soldOut);
+  const ranked = [...available].filter((p) => p.sales > 0).sort((a, b) => b.sales - a.sales);
+  const rest = available
+    .filter((p) => p.sales === 0)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return [...ranked, ...rest].slice(0, count);
+}
+
+/** Manual module selection: keeps the given order, skips unknown/unavailable products. */
+export function pickBySlugs(catalog: ShopProduct[], slugs: string[], count: number): ShopProduct[] {
+  const bySlug = new Map(catalog.map((p) => [p.slug, p]));
+  return slugs
+    .map((slug) => bySlug.get(slug))
+    .filter((p): p is ShopProduct => Boolean(p) && !p!.soldOut)
+    .slice(0, count);
 }
