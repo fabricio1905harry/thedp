@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import { getCurrentStaff } from "@/lib/admin-auth";
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { NavProgress } from "@/components/nav-progress";
 import { AdminLoginForm } from "@/components/admin-login-form";
 import type { Metadata } from "next";
 import "../globals.css";
@@ -42,6 +43,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </div>
         ) : (
           <>
+            <NavProgress />
             <AdminSidebar />
             <main className="flex-1 p-4 md:p-8">{children}</main>
           </>
