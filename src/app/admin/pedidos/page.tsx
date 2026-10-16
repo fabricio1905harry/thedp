@@ -41,7 +41,8 @@ export default async function AdminPedidosPage() {
               <th className="py-2 pr-4">Status</th>
               <th className="py-2 pr-4">Frete</th>
               <th className="py-2 pr-4">Impostos</th>
-              <th className="py-2">Total</th>
+              <th className="py-2 pr-4">Total</th>
+              <th className="py-2"></th>
             </tr>
           </thead>
           <tbody>
@@ -55,8 +56,13 @@ export default async function AdminPedidosPage() {
                 <td className="py-2 pr-4">{ORDER_STATUS_LABELS[o.status] ?? o.status}</td>
                 <td className="py-2 pr-4">{o.shipping_cost}</td>
                 <td className="py-2 pr-4">{o.duties_estimate}</td>
-                <td className="py-2">
+                <td className="py-2 pr-4">
                   {o.total} {o.currency}
+                </td>
+                <td className="py-2 text-right">
+                  <Link href={`/admin/pedidos/${o.id}`} className="inline-block border border-foreground px-3 py-1 text-[11px] uppercase tracking-wider hover:bg-foreground hover:text-background">
+                    Abrir / editar
+                  </Link>
                 </td>
               </tr>
             ))}

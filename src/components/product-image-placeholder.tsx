@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { isOptimizable, optimizedSrcSet, optimizedUrl } from "@/lib/image-opt";
 import { croppedImageStyle, type ImageCrop } from "@/lib/image-crop";
 
 function hueFromSlug(slug: string): number {
@@ -24,6 +25,8 @@ export function ProductImagePlaceholder({
   secondaryImageUrl,
   crop = null,
   secondaryCrop = null,
+  priority = false,
+  sizes = "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw",
 }: {
   slug: string;
   label: string;
@@ -31,6 +34,9 @@ export function ProductImagePlaceholder({
   secondaryImageUrl?: string | null;
   crop?: ImageCrop | null;
   secondaryCrop?: ImageCrop | null;
+  /** Above-the-fold photo: loaded eagerly with high priority. */
+  priority?: boolean;
+  sizes?: string;
 }) {
   const t = useTranslations("product");
   const [error, setError] = useState(false);
@@ -60,11 +66,16 @@ export function ProductImagePlaceholder({
     secondarySrc = `${supabaseUrl}/storage/v1/object/public/${secondarySrc}`;
   }
 
+  const shown = isHovered && secondarySrc ? secondarySrc : imgSrc;
+
   if (!error) {
     return (
       <div
         className="relative aspect-[2/3] w-full overflow-hidden bg-surface group/img transition-all duration-500 rounded-t-sm"
-        onMouseEnter={() => setIsHovered(true)}
+        onMouseEnter={() => {
+          setIsHovered(true);
+          if (secondarySrc) new window.Image().src = isOptimizable(secondarySrc) ? optimizedUrl(secondarySrc, 828) : secondarySrc;
+        }}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Shimmer loading skeleton */}
@@ -72,16 +83,24 @@ export function ProductImagePlaceholder({
           <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/40 to-surface animate-pulse" />
         )}
 
-        {/* Main Dress Photograph */}
+        {/* Main Dress Photograph — optimized, painted as soon as bytes arrive */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={isHovered && secondarySrc ? secondarySrc : imgSrc}
+          src={shown && isOptimizable(shown) ? optimizedUrl(shown, 828) : shown}
+          srcSet={shown ? optimizedSrcSet(shown) : undefined}
+          sizes={sizes}
           alt={label}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={priority ? "high" : "auto"}
+          referrerPolicy="no-referrer"
+          ref={(el) => {
+            if (el?.complete && el.naturalWidth > 0 && !loaded) setLoaded(true);
+          }}
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
           style={croppedImageStyle(isHovered && secondarySrc ? secondaryCrop : crop)}
-          className={`transition-all duration-700 ease-out ${
-            loaded ? "opacity-100 scale-100" : "opacity-0 scale-105"
-          } group-hover/img:scale-108`}
+          className={`transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
         />
 
         {/* Elegant top gradient vignette for contrast */}

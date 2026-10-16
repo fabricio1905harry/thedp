@@ -17,9 +17,11 @@ import type { SiteMode } from "@/lib/site-mode";
 export function ProductCard({
   product,
   siteMode,
+  priority = false,
 }: {
   product: CatalogProduct & { soldOut?: boolean };
   siteMode: SiteMode;
+  priority?: boolean;
 }) {
   const t = useTranslations("product");
   const { currency } = useCurrency();
@@ -57,6 +59,7 @@ export function ProductCard({
           label={product.title}
           imageUrl={product.imageUrl}
           crop={product.imageCrop}
+          priority={priority}
         />
 
         {/* Hover Glassmorphism Quick Action CTA */}

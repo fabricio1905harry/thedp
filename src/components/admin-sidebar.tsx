@@ -147,11 +147,17 @@ function NavLink({
     <Link
       href={item.href}
       onClick={onClick}
-      className={`flex items-center gap-2 text-sm py-2 px-2 rounded-none ${
-        active ? "bg-surface font-medium" : "hover:bg-surface"
+      className={`group relative flex items-center gap-2 text-sm py-2 px-2 rounded-none transition-all duration-200 ${
+        active ? "bg-surface font-medium" : "hover:bg-surface hover:translate-x-0.5"
       }`}
     >
-      <Icon className="w-4 h-4 shrink-0" />
+      <span
+        aria-hidden
+        className={`absolute left-0 top-1 bottom-1 w-0.5 bg-foreground origin-center transition-transform duration-300 ${
+          active ? "scale-y-100" : "scale-y-0 group-hover:scale-y-50"
+        }`}
+      />
+      <Icon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
       {item.label}
     </Link>
   );

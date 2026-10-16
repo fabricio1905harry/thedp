@@ -4,6 +4,7 @@ import { VideoPlayer } from "@/components/video-player";
 import { normalizeImageUrl } from "@/lib/image-url";
 import type { ShopProduct } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
+import { isOptimizable, optimizedSrcSet, optimizedUrl } from "@/lib/image-opt";
 
 type C = Record<string, unknown>;
 const s = (v: unknown) => (typeof v === "string" ? v : "");
@@ -25,10 +26,13 @@ export function HeroModule({ c }: { c: C }) {
   return (
     <section className="relative w-full overflow-hidden bg-surface">
       <picture>
-        {mobile && <source media="(max-width: 639px)" srcSet={mobile} />}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {mobile && <source media="(max-width: 639px)" srcSet={optimizedSrcSet(mobile, 828) ?? mobile} sizes="100vw" />}
+        { }
         <img
-          src={desktop ?? mobile ?? ""}
+          src={desktop && isOptimizable(desktop) ? optimizedUrl(desktop, 1920) : desktop ?? mobile ?? ""}
+          srcSet={desktop ? optimizedSrcSet(desktop) : undefined}
+          sizes="100vw"
+          decoding="async"
           alt={s(c.alt)}
           referrerPolicy="no-referrer"
           fetchPriority="high"
@@ -154,7 +158,7 @@ export function ProductsModule({
           </CmsLink>
         )}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+      <div className="grid stagger grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} siteMode={siteMode} />
         ))}

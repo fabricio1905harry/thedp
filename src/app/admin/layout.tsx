@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import { getCurrentStaff } from "@/lib/admin-auth";
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { NavProgress } from "@/components/nav-progress";
 import { AdminLoginForm } from "@/components/admin-login-form";
 import type { Metadata } from "next";
 import "../globals.css";
@@ -22,7 +23,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <html lang="pt" className={`${body.variable} h-full`}>
-      <body className="min-h-full flex flex-col md:flex-row font-sans antialiased bg-background text-foreground">
+      <body className="min-h-full flex flex-col md:flex-row admin-shell font-sans antialiased bg-background text-foreground">
         {!staff ? (
           <div className="w-full flex items-center justify-center min-h-screen px-4">
             {process.env.NEXT_PUBLIC_SUPABASE_URL ? (
@@ -42,6 +43,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </div>
         ) : (
           <>
+            <NavProgress />
             <AdminSidebar />
             <main className="flex-1 p-4 md:p-8">{children}</main>
           </>

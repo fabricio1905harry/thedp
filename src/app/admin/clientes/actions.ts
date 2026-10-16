@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentStaff } from "@/lib/admin-auth";
+import { flushEmailOutbox } from "@/lib/email";
 
 /**
  * Wholesale account review: APPROVE (queues the "account approved" e-mail),
@@ -50,4 +51,13 @@ export async function setCustomerStatus(
 
   revalidatePath("/admin/clientes");
   revalidatePath("/admin");
+
+  // Send right away; anything that fails stays in email_outbox for the hourly retry.
+  let emailNote: string | undefined;
+  if (status === "approved" || status === "more_info") {
+    const flush = await flushEmailOutbox(10).catch((e) => ({ configured: true, sent: 0, failed: 1, firstError: String(e) }));
+    if (!flush.configured) emailNote = "E-mail NOT sent: configure RESEND_API_KEY and EMAIL_FROM (it stays queued and goes out once configured).";
+    else if (flush.failed > 0) emailNote = `E-mail failed (will retry hourly): ${flush.firstError ?? "unknown error"}`;
+  }
+  return { emailNote };
 }

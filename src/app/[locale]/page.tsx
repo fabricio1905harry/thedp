@@ -5,6 +5,7 @@ import { getCurrentCustomer, isApproved } from "@/lib/auth";
 import { getPublicBlocks } from "@/lib/cms";
 import { operationForSiteMode } from "@/lib/cms-types";
 import { SITE_MODE_HEADER, type SiteMode } from "@/lib/site-mode";
+import { Reveal } from "@/components/reveal";
 import {
   BecomeABrandModule,
   FeaturedVideoModule,
@@ -35,6 +36,7 @@ export default async function HomePage() {
   return (
     <div>
       {blocks.map(({ key, content }) => {
+        const node = (() => {
         switch (key) {
           case "hero":
             return <HeroModule key={key} c={content} />;
@@ -70,6 +72,8 @@ export default async function HomePage() {
           default:
             return null;
         }
+        })();
+        return node && key !== "hero" ? <Reveal key={key}>{node}</Reveal> : node;
       })}
     </div>
   );
