@@ -160,7 +160,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
           {products.length === 0 ? (
             <p className="text-sm text-muted py-16 text-center border border-dashed border-border">{t("noResults")}</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+            <div className="grid stagger grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} siteMode={siteMode} />
               ))}
