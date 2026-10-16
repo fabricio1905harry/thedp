@@ -161,8 +161,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             <p className="text-sm text-muted py-16 text-center border border-dashed border-border">{t("noResults")}</p>
           ) : (
             <div className="grid stagger grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} siteMode={siteMode} />
+              {products.map((product, i) => (
+                <ProductCard key={product.id} product={product} siteMode={siteMode} priority={i < 4} />
               ))}
             </div>
           )}

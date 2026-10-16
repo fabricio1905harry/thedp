@@ -43,6 +43,8 @@ export function ProductGallery({
             secondaryImageUrl={secondaryImage}
             crop={crops[selectedIndex] ?? null}
             secondaryCrop={crops[1] ?? null}
+            priority
+            sizes="(min-width: 1024px) 45vw, 100vw"
           />
         </div>
 
