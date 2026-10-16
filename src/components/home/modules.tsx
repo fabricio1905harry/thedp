@@ -154,7 +154,7 @@ export function ProductsModule({
           </CmsLink>
         )}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+      <div className="grid stagger grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} siteMode={siteMode} />
         ))}

@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <html lang="pt" className={`${body.variable} h-full`}>
-      <body className="min-h-full flex flex-col md:flex-row font-sans antialiased bg-background text-foreground">
+      <body className="min-h-full flex flex-col md:flex-row admin-shell font-sans antialiased bg-background text-foreground">
         {!staff ? (
           <div className="w-full flex items-center justify-center min-h-screen px-4">
             {process.env.NEXT_PUBLIC_SUPABASE_URL ? (
