@@ -38,7 +38,8 @@ export function CustomerApprovalRow({ customer }: { customer: Applicant }) {
     setError(null);
     startTransition(async () => {
       try {
-        await setCustomerStatus(customer.id, status, note);
+        const res = await setCustomerStatus(customer.id, status, note);
+        if (res?.emailNote) setError(res.emailNote);
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Action failed.");

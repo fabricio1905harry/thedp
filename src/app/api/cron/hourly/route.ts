@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isApiBlocked } from "@/lib/app-target";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { flushEmailOutbox } from "@/lib/email";
 
 /**
  * Hourly job: closes expired Temporary Stock Hold windows (status PAYMENT
@@ -18,5 +19,6 @@ export async function GET(request: Request) {
   const supabase = createServiceRoleClient();
   const { data, error } = await supabase.rpc("expire_unpaid_orders");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ expiredOrders: data });
+  const email = await flushEmailOutbox(50);
+  return NextResponse.json({ expiredOrders: data, email });
 }
