@@ -104,6 +104,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Catálogo & Vendas",
     items: [
+      { href: "/admin/precificacao", label: "Precificação", icon: OverviewIcon },
       { href: "/admin/produtos", label: "Produtos", icon: ProductsIcon },
       { href: "/admin/imagens", label: "Imagens p/ revisar", icon: ProductsIcon },
       { href: "/admin/pedidos", label: "Pedidos", icon: OrdersIcon },

@@ -66,3 +66,9 @@ Pedido original preservado + Confirmed Order · reserva temporária 24h/48h/Cust
 - **Admin → Conteúdo do site**: abas Home, About, Contact, Site bars (barra de aviso do topo, internacional e nacional) e Pages (FAQ, Terms, Privacy, Returns: título, introdução e lista ordenável de seções). Cada bloco: ON/OFF, ordem, operação, EN/ES/PT.
 - **Admin → Textos da interface** (`/admin/textos`): qualquer string do site (menus, botões, avisos, formulários, carrinho, checkout, pedido, produto) editável em EN/ES/PT, com busca e validação de `{placeholders}`. Gravado em `cms_blocks` (`site`/`ui_texts`) e aplicado em todas as páginas em até ~10s.
 - Requer a migration **0032** (`supabase/deploy/2026-10-19_apply_0032.sql`), que apenas amplia o `check` de `scope` para incluir `pages`.
+
+## Precificação (planilha "Tabela de preço - TDP EXP")
+
+- Migration **0035**: tabela `pricing_rules` + função `tdp_compute_price`. PV R$ = (custo da peça + custos fixos + custo extra) ÷ (1 − margem − comissão − ICMS − PIS/COFINS − taxa cartão) × (1 + ajuste %); USD/EUR = PV ÷ câmbio arredondado para cima terminando em 9; Retail = USD/EUR × (1 + frete 15% + impostos 25%) × 2,5.
+- Calculado no banco ao inserir/atualizar o custo (n8n/ingest só envia `original_price`), ao salvar as regras e, no modo de câmbio automático, a cada nova cotação. `markup` deixou de ser usado.
+- **Admin → Precificação**: regras editáveis com simulação, recálculo geral e ajuste em massa (margem, comissão, ajuste %, custo extra, reajuste de custo, voltar à regra global) por filtro ou seleção. Na página do produto: preço calculado e exceções individuais.
