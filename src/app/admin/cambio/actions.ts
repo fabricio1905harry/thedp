@@ -21,7 +21,7 @@ export async function setFxRate(
   formData: FormData
 ): Promise<SetFxRateState> {
   const staff = await getCurrentStaff();
-  if (!staff) return { status: "error", message: "Not authorized" };
+  if (!staff) return { status: "error", message: "Não autorizado" };
 
   const rate = Number(formData.get("rate"));
   if (!Number.isFinite(rate) || rate <= 0) {
@@ -53,7 +53,7 @@ export async function setEurRate(prevState: SetFxRateState, formData: FormData) 
 /** "UPDATE FX NOW" — same automatic fetch as the daily job, on demand. */
 export async function updateFxNow(): Promise<SetFxRateState> {
   const staff = await getCurrentStaff();
-  if (!staff) return { status: "error", message: "Not authorized" };
+  if (!staff) return { status: "error", message: "Não autorizado" };
   const result = await updateFxRatesNow("manual", staff.id);
   revalidatePath("/admin/cambio");
   return result.ok

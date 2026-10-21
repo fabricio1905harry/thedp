@@ -8,16 +8,16 @@ export type PaymentMethodCode = "bank_transfer" | "stripe_card" | "pix" | (strin
 export type RuleScope = "channel" | "customer" | "order";
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  bank_transfer: "Bank Transfer",
-  stripe_card: "Card / Stripe",
+  bank_transfer: "Bank Transfer (Transferência bancária)",
+  stripe_card: "Cartão / Stripe",
   pix: "Pix",
 };
 
 export const CHANNEL_LABELS: Record<string, string> = {
-  intl_b2b: "International B2B",
-  intl_b2c: "International B2C",
-  br_b2b: "Brazil B2B",
-  br_b2c: "Brazil B2C",
+  intl_b2b: "Internacional B2B",
+  intl_b2c: "Internacional B2C",
+  br_b2b: "Brasil B2B",
+  br_b2c: "Brasil B2C",
 };
 
 export interface PaymentRule {
@@ -50,7 +50,7 @@ export function resolvePaymentAvailability(
 export function bankFeeInCurrency(feeBrl: number, brlPerUnit: number | null, currency: string): number {
   if (feeBrl <= 0) return 0;
   if (currency.toUpperCase() === "BRL") return round2(feeBrl);
-  if (!brlPerUnit || brlPerUnit <= 0) throw new Error(`No FX rate to convert the bank fee to ${currency}`);
+  if (!brlPerUnit || brlPerUnit <= 0) throw new Error(`Sem taxa de câmbio para converter a taxa bancária para ${currency}`);
   return round2(feeBrl / brlPerUnit);
 }
 
@@ -67,15 +67,15 @@ export function computeReserve(costTotal: number, saleTotal: number, markupPct: 
 
 /** Pass-through components that are collected but are NOT revenue. */
 export const PASS_THROUGH_COMPONENTS = [
-  { key: "freight_amount", label: "Freight Collected" },
-  { key: "insurance_amount", label: "Insurance Collected" },
-  { key: "fuel_surcharge_amount", label: "Fuel Surcharge Collected" },
-  { key: "demand_surcharge_amount", label: "Demand Surcharge Collected" },
-  { key: "export_declaration_amount", label: "Export Declaration Collected" },
-  { key: "other_dhl_amount", label: "Other DHL Charges Collected" },
-  { key: "duties_taxes_amount", label: "Duties & Taxes Collected / Prepaid" },
-  { key: "bank_fee_amount", label: "Bank Processing Fees Collected" },
-  { key: "other_charges_amount", label: "Other Operational Charges Collected" },
+  { key: "freight_amount", label: "Frete recebido" },
+  { key: "insurance_amount", label: "Seguro recebido" },
+  { key: "fuel_surcharge_amount", label: "Sobretaxa de combustível recebida" },
+  { key: "demand_surcharge_amount", label: "Sobretaxa de demanda recebida" },
+  { key: "export_declaration_amount", label: "Declaração de exportação recebida" },
+  { key: "other_dhl_amount", label: "Outras cobranças DHL recebidas" },
+  { key: "duties_taxes_amount", label: "Impostos e taxas recebidos / pré-pagos" },
+  { key: "bank_fee_amount", label: "Taxas bancárias recebidas" },
+  { key: "other_charges_amount", label: "Outras cobranças operacionais recebidas" },
 ] as const;
 
 export type PassThroughKey = (typeof PASS_THROUGH_COMPONENTS)[number]["key"];

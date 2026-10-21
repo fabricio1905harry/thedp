@@ -38,22 +38,22 @@ export default async function AdminAutomacaoPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-2xl mb-2">Automation (ADM-05)</h1>
+      <h1 className="font-serif text-2xl mb-2">Automação (ADM-05)</h1>
       <p className="text-sm text-muted mb-6">
-        Last run, errors, and items processed per n8n connector — the
-        automation itself is blocked on the contractor&apos;s VPS access and
-        the supplier list (task #10).
+        Última execução, erros e itens processados por conector n8n — a
+        automação em si depende do acesso à VPS do prestador e da
+        lista de fornecedores (tarefa #10).
       </p>
       {connectors === null ? (
-        <p className="text-sm text-muted">Could not load connectors.</p>
+        <p className="text-sm text-muted">Não foi possível carregar os conectores.</p>
       ) : (
         <>
           <table className="w-full text-sm mb-10">
             <thead>
               <tr className="text-left text-xs text-muted uppercase border-b border-border">
-                <th className="py-2 pr-4">Supplier</th>
+                <th className="py-2 pr-4">Fornecedor</th>
                 <th className="py-2 pr-4">Status</th>
-                <th className="py-2">Included in contract</th>
+                <th className="py-2">Incluído no contrato</th>
               </tr>
             </thead>
             <tbody>
@@ -61,29 +61,29 @@ export default async function AdminAutomacaoPage() {
                 <tr key={c.id} className="border-b border-border">
                   <td className="py-2 pr-4">{c.supplier_name}</td>
                   <td className="py-2 pr-4">{c.status}</td>
-                  <td className="py-2">{c.included_in_contract ? "Yes" : "No"}</td>
+                  <td className="py-2">{c.included_in_contract ? "Sim" : "Não"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Recent sync runs</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Sincronizações recentes</h2>
           {runs.length === 0 ? (
             <p className="text-sm text-muted">
-              No sync runs logged yet — nothing to show until the n8n
-              connectors are live and start writing to{" "}
+              Nenhuma sincronização registrada ainda — nada a exibir até os
+              conectores n8n entrarem no ar e começarem a gravar em{" "}
               <code className="text-xs">sync_runs</code>.
             </p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted uppercase border-b border-border">
-                  <th className="py-2 pr-4">Supplier</th>
-                  <th className="py-2 pr-4">Started</th>
-                  <th className="py-2 pr-4">Finished</th>
-                  <th className="py-2 pr-4">Created</th>
-                  <th className="py-2 pr-4">Updated</th>
-                  <th className="py-2">Failed</th>
+                  <th className="py-2 pr-4">Fornecedor</th>
+                  <th className="py-2 pr-4">Início</th>
+                  <th className="py-2 pr-4">Fim</th>
+                  <th className="py-2 pr-4">Criados</th>
+                  <th className="py-2 pr-4">Atualizados</th>
+                  <th className="py-2">Falhas</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,7 +92,7 @@ export default async function AdminAutomacaoPage() {
                     <td className="py-2 pr-4">{connectorName(r.connector_id)}</td>
                     <td className="py-2 pr-4">{new Date(r.started_at).toLocaleString()}</td>
                     <td className="py-2 pr-4">
-                      {r.finished_at ? new Date(r.finished_at).toLocaleString() : "running…"}
+                      {r.finished_at ? new Date(r.finished_at).toLocaleString() : "em execução…"}
                     </td>
                     <td className="py-2 pr-4">{r.created}</td>
                     <td className="py-2 pr-4">{r.updated}</td>

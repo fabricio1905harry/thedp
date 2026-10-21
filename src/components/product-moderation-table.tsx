@@ -71,10 +71,10 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
         setSelected(new Set());
         if (result.blockedCount > 0) {
           setNotice(
-            `Deleted ${result.deletedCount}. ${result.blockedCount} skipped because they already have orders — archive those instead.`
+            `${result.deletedCount} excluído(s). ${result.blockedCount} ignorado(s) porque já têm pedidos — arquive-os em vez disso.`
           );
         } else {
-          setNotice(`Deleted ${result.deletedCount} product${result.deletedCount === 1 ? "" : "s"}.`);
+          setNotice(`${result.deletedCount} produto${result.deletedCount === 1 ? "" : "s"} excluído${result.deletedCount === 1 ? "" : "s"}.`);
         }
       });
     } else {
@@ -82,7 +82,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
       startTransition(async () => {
         const result = await deleteProducts([id]);
         if (result.blockedCount > 0) {
-          setNotice(`Can't delete "${title}" — it already has orders. Archive it instead.`);
+          setNotice(`Não é possível excluir "${title}" — já tem pedidos. Arquive-o em vez disso.`);
         }
       });
     }
@@ -94,34 +94,34 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
       <div className="flex items-center gap-2 mb-3 min-h-9">
         {selected.size > 0 && (
           <>
-            <span className="text-xs text-muted mr-2">{selected.size} selected</span>
+            <span className="text-xs text-muted mr-2">{selected.size} selecionado(s)</span>
             <button
               disabled={pending}
               onClick={() => bulkSetStatus("published")}
               className="btn-primary text-xs px-3 py-1.5"
             >
-              Publish
+              Publicar
             </button>
             <button
               disabled={pending}
               onClick={() => bulkSetStatus("draft")}
               className="text-xs border border-border px-3 py-1.5 disabled:opacity-50"
             >
-              Unpublish
+              Despublicar
             </button>
             <button
               disabled={pending}
               onClick={() => bulkSetStatus("archived")}
               className="text-xs border border-border px-3 py-1.5 disabled:opacity-50"
             >
-              Archive
+              Arquivar
             </button>
             <button
               disabled={pending}
               onClick={bulkDelete}
               className="text-xs border border-red-600 text-red-600 px-3 py-1.5 disabled:opacity-50"
             >
-              Delete
+              Excluir
             </button>
           </>
         )}
@@ -142,11 +142,11 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
               />
             </th>
             <th className="py-2 pr-4 w-14"></th>
-            <th className="py-2 pr-4">Title</th>
-            <th className="py-2 pr-4">Category</th>
-            <th className="py-2 pr-4">Supplier(s)</th>
+            <th className="py-2 pr-4">Título</th>
+            <th className="py-2 pr-4">Categoria</th>
+            <th className="py-2 pr-4">Fornecedor(es)</th>
             <th className="py-2 pr-4">Status</th>
-            <th className="py-2 pr-4">Price</th>
+            <th className="py-2 pr-4">Preço</th>
             <th className="py-2"></th>
           </tr>
         </thead>
@@ -195,7 +195,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
               </td>
               <td className="py-2 text-right whitespace-nowrap">
                 <Link href={`/admin/produtos/${p.id}`} className="text-xs text-accent underline mr-3">
-                  Edit
+                  Editar
                 </Link>
                 <button
                   type="button"
@@ -203,7 +203,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
                   onClick={() => deleteOne(p.id, p.title)}
                   className="text-xs text-red-600 underline disabled:opacity-50"
                 >
-                  Delete
+                  Excluir
                 </button>
               </td>
             </tr>
@@ -214,11 +214,11 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background max-w-md w-full p-6 rounded-sm border border-border shadow-xl space-y-4">
-            <h3 className="font-serif text-lg font-bold">Delete permanently?</h3>
+            <h3 className="font-serif text-lg font-bold">Excluir permanentemente?</h3>
             <p className="text-sm text-muted">
               {confirmDelete.kind === "bulk"
-                ? `Delete ${confirmDelete.ids.length} product${confirmDelete.ids.length === 1 ? "" : "s"} permanently? This cannot be undone.`
-                : `Delete "${confirmDelete.title}" permanently? This cannot be undone.`}
+                ? `Excluir ${confirmDelete.ids.length} produto${confirmDelete.ids.length === 1 ? "" : "s"} permanentemente? Esta ação não pode ser desfeita.`
+                : `Excluir "${confirmDelete.title}" permanentemente? Esta ação não pode ser desfeita.`}
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -226,7 +226,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
                 onClick={() => setConfirmDelete(null)}
                 className="text-xs border border-border px-3 py-1.5"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -234,7 +234,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
                 onClick={runConfirmedDelete}
                 className="text-xs border border-red-600 text-red-600 px-3 py-1.5 disabled:opacity-50"
               >
-                Delete
+                Excluir
               </button>
             </div>
           </div>
@@ -250,7 +250,12 @@ function StatusBadge({ status }: { status: string }) {
     published: "bg-accent/10 text-accent",
     archived: "bg-surface text-muted line-through",
   };
+  const labels: Record<string, string> = {
+    draft: "Rascunho",
+    published: "Publicado",
+    archived: "Arquivado",
+  };
   return (
-    <span className={`text-xs px-2 py-0.5 ${styles[status] ?? ""}`}>{status}</span>
+    <span className={`text-xs px-2 py-0.5 ${styles[status] ?? ""}`}>{labels[status] ?? status}</span>
   );
 }

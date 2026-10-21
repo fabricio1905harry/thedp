@@ -2,11 +2,11 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   created: "Criado",
   order_request: "Order Request",
   stock_confirmation: "Confirmando estoque",
-  awaiting_buyer_decision: "Aguardando decisão do buyer",
+  awaiting_buyer_decision: "Aguardando decisão do comprador",
   confirmed_awaiting_payment: "Confirmed Order — aguardando pagamento",
-  payment_coordination_required: "Availability confirmed — payment coordination required",
-  payment_window_expired: "Payment window expired",
-  reserved: "Reserved (Reserve Order)",
+  payment_coordination_required: "Disponibilidade confirmada — coordenação de pagamento necessária",
+  payment_window_expired: "Prazo de pagamento expirado",
+  reserved: "Reservado (Reserve Order)",
   paid: "Pago",
   processing: "Em Separação",
   shipped: "Enviado",
@@ -25,18 +25,18 @@ export const EDITABLE_ORDER_STATUSES = [
 ];
 
 export const ITEM_STATUS_LABELS: Record<string, string> = {
-  requested: "Requested",
-  available: "AVAILABLE",
-  unavailable_out_of_stock: "UNAVAILABLE — OUT OF STOCK",
-  unavailable_order_only: "UNAVAILABLE — ORDER ONLY / OTHER REASON",
-  removed: "Removed",
+  requested: "Solicitado",
+  available: "DISPONÍVEL",
+  unavailable_out_of_stock: "INDISPONÍVEL — SEM ESTOQUE",
+  unavailable_order_only: "INDISPONÍVEL — SOB ENCOMENDA / OUTRO MOTIVO",
+  removed: "Removido",
 };
 
 export const STOCK_HOLD_LABELS: Record<string, string> = {
   "24h": "24h",
   "48h": "48h",
-  custom: "Custom (TDP sets date/time)",
-  cannot_reserve: "Cannot Reserve / Reserva impossível",
+  custom: "Personalizado (TDP define data/hora)",
+  cannot_reserve: "Reserva impossível",
 };
 
 /** Buyer-facing status → message key in the "order" namespace. */

@@ -10,7 +10,7 @@ export function FxUpdateNowButton() {
   return (
     <form action={action} className="flex items-center gap-3 mb-6">
       <button type="submit" disabled={pending} className="btn-primary px-4 py-2 text-sm font-medium">
-        {pending ? "Atualizando..." : "UPDATE FX NOW"}
+        {pending ? "Atualizando..." : "ATUALIZAR CÂMBIO AGORA"}
       </button>
       {state.status === "success" && <span className="text-xs">Atualizado: {state.message}</span>}
       {state.status === "error" && <span className="text-xs text-accent">Falhou: {state.message}</span>}

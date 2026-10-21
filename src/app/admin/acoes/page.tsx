@@ -3,12 +3,13 @@ import { loadActionCenter } from "@/lib/action-center-data";
 import { ActionCards } from "@/components/action-cards";
 import { ActionQueue } from "@/components/action-queue";
 import type { QueueSort } from "@/lib/action-center";
+import { actionTypeLabelPt } from "@/lib/action-labels-pt";
 
 const SORTS: { key: QueueSort; label: string }[] = [
-  { key: "system", label: "System Priority" },
-  { key: "value", label: "Highest Value" },
-  { key: "oldest", label: "Oldest" },
-  { key: "newest", label: "Newest" },
+  { key: "system", label: "Prioridade do sistema" },
+  { key: "value", label: "Maior valor" },
+  { key: "oldest", label: "Mais antigos" },
+  { key: "newest", label: "Mais recentes" },
 ];
 
 export default async function AdminActionCenterPage({
@@ -31,15 +32,15 @@ export default async function AdminActionCenterPage({
       <div>
         <h1 className="font-serif text-2xl mb-1">Action Center</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Everything that depends on a TDP action. Items close automatically when the action that solves them is
-          done; history is kept. “Mark as resolved” only exists for items with no objective system action.
+          Tudo o que depende de uma ação da TDP. Os itens fecham automaticamente quando a ação que os resolve é
+          concluída; o histórico é mantido. “Marcar como resolvido” só existe para itens sem ação objetiva no sistema.
         </p>
       </div>
 
       <ActionCards cards={cards} showEmpty />
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-muted">Sort:</span>
+        <span className="text-muted">Ordenar:</span>
         {SORTS.map((s) => (
           <Link key={s.key} href={qs({ sort: s.key })} className={`border px-2 py-1 ${s.key === sort ? "border-foreground font-semibold" : "border-border"}`}>
             {s.label}
@@ -47,13 +48,13 @@ export default async function AdminActionCenterPage({
         ))}
         {sp.type && (
           <Link href={qs({ type: undefined })} className="ml-2 underline">
-            Filter: {labels.get(sp.type) ?? sp.type} ✕
+            Filtro: {actionTypeLabelPt(sp.type, labels.get(sp.type) ?? sp.type)} ✕
           </Link>
         )}
       </div>
 
       <section>
-        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Action Required — {queue.length}</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Ação necessária — {queue.length}</h2>
         <ActionQueue items={queue} labels={Object.fromEntries(labels)} manualTypes={[...manualTypes]} now={now} />
       </section>
     </div>

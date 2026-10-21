@@ -8,7 +8,7 @@ import { PASS_THROUGH_COMPONENTS, type PassThroughKey } from "@/lib/payments";
  * the payment's confirmation (a Reserve paid 6k in May + 4k in June counts
  * 6k in May and 4k in June). Freight, insurance, DHL surcharges, duties,
  * export declaration, bank fees and other pass-through charges never enter
- * Revenue; they are reported separately (Total Collected + breakdown).
+ * Revenue; they are reported separately (Total recebido + breakdown).
  *
  * Margin: each payment carries the product cost it recognised
  * (cogs_recognized_brl — 100% on the first payment of an order, 0 after),
@@ -25,21 +25,21 @@ export type DisplayCurrency = "BRL" | "USD" | "EUR";
 export type EvolutionWindow = "3m" | "6m" | "12m" | "year";
 
 export const KPI_DEFS = [
-  { key: "revenue", label: "Revenue / Faturamento", money: true },
-  { key: "orders", label: "Orders", money: false },
-  { key: "aov", label: "Average Order Value", money: true },
-  { key: "productsSold", label: "Products Sold", money: false },
-  { key: "itemsPerOrder", label: "Average Items per Order", money: false },
-  { key: "grossMargin", label: "Gross Margin", money: true },
-  { key: "grossMarginPct", label: "Gross Margin %", money: false },
-  { key: "customers", label: "Customers", money: false },
-  { key: "newCustomers", label: "New Customers", money: false },
-  { key: "totalCollected", label: "Total Collected", money: true },
-  { key: "reserveDeposits", label: "Reserve Deposits Collected", money: true },
-  { key: "lostSalesValue", label: "Lost Sales — Out of Stock", money: true },
-  { key: "recoveredSales", label: "Recovered Sales", money: true },
+  { key: "revenue", label: "Faturamento", money: true },
+  { key: "orders", label: "Pedidos", money: false },
+  { key: "aov", label: "Ticket médio", money: true },
+  { key: "productsSold", label: "Produtos vendidos", money: false },
+  { key: "itemsPerOrder", label: "Itens médios por pedido", money: false },
+  { key: "grossMargin", label: "Margem bruta", money: true },
+  { key: "grossMarginPct", label: "Margem bruta %", money: false },
+  { key: "customers", label: "Clientes", money: false },
+  { key: "newCustomers", label: "Novos clientes", money: false },
+  { key: "totalCollected", label: "Total recebido", money: true },
+  { key: "reserveDeposits", label: "Depósitos de Reserve recebidos", money: true },
+  { key: "lostSalesValue", label: "Vendas perdidas — sem estoque", money: true },
+  { key: "recoveredSales", label: "Vendas recuperadas", money: true },
   { key: "chargebacks", label: "Chargebacks", money: false },
-  { key: "cancellations", label: "Cancellations", money: false },
+  { key: "cancellations", label: "Cancelamentos", money: false },
 ] as const;
 
 export type KpiKey = (typeof KPI_DEFS)[number]["key"];
@@ -477,10 +477,10 @@ export function outstandingAging(raw: DashboardRaw, channel: string, conv: Conve
     collected.set(p.order_id, (collected.get(p.order_id) ?? 0) + Number(p.merchandise_amount));
   }
   const buckets = [
-    { key: "0-30", label: "0–30 days", min: 0, max: 30 },
-    { key: "31-60", label: "31–60 days", min: 31, max: 60 },
-    { key: "61-90", label: "61–90 days", min: 61, max: 90 },
-    { key: "90+", label: "90+ days", min: 91, max: Infinity },
+    { key: "0-30", label: "0–30 dias", min: 0, max: 30 },
+    { key: "31-60", label: "31–60 dias", min: 31, max: 60 },
+    { key: "61-90", label: "61–90 dias", min: 61, max: 90 },
+    { key: "90+", label: "90+ dias", min: 91, max: Infinity },
   ].map((b) => ({ ...b, value: 0, orders: [] as { id: string; ref: string; customer: string; value: number; days: number }[] }));
 
   let total = 0;

@@ -17,10 +17,10 @@ export type CmsScope = "home" | "about" | "contact" | "site" | "pages";
 
 /** Operations / domains (same codes as sales_channels). */
 export const OPERATIONS = [
-  { code: "intl_b2b", label: "International B2B" },
-  { code: "intl_b2c", label: "International DTC" },
-  { code: "br_b2b", label: "National B2B" },
-  { code: "br_b2c", label: "National DTC" },
+  { code: "intl_b2b", label: "Internacional B2B" },
+  { code: "intl_b2c", label: "Internacional DTC (varejo)" },
+  { code: "br_b2b", label: "Nacional B2B" },
+  { code: "br_b2c", label: "Nacional DTC (varejo)" },
 ] as const;
 export type OperationCode = (typeof OPERATIONS)[number]["code"];
 

@@ -24,8 +24,8 @@ export default async function AdminClientesPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-serif text-2xl mb-1">Pending wholesale accounts</h1>
-      <p className="text-sm text-muted mb-6">Approve, reject or ask for more information. Approval queues the “account approved” e-mail.</p>
+      <h1 className="font-serif text-2xl mb-1">Contas atacado pendentes</h1>
+      <p className="text-sm text-muted mb-6">Aprove, rejeite ou solicite mais informações. A aprovação coloca na fila o e-mail de “conta aprovada”.</p>
       {applicants === null ? (
         <p className="text-sm text-muted">Banco ainda não provisionado — nada para mostrar.</p>
       ) : applicants.length === 0 ? (

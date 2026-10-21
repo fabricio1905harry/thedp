@@ -41,7 +41,8 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
   const [recipientName, setRecipientName] = useState("");
   const [addressLine, setAddressLine] = useState(addresses[0]?.line1 ?? "");
   const [city, setCity] = useState(addresses[0]?.city ?? "");
-  const [state, setState] = useState("NY");
+  const [state, setState] = useState("");
+  const pieceCount = items.reduce((sum, i) => sum + i.qty, 0);
   const [postalCode, setPostalCode] = useState(addresses[0]?.postal_code ?? "");
   const [countryCode, setCountryCode] = useState(addresses[0]?.country ?? "US");
 
@@ -277,7 +278,7 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
       {/* Right Column: Order Summary & Place Order */}
       <div className="lg:col-span-5 space-y-6 bg-white p-6 rounded-sm border border-border/80 shadow-xs">
         <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-accent pb-2 border-b border-border">
-          {t("orderSummary")} ({items.length} {items.length === 1 ? tProduct("piece") : tProduct("pieces")})
+          {t("orderSummary")} ({pieceCount} {pieceCount === 1 ? tProduct("piece") : tProduct("pieces")})
         </h2>
 
         {/* Items List */}

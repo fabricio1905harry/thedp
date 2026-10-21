@@ -108,7 +108,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/produtos", label: "Produtos", icon: ProductsIcon },
       { href: "/admin/imagens", label: "Imagens p/ revisar", icon: ProductsIcon },
       { href: "/admin/pedidos", label: "Pedidos", icon: OrdersIcon },
-      { href: "/admin/vendas-perdidas", label: "Lost Sales", icon: OrdersIcon },
+      { href: "/admin/vendas-perdidas", label: "Vendas perdidas", icon: OrdersIcon },
       { href: "/admin/embalagens", label: "Embalagens DHL", icon: PackagingIcon },
     ],
   },
@@ -122,7 +122,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Clientes & Sistema",
     items: [
-      { href: "/admin/clientes", label: "Contas wholesale", icon: CustomersIcon },
+      { href: "/admin/clientes", label: "Contas atacado", icon: CustomersIcon },
       { href: "/admin/whatsapp", label: "WhatsApp", icon: CustomersIcon },
       { href: "/admin/automacao", label: "Automação", icon: AutomationIcon },
     ],

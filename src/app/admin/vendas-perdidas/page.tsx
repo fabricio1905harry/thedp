@@ -27,19 +27,19 @@ interface Row {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  lost: "LOST",
-  restock_opportunity: "RESTOCK OPPORTUNITY",
-  contacted: "CONTACTED",
-  recovered: "RECOVERED",
-  not_recovered: "NOT RECOVERED",
+  lost: "PERDIDA",
+  restock_opportunity: "OPORTUNIDADE DE REPOSIÇÃO",
+  contacted: "CONTATADO",
+  recovered: "RECUPERADA",
+  not_recovered: "NÃO RECUPERADA",
 };
 
 const GROUPS = [
-  ["product", "Product"],
-  ["brand", "Brand"],
-  ["color", "Color"],
-  ["size", "Size"],
-  ["variant", "Product + Color + Size"],
+  ["product", "Produto"],
+  ["brand", "Marca"],
+  ["color", "Cor"],
+  ["size", "Tamanho"],
+  ["variant", "Produto + Cor + Tamanho"],
 ] as const;
 
 /** Lost Sales — Out of Stock: full list, demand consolidation and ranking. */
@@ -98,23 +98,23 @@ export default async function LostSalesPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-serif text-2xl mb-1">Lost Sales — Out of Stock</h1>
+        <h1 className="font-serif text-2xl mb-1">Vendas perdidas — Sem estoque</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Recorded automatically when an Order Request line is marked UNAVAILABLE — OUT OF STOCK. When a sync
-          brings stock back for that product + color + size, it becomes a RESTOCK OPPORTUNITY in the Action Center.
+          Registradas automaticamente quando uma linha de Order Request é marcada como INDISPONÍVEL — SEM ESTOQUE. Quando uma
+          sincronização traz estoque de volta para esse produto + cor + tamanho, ela vira uma OPORTUNIDADE DE REPOSIÇÃO no Action Center.
         </p>
         <div className="flex flex-wrap gap-1 text-xs mt-3">
-          <Link href={link({ status: undefined })} className={`border px-2 py-0.5 ${!sp.status ? "border-foreground" : "border-border"}`}>All</Link>
+          <Link href={link({ status: undefined })} className={`border px-2 py-0.5 ${!sp.status ? "border-foreground" : "border-border"}`}>Todas</Link>
           {Object.entries(STATUS_LABEL).map(([k, l]) => (
             <Link key={k} href={link({ status: k })} className={`border px-2 py-0.5 ${sp.status === k ? "border-foreground" : "border-border"}`}>{l}</Link>
           ))}
-          {sp.variant && <Link href={link({ variant: undefined })} className="underline ml-2">variant filter ✕</Link>}
+          {sp.variant && <Link href={link({ variant: undefined })} className="underline ml-2">filtro de variante ✕</Link>}
         </div>
       </div>
 
       <section>
         <div className="flex flex-wrap items-center gap-2 mb-2">
-          <h2 className="text-sm font-medium uppercase tracking-wide">Most Requested Out-of-Stock — by</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide">Mais solicitados sem estoque — por</h2>
           {GROUPS.map(([k, l]) => (
             <Link key={k} href={link({ group: k })} className={`text-xs border px-2 py-0.5 ${group === k ? "border-foreground" : "border-border"}`}>{l}</Link>
           ))}
@@ -124,14 +124,14 @@ export default async function LostSalesPage({
             <thead>
               <tr className="text-left text-muted uppercase border-b border-border">
                 <th className="py-1 pr-2">#</th>
-                <th className="py-1 pr-2">Group</th>
-                <th className="py-1 pr-2 text-right">Lost Units</th>
-                <th className="py-1 pr-2 text-right">Lost Sales Value</th>
-                <th className="py-1 pr-2 text-right"># Buyers</th>
-                <th className="py-1 pr-2 text-right"># Orders</th>
-                <th className="py-1 pr-2 text-right">Restocks</th>
-                <th className="py-1 pr-2 text-right">Recovered Units</th>
-                <th className="py-1 text-right">Recovered Revenue</th>
+                <th className="py-1 pr-2">Grupo</th>
+                <th className="py-1 pr-2 text-right">Unidades perdidas</th>
+                <th className="py-1 pr-2 text-right">Valor de vendas perdidas</th>
+                <th className="py-1 pr-2 text-right"># Compradores</th>
+                <th className="py-1 pr-2 text-right"># Pedidos</th>
+                <th className="py-1 pr-2 text-right">Reposições</th>
+                <th className="py-1 pr-2 text-right">Unidades recuperadas</th>
+                <th className="py-1 text-right">Receita recuperada</th>
               </tr>
             </thead>
             <tbody>
@@ -154,20 +154,20 @@ export default async function LostSalesPage({
       </section>
 
       <section>
-        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">All lost sales — {rows.length}</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Todas as vendas perdidas — {rows.length}</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-xs min-w-[900px]">
             <thead>
               <tr className="text-left text-muted uppercase border-b border-border">
-                <th className="py-1 pr-2">Date</th>
-                <th className="py-1 pr-2">Customer</th>
-                <th className="py-1 pr-2">Product / Code</th>
-                <th className="py-1 pr-2">Brand</th>
-                <th className="py-1 pr-2">Color / Size</th>
-                <th className="py-1 pr-2 text-right">Qty</th>
-                <th className="py-1 pr-2 text-right">Potential</th>
-                <th className="py-1 pr-2">Order</th>
-                <th className="py-1 pr-2">Channel</th>
+                <th className="py-1 pr-2">Data</th>
+                <th className="py-1 pr-2">Cliente</th>
+                <th className="py-1 pr-2">Produto / Código</th>
+                <th className="py-1 pr-2">Marca</th>
+                <th className="py-1 pr-2">Cor / Tamanho</th>
+                <th className="py-1 pr-2 text-right">Qtd.</th>
+                <th className="py-1 pr-2 text-right">Potencial</th>
+                <th className="py-1 pr-2">Pedido</th>
+                <th className="py-1 pr-2">Canal</th>
                 <th className="py-1 pr-2">Status</th>
                 <th className="py-1" />
               </tr>

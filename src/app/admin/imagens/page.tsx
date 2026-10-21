@@ -32,20 +32,20 @@ export default async function AdminImageQueuePage({
 
   return (
     <div>
-      <h1 className="font-serif text-2xl mb-1">Images to Review — {count ?? 0}</h1>
+      <h1 className="font-serif text-2xl mb-1">Imagens para revisar — {count ?? 0}</h1>
       <p className="text-sm text-muted mb-6 max-w-2xl">
-        Supplier photos wait here as PENDING REVIEW and never reach the site until approved. Rejected photos
-        are remembered and never re-imported. Approving does not change a product&apos;s cover.
+        Fotos do fornecedor aguardam aqui como AGUARDANDO REVISÃO e só chegam ao site depois de aprovadas. Fotos
+        rejeitadas são lembradas e nunca reimportadas. Aprovar não altera a capa do produto.
         {product && (
           <>
             {" "}
-            Filtered by one product — <Link href="/admin/imagens" className="underline">show all</Link>.
+            Filtrado por um produto — <Link href="/admin/imagens" className="underline">mostrar todas</Link>.
           </>
         )}
       </p>
       <ProductImagesManager images={images} mode="queue" />
       {(count ?? 0) > PAGE_SIZE && (
-        <p className="text-xs text-muted mt-4">Showing the oldest {PAGE_SIZE}; approve/reject to load more.</p>
+        <p className="text-xs text-muted mt-4">Mostrando as {PAGE_SIZE} mais antigas; aprove/rejeite para carregar mais.</p>
       )}
     </div>
   );

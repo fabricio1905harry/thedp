@@ -16,6 +16,11 @@ export default async function MyAccountPage() {
   const t = await getTranslations("account");
   const tOrder = await getTranslations("order");
   const supabase = await createClient();
+  const { data: application } = await supabase
+    .from("customers")
+    .select("status, review_note")
+    .eq("id", customer.id)
+    .maybeSingle();
   const { data: orders } = await supabase
     .from("orders")
     .select("id, order_number, status, currency, total, created_at")
@@ -26,6 +31,25 @@ export default async function MyAccountPage() {
     <div className="max-w-4xl mx-auto px-4 py-14 sm:py-20">
       <h1 className="font-serif text-4xl">{t("title")}</h1>
       <p className="mt-2 text-xs uppercase tracking-[0.2em] text-muted">{customer.email}</p>
+
+      {application && application.status !== "approved" && (
+        <section className="mt-10 border border-border p-5">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted mb-3">{t("appStatusTitle")}</h2>
+          {application.status === "more_info" ? (
+            <>
+              <p className="text-sm">{t("appMoreInfo")}</p>
+              {application.review_note && <p className="mt-3 text-sm border-l-2 border-foreground pl-3 whitespace-pre-line">{application.review_note}</p>}
+              <Link href="/contato?subject=registration" className="mt-4 inline-block bg-foreground text-background px-5 py-2.5 text-[11px] uppercase tracking-[0.2em] font-semibold">
+                {t("appReply")}
+              </Link>
+            </>
+          ) : application.status === "rejected" ? (
+            <p className="text-sm">{t("appRejected")}</p>
+          ) : (
+            <p className="text-sm">{t("appPending")}</p>
+          )}
+        </section>
+      )}
 
       <section className="mt-12">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted mb-4">{t("orders")}</h2>

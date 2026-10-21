@@ -3,9 +3,9 @@ import { PaymentRulesEditor } from "@/components/payment-rules-editor";
 import { saveBankInstructions, saveNumericSetting } from "./actions";
 
 const SETTINGS = [
-  { key: "bank_processing_fee_brl", label: "Bank Processing Fee (BRL, charged per Bank Transfer payment)", fallback: 135 },
-  { key: "reserve_markup_pct", label: "Reserve for Later Delivery — % over product cost", fallback: 10 },
-  { key: "margin_target_pct", label: "Margin target % (below → Action Center). Empty = off", fallback: null },
+  { key: "bank_processing_fee_brl", label: "Taxa bancária (BRL, cobrada por pagamento via Bank Transfer)", fallback: 135 },
+  { key: "reserve_markup_pct", label: "Reserve for Later Delivery — % sobre o custo do produto", fallback: 10 },
+  { key: "margin_target_pct", label: "Meta de margem % (abaixo → Action Center). Vazio = desativado", fallback: null },
 ] as const;
 
 export default async function AdminPaymentsPage() {
@@ -24,9 +24,9 @@ export default async function AdminPaymentsPage() {
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
-        <h1 className="font-serif text-2xl mb-1">Payments</h1>
+        <h1 className="font-serif text-2xl mb-1">Pagamentos</h1>
         <p className="text-sm text-muted">
-          Availability hierarchy: channel default → customer exception → order exception. The most specific rule wins.
+          Hierarquia de disponibilidade: padrão do canal → exceção do cliente → exceção do pedido. A regra mais específica prevalece.
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export default async function AdminPaymentsPage() {
       />
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide">Settings</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide">Configurações</h2>
         {SETTINGS.map((s) => {
           const current = settingValue.get(s.key);
           return (
@@ -53,13 +53,13 @@ export default async function AdminPaymentsPage() {
                   className="border border-border px-2 py-1 w-40"
                 />
               </label>
-              <button type="submit" className="border border-border px-3 py-1">Save</button>
+              <button type="submit" className="border border-border px-3 py-1">Salvar</button>
             </form>
           );
         })}
         <form action={saveBankInstructions} className="flex flex-col gap-2 text-xs max-w-xl">
           <label className="flex flex-col">
-            Bank transfer instructions (shown to the buyer when Bank Transfer is enabled for the order)
+            Instruções de Bank Transfer (transferência bancária) — exibidas ao comprador quando Bank Transfer está habilitado para o pedido
             <textarea
               name="instructions"
               rows={6}
@@ -68,23 +68,23 @@ export default async function AdminPaymentsPage() {
               className="border border-border px-2 py-1 font-mono"
             />
           </label>
-          <button type="submit" className="border border-border px-3 py-1 self-start">Save instructions</button>
+          <button type="submit" className="border border-border px-3 py-1 self-start">Salvar instruções</button>
         </form>
         <p className="text-[11px] text-muted">
-          The bank fee is converted to the order currency with the current FX rate when each transfer is registered;
-          a Reserve deposit + a later balance by transfer = two fees.
+          A taxa bancária é convertida para a moeda do pedido com a taxa de câmbio vigente quando cada transferência é registrada;
+          um depósito de Reserve + um saldo posterior por transferência = duas taxas.
         </p>
       </section>
 
       <section className="space-y-2 text-xs max-w-2xl">
-        <h2 className="text-sm font-medium uppercase tracking-wide">Stripe (card)</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide">Stripe (cartão)</h2>
         <p className="text-muted">
-          Card payments are taken on the <strong>site</strong> deployment. There, set <code>STRIPE_SECRET_KEY</code> and{" "}
-          <code>STRIPE_WEBHOOK_SECRET</code>, and create a Stripe webhook pointing to{" "}
-          <code>https://&lt;site&gt;/api/stripe/webhook</code> (events: checkout.session.completed,
-          checkout.session.async_payment_succeeded, charge.refunded, charge.dispute.created). Then enable Stripe per
-          channel above, per customer, or per order (order page → “Enable Stripe for this order”). A paid card payment
-          marks the order PAID automatically.
+          Os pagamentos com cartão são recebidos no deploy do <strong>site</strong>. Lá, defina <code>STRIPE_SECRET_KEY</code> e{" "}
+          <code>STRIPE_WEBHOOK_SECRET</code>, e crie um webhook do Stripe apontando para{" "}
+          <code>https://&lt;site&gt;/api/stripe/webhook</code> (eventos: checkout.session.completed,
+          checkout.session.async_payment_succeeded, charge.refunded, charge.dispute.created). Depois habilite o Stripe por
+          canal acima, por cliente ou por pedido (página do pedido → “Habilitar Stripe para este pedido”). Um pagamento com cartão
+          aprovado marca o pedido como PAGO automaticamente.
         </p>
       </section>
     </div>

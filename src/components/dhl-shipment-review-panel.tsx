@@ -66,7 +66,7 @@ export function DhlShipmentReviewPanel({
             </span>
             {hasReviewRequired ? (
               <span className="bg-background text-foreground text-[10px] font-semibold px-2 py-0.5 rounded border-2 border-foreground">
-                PACKAGING_REVIEW_REQUIRED
+                REVISÃO DE EMBALAGEM NECESSÁRIA
               </span>
             ) : (
               <span className="bg-foreground text-background text-[10px] font-semibold px-2 py-0.5 rounded border border-foreground">
@@ -90,7 +90,7 @@ export function DhlShipmentReviewPanel({
                 : "border-border hover:bg-surface text-foreground"
             }`}
           >
-            {overrideMode ? "🔒 Concluir Edição" : "✏️ Ajustar / Override Manual"}
+            {overrideMode ? "🔒 Concluir Edição" : "✏️ Ajustar / Edição manual"}
           </button>
         </div>
       </div>
@@ -102,7 +102,7 @@ export function DhlShipmentReviewPanel({
             Uma ou mais embalagens selecionadas possuem dimensões (comprimento, largura ou altura) zeradas no cadastro oficial DHL ou excedem o limite de peso.
           </p>
           <p className="font-medium">
-            → Por favor, edite as dimensões abaixo manualmente ou cadastre as medidas oficiais no menu <strong>Admin &gt; Embalagens DHL</strong> antes de confirmar o shipment.
+            → Por favor, edite as dimensões abaixo manualmente ou cadastre as medidas oficiais no menu <strong>Admin &gt; Embalagens DHL</strong> antes de confirmar o envio.
           </p>
         </div>
       )}
@@ -163,7 +163,7 @@ export function DhlShipmentReviewPanel({
                     className="w-full border border-border px-2 py-1 bg-background"
                   />
                 ) : (
-                  <span className="font-bold">{pkg.quantity} pcs</span>
+                  <span className="font-bold">{pkg.quantity} peças</span>
                 )}
               </div>
 
@@ -276,13 +276,13 @@ export function DhlShipmentReviewPanel({
           onClick={() => setCreatedSuccess(true)}
           className="btn-primary px-6 py-3 text-xs uppercase tracking-wider font-semibold"
         >
-          Confirmar & Gerar Shipment DHL Express
+          Confirmar e gerar envio DHL Express
         </button>
       </div>
 
       {createdSuccess && (
         <div className="p-4 bg-foreground border border-foreground text-background text-xs rounded-sm font-medium">
-          ✅ Dados de embalagem validados e enviados com sucesso para cotação/shipment DHL Express!
+          ✅ Dados de embalagem validados e enviados com sucesso para cotação/envio DHL Express!
         </div>
       )}
     </div>

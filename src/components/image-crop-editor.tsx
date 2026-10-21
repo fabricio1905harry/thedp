@@ -53,14 +53,14 @@ export function ImageCropEditor({
           )}
         </div>
         <div>
-          <p className="text-xs text-muted uppercase mb-2">Result 2:3 (1200×1800 reference)</p>
+          <p className="text-xs text-muted uppercase mb-2">Resultado 2:3 (referência 1200×1800)</p>
           <div className="relative overflow-hidden aspect-[2/3] bg-surface border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt="" style={croppedImageStyle(crop)} />
           </div>
           {lowRes && (
             <p className="text-[11px] text-accent mt-1">
-              Below 1200×1800 at this zoom — consider a higher-resolution file.
+              Abaixo de 1200×1800 neste zoom — considere um arquivo de maior resolução.
             </p>
           )}
           <div className="space-y-2 mt-3 text-xs">
@@ -69,23 +69,23 @@ export function ImageCropEditor({
               <input type="range" min={1} max={3} step={0.01} value={zoom} onChange={(e) => { setTouched(true); setZoom(Number(e.target.value)); }} className="flex-1" />
             </label>
             <label className="flex items-center gap-2">
-              <span className="w-12">Left/right</span>
+              <span className="w-12">Esq./dir.</span>
               <input type="range" min={0} max={1} step={0.005} value={panX} onChange={(e) => { setTouched(true); setPanX(Number(e.target.value)); }} className="flex-1" />
             </label>
             <label className="flex items-center gap-2">
-              <span className="w-12">Up/down</span>
+              <span className="w-12">Cima/baixo</span>
               <input type="range" min={0} max={1} step={0.005} value={panY} onChange={(e) => { setTouched(true); setPanY(Number(e.target.value)); }} className="flex-1" />
             </label>
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
             <button type="button" disabled={!crop || saving} onClick={() => crop && onSave(crop)} className="btn-primary px-3 py-1.5 text-xs">
-              Save crop
+              Salvar recorte
             </button>
             <button type="button" disabled={saving} onClick={() => onSave(null)} className="border border-border px-3 py-1.5 text-xs">
-              No crop (show full photo)
+              Sem recorte (mostrar foto inteira)
             </button>
             <button type="button" onClick={onCancel} className="text-xs text-muted px-2">
-              Cancel
+              Cancelar
             </button>
           </div>
         </div>

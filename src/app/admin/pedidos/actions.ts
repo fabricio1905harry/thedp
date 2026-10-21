@@ -8,7 +8,7 @@ import { computeReserve } from "@/lib/payments";
 
 async function requireStaff() {
   const staff = await getCurrentStaff();
-  if (!staff) throw new Error("Not authorized");
+  if (!staff) throw new Error("Não autorizado");
   return staff;
 }
 
@@ -44,7 +44,7 @@ async function itemLabel(orderId: string, itemId: string) {
     .eq("id", itemId)
     .eq("order_id", orderId)
     .single();
-  if (!data) throw new Error("Order line not found");
+  if (!data) throw new Error("Linha do pedido não encontrada");
   return {
     ...data,
     label: `${data.product_title ?? "Item"} ${data.color ?? "—"}/${data.size ?? "—"}`,
@@ -54,9 +54,9 @@ async function itemLabel(orderId: string, itemId: string) {
 async function assertEditable(orderId: string) {
   const supabase = await createClient();
   const { data: order } = await supabase.from("orders").select("status").eq("id", orderId).single();
-  if (!order) throw new Error("Order not found");
+  if (!order) throw new Error("Pedido não encontrado");
   if (!EDITABLE_ORDER_STATUSES.includes(order.status)) {
-    throw new Error("This order can no longer be changed (already released for payment / paid).");
+    throw new Error("Este pedido não pode mais ser alterado (já liberado para pagamento / pago).");
   }
   return supabase;
 }
@@ -92,12 +92,12 @@ export interface OrderChargesInput {
  * (in the order currency). Closes "DHL Quote Required" in the Action
  * Center; required before generating the Confirmed Order.
  */
-export async function setOrderCharges(orderId: string, input: OrderChargesInput) {
+async function setOrderChargesImpl(orderId: string, input: OrderChargesInput) {
   const staff = await requireStaff();
   const supabase = await assertEditable(orderId);
   const n = (v: number) => {
     const x = Number(v);
-    if (!Number.isFinite(x) || x < 0) throw new Error("Values must be zero or positive.");
+    if (!Number.isFinite(x) || x < 0) throw new Error("Os valores devem ser zero ou positivos.");
     return Math.round(x * 100) / 100;
   };
   const { error } = await supabase
@@ -118,7 +118,7 @@ export async function setOrderCharges(orderId: string, input: OrderChargesInput)
     })
     .eq("id", orderId);
   if (error) throw new Error(error.message);
-  await logEvent(orderId, staff.id, "charges", "Freight & import duties informed", { ...input });
+  await logEvent(orderId, staff.id, "charges", "Frete e impostos de importação informados", { ...input });
   revalidateOrder(orderId);
 }
 
@@ -135,16 +135,18 @@ export type ItemStatus =
  * REASON affects this order only. Setting a line back from OUT OF STOCK
  * removes its untouched lost sale.
  */
-export async function setOrderItemStatus(orderId: string, itemId: string, status: ItemStatus, note?: string) {
+async function setOrderItemStatusImpl(orderId: string, itemId: string, status: ItemStatus, note?: string) {
   const staff = await requireStaff();
   const supabase = await assertEditable(orderId);
   const before = await itemLabel(orderId, itemId);
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("order_items")
     .update({ item_status: status, unavailable_note: note || null, updated_at: new Date().toISOString() })
     .eq("id", itemId)
-    .eq("order_id", orderId);
+    .eq("order_id", orderId)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!updated || updated.length === 0) throw new Error("A linha não foi alterada (sem permissão ou linha inexistente). Rode a migration 0036 no Supabase.");
   await recalcTotals(orderId);
   await logEvent(orderId, staff.id, "item_status", `${before.label}: ${before.item_status} → ${status}`, {
     item_id: itemId,
@@ -155,19 +157,21 @@ export async function setOrderItemStatus(orderId: string, itemId: string, status
   revalidateOrder(orderId);
 }
 
-export async function setOrderItemQty(orderId: string, itemId: string, qty: number) {
+async function setOrderItemQtyImpl(orderId: string, itemId: string, qty: number) {
   const staff = await requireStaff();
-  if (!Number.isInteger(qty) || qty <= 0) throw new Error("Quantity must be a positive integer.");
+  if (!Number.isInteger(qty) || qty <= 0) throw new Error("A quantidade deve ser um número inteiro positivo.");
   const supabase = await assertEditable(orderId);
   const before = await itemLabel(orderId, itemId);
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("order_items")
     .update({ qty, updated_at: new Date().toISOString() })
     .eq("id", itemId)
-    .eq("order_id", orderId);
+    .eq("order_id", orderId)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!updated || updated.length === 0) throw new Error("A linha não foi alterada (sem permissão ou linha inexistente). Rode a migration 0036 no Supabase.");
   await recalcTotals(orderId);
-  await logEvent(orderId, staff.id, "item_qty", `${before.label}: qty ${before.qty} → ${qty}`, {
+  await logEvent(orderId, staff.id, "item_qty", `${before.label}: qtd. ${before.qty} → ${qty}`, {
     item_id: itemId,
     from: before.qty,
     to: qty,
@@ -176,20 +180,22 @@ export async function setOrderItemQty(orderId: string, itemId: string, qty: numb
 }
 
 /** Unit price of one line, in the order currency (the buyer's original price is kept). */
-export async function setOrderItemPrice(orderId: string, itemId: string, unitPrice: number) {
+async function setOrderItemPriceImpl(orderId: string, itemId: string, unitPrice: number) {
   const staff = await requireStaff();
   const price = Math.round(Number(unitPrice) * 100) / 100;
-  if (!Number.isFinite(price) || price < 0) throw new Error("Price must be zero or positive.");
+  if (!Number.isFinite(price) || price < 0) throw new Error("O preço deve ser zero ou positivo.");
   const supabase = await assertEditable(orderId);
   const before = await itemLabel(orderId, itemId);
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("order_items")
     .update({ unit_price: price, updated_at: new Date().toISOString() })
     .eq("id", itemId)
-    .eq("order_id", orderId);
+    .eq("order_id", orderId)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!updated || updated.length === 0) throw new Error("A linha não foi alterada (sem permissão ou linha inexistente). Rode a migration 0036 no Supabase.");
   await recalcTotals(orderId);
-  await logEvent(orderId, staff.id, "item_price", `${before.label}: unit price ${before.unit_price} → ${price}`, {
+  await logEvent(orderId, staff.id, "item_price", `${before.label}: preço unitário ${before.unit_price} → ${price}`, {
     item_id: itemId,
     from: Number(before.unit_price),
     to: price,
@@ -198,14 +204,14 @@ export async function setOrderItemPrice(orderId: string, itemId: string, unitPri
 }
 
 /** Puts a line back exactly as the buyer requested it (qty, price, status). */
-export async function restoreOrderItem(orderId: string, itemId: string) {
+async function restoreOrderItemImpl(orderId: string, itemId: string) {
   const staff = await requireStaff();
   const supabase = await assertEditable(orderId);
   const before = await itemLabel(orderId, itemId);
   if (before.original_qty === null || before.original_unit_price === null) {
-    throw new Error("This line was added by the TDP — set it as removed instead.");
+    throw new Error("Esta linha foi adicionada pela TDP — marque-a como removida.");
   }
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("order_items")
     .update({
       qty: before.original_qty,
@@ -215,10 +221,12 @@ export async function restoreOrderItem(orderId: string, itemId: string) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", itemId)
-    .eq("order_id", orderId);
+    .eq("order_id", orderId)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!updated || updated.length === 0) throw new Error("A linha não foi alterada (sem permissão ou linha inexistente). Rode a migration 0036 no Supabase.");
   await recalcTotals(orderId);
-  await logEvent(orderId, staff.id, "item_restore", `${before.label}: restored to the original request`, {
+  await logEvent(orderId, staff.id, "item_restore", `${before.label}: restaurado ao Original Request`, {
     item_id: itemId,
   });
   revalidateOrder(orderId);
@@ -272,7 +280,7 @@ export async function searchVariantsForOrder(orderId: string, query: string): Pr
  * as a substitute for another line (that line is marked removed unless it
  * already has an unavailable status). `unitPrice` overrides the list price.
  */
-export async function addOrderItemBySku(
+async function addOrderItemBySkuImpl(
   orderId: string,
   sku: string,
   qty: number,
@@ -280,7 +288,7 @@ export async function addOrderItemBySku(
   unitPrice?: number
 ) {
   const staff = await requireStaff();
-  if (!Number.isInteger(qty) || qty <= 0) throw new Error("Quantity must be a positive integer.");
+  if (!Number.isInteger(qty) || qty <= 0) throw new Error("A quantidade deve ser um número inteiro positivo.");
   const supabase = await assertEditable(orderId);
 
   const [{ data: variant }, { data: order }] = await Promise.all([
@@ -291,14 +299,14 @@ export async function addOrderItemBySku(
       .maybeSingle(),
     supabase.from("orders").select("currency").eq("id", orderId).single(),
   ]);
-  if (!variant) throw new Error(`SKU not found: ${sku}`);
+  if (!variant) throw new Error(`SKU não encontrado: ${sku}`);
 
   const prices = variant.products as unknown as { price_brl: number | null; price_usd: number | null; price_eur: number | null } | null;
   const currency = (order?.currency ?? "USD").toUpperCase();
   const listPrice =
     currency === "BRL" ? prices?.price_brl : currency === "EUR" ? prices?.price_eur : prices?.price_usd;
   const price = unitPrice !== undefined && Number.isFinite(unitPrice) && unitPrice >= 0 ? unitPrice : listPrice;
-  if (price === null || price === undefined) throw new Error(`No ${currency} price for ${sku} — type a unit price.`);
+  if (price === null || price === undefined) throw new Error(`Sem preço em ${currency} para ${sku} — informe um preço unitário.`);
 
   const { error } = await supabase.from("order_items").insert({
     order_id: orderId,
@@ -314,14 +322,14 @@ export async function addOrderItemBySku(
   let replaced = "";
   if (substitutesItemId) {
     const original = await itemLabel(orderId, substitutesItemId);
-    replaced = ` (substitutes ${original.label})`;
+    replaced = ` (substitui ${original.label})`;
     if (original.item_status === "requested" || original.item_status === "available") {
       await supabase.from("order_items").update({ item_status: "removed" }).eq("id", substitutesItemId);
     }
   }
 
   await recalcTotals(orderId);
-  await logEvent(orderId, staff.id, "item_added", `Added ${qty} × ${sku} at ${price}${replaced}`, {
+  await logEvent(orderId, staff.id, "item_added", `Adicionado ${qty} × ${sku} a ${price}${replaced}`, {
     sku,
     qty,
     unit_price: price,
@@ -330,7 +338,7 @@ export async function addOrderItemBySku(
   revalidateOrder(orderId);
 }
 
-export async function setOrderStage(
+async function setOrderStageImpl(
   orderId: string,
   status: "order_request" | "stock_confirmation" | "awaiting_buyer_decision" | "canceled"
 ) {
@@ -347,19 +355,19 @@ export async function setOrderStage(
  * lines, prices and freight/duties can be changed again. Not allowed once a
  * payment exists (pending or confirmed) — cancel or refund it first.
  */
-export async function reopenOrderForEditing(orderId: string) {
+async function reopenOrderForEditingImpl(orderId: string) {
   const staff = await requireStaff();
   const supabase = await createClient();
   const [{ data: order }, { data: payments }] = await Promise.all([
     supabase.from("orders").select("status").eq("id", orderId).single(),
     supabase.from("payments").select("id, status").eq("order_id", orderId),
   ]);
-  if (!order) throw new Error("Order not found");
+  if (!order) throw new Error("Pedido não encontrado");
   if (!["confirmed_awaiting_payment", "payment_coordination_required", "payment_window_expired"].includes(order.status)) {
-    throw new Error("Only a Confirmed Order waiting for payment can be reopened for editing.");
+    throw new Error("Somente um Confirmed Order aguardando pagamento pode ser reaberto para edição.");
   }
   if ((payments ?? []).some((p) => p.status === "pending_verification" || p.status === "confirmed")) {
-    throw new Error("This order already has a payment — reject or refund it before editing.");
+    throw new Error("Este pedido já tem um pagamento — rejeite-o ou reembolse-o antes de editar.");
   }
   const { error } = await supabase
     .from("orders")
@@ -372,7 +380,7 @@ export async function reopenOrderForEditing(orderId: string) {
     })
     .eq("id", orderId);
   if (error) throw new Error(error.message);
-  await logEvent(orderId, staff.id, "reopened", "Confirmed Order reopened for editing");
+  await logEvent(orderId, staff.id, "reopened", "Confirmed Order reaberto para edição");
   revalidateOrder(orderId);
 }
 
@@ -382,7 +390,7 @@ export async function reopenOrderForEditing(orderId: string) {
  * payment disabled and raises PAYMENT COORDINATION REQUIRED. Also used to
  * reopen an expired order after re-confirming stock and values.
  */
-export async function releaseOrderForPayment(
+async function releaseOrderForPaymentImpl(
   orderId: string,
   holdType: "24h" | "48h" | "custom" | "cannot_reserve",
   customUntil?: string
@@ -395,13 +403,13 @@ export async function releaseOrderForPayment(
     supabase.from("orders").select("charges_informed_at").eq("id", orderId).single(),
   ]);
   if (!order?.charges_informed_at) {
-    throw new Error("Inform freight & import duties (after stock confirmation) before generating the Confirmed Order.");
+    throw new Error("Informe o frete e os impostos de importação (após a confirmação de estoque) antes de gerar o Confirmed Order.");
   }
   if ((items ?? []).some((i) => i.item_status === "requested")) {
-    throw new Error("Confirm every line (AVAILABLE / UNAVAILABLE) before generating the Confirmed Order.");
+    throw new Error("Confirme todas as linhas (DISPONÍVEL / INDISPONÍVEL) antes de gerar o Confirmed Order.");
   }
   if (!(items ?? []).some((i) => i.item_status === "available")) {
-    throw new Error("The Confirmed Order needs at least one AVAILABLE line.");
+    throw new Error("O Confirmed Order precisa de pelo menos uma linha DISPONÍVEL.");
   }
 
   await recalcTotals(orderId);
@@ -411,7 +419,7 @@ export async function releaseOrderForPayment(
     p_custom_until: holdType === "custom" && customUntil ? new Date(customUntil).toISOString() : null,
   });
   if (error) throw new Error(error.message);
-  await logEvent(orderId, staff.id, "released", `Confirmed Order released for payment (stock hold: ${holdType})`, {
+  await logEvent(orderId, staff.id, "released", `Confirmed Order liberado para pagamento (reserva de estoque: ${holdType})`, {
     hold_type: holdType,
     custom_until: customUntil ?? null,
   });
@@ -419,7 +427,7 @@ export async function releaseOrderForPayment(
 }
 
 /** Order-level exception for one payment method (null = inherit). */
-export async function setOrderPaymentRule(orderId: string, methodCode: string, enabled: boolean | null) {
+async function setOrderPaymentRuleImpl(orderId: string, methodCode: string, enabled: boolean | null) {
   const staff = await requireStaff();
   const supabase = await createClient();
   await supabase.from("payment_method_rules").delete().eq("scope", "order").eq("order_id", orderId).eq("method_code", methodCode);
@@ -437,7 +445,7 @@ export async function setOrderPaymentRule(orderId: string, methodCode: string, e
     orderId,
     staff.id,
     "payment_rule",
-    `${methodCode}: order exception → ${enabled === null ? "inherit" : enabled ? "allowed" : "blocked"}`
+    `${methodCode}: exceção do pedido → ${enabled === null ? "herdar" : enabled ? "permitido" : "bloqueado"}`
   );
   revalidateOrder(orderId);
 }
@@ -446,7 +454,7 @@ export async function setOrderPaymentRule(orderId: string, methodCode: string, e
  * Reserve for Later Delivery: amount = product cost + reserve_markup_pct
  * (Admin, default 10%), shown as the equivalent % of the sale value.
  */
-export async function setReserveMode(orderId: string, enabled: boolean) {
+async function setReserveModeImpl(orderId: string, enabled: boolean) {
   const staff = await requireStaff();
   const supabase = await createClient();
 
@@ -455,7 +463,7 @@ export async function setReserveMode(orderId: string, enabled: boolean) {
       .from("orders")
       .update({ payment_mode: "standard", reserve_amount: null, reserve_pct_of_sale: null })
       .eq("id", orderId);
-    await logEvent(orderId, staff.id, "reserve", "Payment mode → standard");
+    await logEvent(orderId, staff.id, "reserve", "Modo de pagamento → padrão");
     revalidateOrder(orderId);
     return;
   }
@@ -465,7 +473,7 @@ export async function setReserveMode(orderId: string, enabled: boolean) {
     supabase.from("order_items").select("qty, unit_cost_brl, item_status").eq("order_id", orderId),
     supabase.from("app_settings").select("value").eq("key", "reserve_markup_pct").maybeSingle(),
   ]);
-  if (!order) throw new Error("Order not found");
+  if (!order) throw new Error("Pedido não encontrado");
 
   const costBrl = (items ?? [])
     .filter((i) => i.item_status === "available" || i.item_status === "requested")
@@ -481,7 +489,7 @@ export async function setReserveMode(orderId: string, enabled: boolean) {
       .order("fetched_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!rate) throw new Error(`No FX rate for ${order.currency}`);
+    if (!rate) throw new Error(`Sem taxa de câmbio para ${order.currency}`);
     brlPerUnit = Number(rate.rate);
   }
 
@@ -492,7 +500,7 @@ export async function setReserveMode(orderId: string, enabled: boolean) {
     .update({ payment_mode: "reserve", reserve_amount: reserve.amount, reserve_pct_of_sale: reserve.pctOfSale })
     .eq("id", orderId);
   if (error) throw new Error(error.message);
-  await logEvent(orderId, staff.id, "reserve", `Payment mode → Reserve (${reserve.amount}, ${reserve.pctOfSale}% of sale)`);
+  await logEvent(orderId, staff.id, "reserve", `Modo de pagamento → Reserve (${reserve.amount}, ${reserve.pctOfSale}% da venda)`);
   revalidateOrder(orderId);
 }
 
@@ -525,18 +533,18 @@ export interface PaymentInput {
  * A Bank Transfer automatically carries one Bank Processing Fee (BRL config
  * converted to the order currency) — one per transfer.
  */
-export async function registerPayment(orderId: string, input: PaymentInput) {
+async function registerPaymentImpl(orderId: string, input: PaymentInput) {
   const staff = await requireStaff();
   const supabase = await createClient();
   const { data: order } = await supabase.from("orders").select("currency").eq("id", orderId).single();
-  if (!order) throw new Error("Order not found");
+  if (!order) throw new Error("Pedido não encontrado");
 
   if (!input.confirmNow) {
     const { data: methods } = await supabase.rpc("available_payment_methods", { p_order_id: orderId });
     const allowed = ((methods ?? []) as { method_code: string; enabled: boolean }[]).find(
       (m) => m.method_code === input.methodCode
     );
-    if (!allowed?.enabled) throw new Error("This payment method is not enabled for this order.");
+    if (!allowed?.enabled) throw new Error("Esta forma de pagamento não está habilitada para este pedido.");
   }
 
   const n = (v?: number) => (Number.isFinite(v) ? Number(v) : 0);
@@ -571,14 +579,14 @@ export async function registerPayment(orderId: string, input: PaymentInput) {
     orderId,
     staff.id,
     input.confirmNow ? "payment_received" : "payment_registered",
-    `${input.confirmNow ? "Payment received" : "Payment registered"}: ${input.methodCode} · ${input.kind} · ${n(input.merchandiseAmount)} ${order.currency} merchandise`,
+    `${input.confirmNow ? "Pagamento recebido" : "Pagamento registrado"}: ${input.methodCode} · ${input.kind} · ${n(input.merchandiseAmount)} ${order.currency} em mercadoria`,
     { method: input.methodCode, kind: input.kind, confirm_now: Boolean(input.confirmNow) }
   );
   revalidateOrder(orderId);
 }
 
 /** CONFIRM (optionally with the amount actually received → Payment Difference). */
-export async function confirmPayment(orderId: string, paymentId: string, receivedAmount?: number) {
+async function confirmPaymentImpl(orderId: string, paymentId: string, receivedAmount?: number) {
   const staff = await requireStaff();
   const supabase = await createClient();
   const { error } = await supabase
@@ -591,11 +599,11 @@ export async function confirmPayment(orderId: string, paymentId: string, receive
     .eq("id", paymentId)
     .eq("order_id", orderId);
   if (error) throw new Error(error.message);
-  await logEvent(orderId, staff.id, "payment_confirmed", "Payment confirmed", { payment_id: paymentId, received: receivedAmount ?? null });
+  await logEvent(orderId, staff.id, "payment_confirmed", "Pagamento confirmado", { payment_id: paymentId, received: receivedAmount ?? null });
   revalidateOrder(orderId);
 }
 
-export async function setPaymentStatus(
+async function setPaymentStatusImpl(
   orderId: string,
   paymentId: string,
   status: "rejected" | "refunded" | "chargeback" | "canceled"
@@ -604,6 +612,78 @@ export async function setPaymentStatus(
   const supabase = await createClient();
   const { error } = await supabase.from("payments").update({ status }).eq("id", paymentId).eq("order_id", orderId);
   if (error) throw new Error(error.message);
-  await logEvent(orderId, staff.id, "payment_status", `Payment → ${status}`, { payment_id: paymentId, status });
+  await logEvent(orderId, staff.id, "payment_status", `Pagamento → ${status}`, { payment_id: paymentId, status });
   revalidateOrder(orderId);
+}
+
+
+// ---------------------------------------------------------------------
+// Production Next.js hides the message of an error thrown by a Server Action
+// ("digest …"). Actions therefore return { error } and the panel shows it.
+// ---------------------------------------------------------------------
+export type ActionResult = { error?: string };
+
+async function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error("[admin/pedidos]", err);
+    return { error: err instanceof Error ? err.message : "Falha na ação." };
+  }
+}
+
+export async function setOrderCharges(...args: Parameters<typeof setOrderChargesImpl>) {
+  return safe(() => setOrderChargesImpl(...args));
+}
+
+export async function setOrderItemStatus(...args: Parameters<typeof setOrderItemStatusImpl>) {
+  return safe(() => setOrderItemStatusImpl(...args));
+}
+
+export async function setOrderItemQty(...args: Parameters<typeof setOrderItemQtyImpl>) {
+  return safe(() => setOrderItemQtyImpl(...args));
+}
+
+export async function setOrderItemPrice(...args: Parameters<typeof setOrderItemPriceImpl>) {
+  return safe(() => setOrderItemPriceImpl(...args));
+}
+
+export async function restoreOrderItem(...args: Parameters<typeof restoreOrderItemImpl>) {
+  return safe(() => restoreOrderItemImpl(...args));
+}
+
+export async function addOrderItemBySku(...args: Parameters<typeof addOrderItemBySkuImpl>) {
+  return safe(() => addOrderItemBySkuImpl(...args));
+}
+
+export async function setOrderStage(...args: Parameters<typeof setOrderStageImpl>) {
+  return safe(() => setOrderStageImpl(...args));
+}
+
+export async function reopenOrderForEditing(...args: Parameters<typeof reopenOrderForEditingImpl>) {
+  return safe(() => reopenOrderForEditingImpl(...args));
+}
+
+export async function releaseOrderForPayment(...args: Parameters<typeof releaseOrderForPaymentImpl>) {
+  return safe(() => releaseOrderForPaymentImpl(...args));
+}
+
+export async function setOrderPaymentRule(...args: Parameters<typeof setOrderPaymentRuleImpl>) {
+  return safe(() => setOrderPaymentRuleImpl(...args));
+}
+
+export async function setReserveMode(...args: Parameters<typeof setReserveModeImpl>) {
+  return safe(() => setReserveModeImpl(...args));
+}
+
+export async function registerPayment(...args: Parameters<typeof registerPaymentImpl>) {
+  return safe(() => registerPaymentImpl(...args));
+}
+
+export async function confirmPayment(...args: Parameters<typeof confirmPaymentImpl>) {
+  return safe(() => confirmPaymentImpl(...args));
+}
+
+export async function setPaymentStatus(...args: Parameters<typeof setPaymentStatusImpl>) {
+  return safe(() => setPaymentStatusImpl(...args));
 }

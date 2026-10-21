@@ -20,5 +20,6 @@ export async function GET(request: Request) {
   const { data, error } = await supabase.rpc("expire_unpaid_orders");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const email = await flushEmailOutbox(50);
-  return NextResponse.json({ expiredOrders: data, email });
+  const { data: escalated } = await supabase.rpc("escalate_stale_actions");
+  return NextResponse.json({ expiredOrders: data, email, escalated });
 }

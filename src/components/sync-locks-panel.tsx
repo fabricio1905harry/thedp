@@ -29,37 +29,37 @@ export function SyncLocksPanel({
         await resetFieldsToSource(productId, target);
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Reset failed.");
+        setError(err instanceof Error ? err.message : "Falha ao restaurar.");
       }
     });
   }
 
   return (
     <div className="border border-border p-3 mb-8 max-w-3xl text-xs">
-      <p className="font-medium uppercase tracking-wide mb-1">Supplier sync</p>
+      <p className="font-medium uppercase tracking-wide mb-1">Sincronização com fornecedor</p>
       <p className="text-muted mb-2">
-        Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString("pt-BR") : "never"}. Fields edited
-        manually are protected from future syncs; all other fields keep syncing.
+        Última sincronização: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString("pt-BR") : "nunca"}. Campos editados
+        manualmente ficam protegidos das próximas sincronizações; os demais continuam sincronizando.
       </p>
       {fields.length === 0 ? (
-        <p className="text-muted">No protected fields — everything follows the supplier.</p>
+        <p className="text-muted">Nenhum campo protegido — tudo segue o fornecedor.</p>
       ) : (
         <ul className="space-y-1">
           {fields.map((field) => (
             <li key={field} className="flex items-center gap-2">
               <span>🔒 {SYNCABLE_FIELD_LABELS[field]}</span>
               <span className="text-muted truncate max-w-xs">
-                source: {sourceSnapshot && field in sourceSnapshot ? JSON.stringify(sourceSnapshot[field]) : "—"}
+                fornecedor: {sourceSnapshot && field in sourceSnapshot ? JSON.stringify(sourceSnapshot[field]) : "—"}
               </span>
               <button type="button" disabled={pending} onClick={() => reset([field])} className="underline">
-                Reset to source
+                Restaurar do fornecedor
               </button>
             </li>
           ))}
           {fields.length > 1 && (
             <li>
               <button type="button" disabled={pending} onClick={() => reset(fields)} className="underline font-medium">
-                Reset all to source
+                Restaurar tudo do fornecedor
               </button>
             </li>
           )}

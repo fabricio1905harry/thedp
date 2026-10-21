@@ -116,7 +116,13 @@ export default async function AdminOrderDetailPage({
         outstandingMerchandise={outstandingMerchandise}
       />
 
-      <DhlShipmentReviewPanel initialCalculation={initialCalculation} orderId={order.id} />
+      {["paid", "processing", "shipped", "delivered"].includes(order.status) ? (
+        <DhlShipmentReviewPanel initialCalculation={initialCalculation} orderId={order.id} />
+      ) : (
+        <section className="border border-dashed border-border p-4 text-sm text-muted">
+          O envio DHL só é gerado depois do pagamento integral do pedido. Status atual: {ORDER_STATUS_LABELS[order.status] ?? order.status}.
+        </section>
+      )}
     </div>
   );
 }

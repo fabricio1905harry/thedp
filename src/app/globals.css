@@ -267,3 +267,65 @@ details[open] > :not(summary) {
   background: var(--surface, #f2f2f2);
   animation: pulseSoft 1.4s ease-in-out infinite;
 }
+
+/* ---- Admin look & feel ---- */
+.admin-shell {
+  background: #f7f7f6;
+}
+.admin-shell > aside {
+  background: #fff;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+}
+.admin-shell main {
+  min-width: 0;
+}
+.admin-shell main h1 {
+  letter-spacing: -0.01em;
+}
+.admin-shell main section.border,
+.admin-shell main div.border.p-3,
+.admin-shell main div.border.p-4 {
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 2px;
+}
+.admin-shell main table {
+  background: #fff;
+}
+.admin-shell main thead th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted, #6b6b6b);
+  font-weight: 600;
+}
+.admin-shell input:not([type="checkbox"]):not([type="radio"]),
+.admin-shell select,
+.admin-shell textarea {
+  background: #fff;
+}
+.admin-shell input:focus-visible,
+.admin-shell select:focus-visible,
+.admin-shell textarea:focus-visible,
+.admin-shell button:focus-visible,
+.admin-shell a:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 1px;
+}
+.admin-shell button:not(:disabled) {
+  cursor: pointer;
+}
+.admin-shell button:disabled {
+  cursor: not-allowed;
+}
+.admin-shell .btn-primary,
+.admin-shell button.bg-foreground {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.admin-shell button.bg-foreground:not(:disabled):hover {
+  opacity: 0.88;
+}

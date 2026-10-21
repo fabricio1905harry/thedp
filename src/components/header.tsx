@@ -5,6 +5,7 @@ import { MegaMenu } from "@/components/mega-menu";
 import { CartLink } from "@/components/cart-link";
 import { MobileNav } from "@/components/mobile-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { CurrencySwitcher } from "@/components/currency-switcher";
 import { getAllCategories } from "@/lib/catalog";
 import { mainNav, statusKey } from "@/lib/nav";
 import type { SiteMode } from "@/lib/site-mode";
@@ -92,6 +93,7 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
 
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
+          {!isNacional && <CurrencySwitcher />}
           {!isNacional && <CartLink />}
           {!isNacional &&
             (customer ? (

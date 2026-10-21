@@ -56,15 +56,21 @@ export default async function HomePage() {
                 : pickBestSellers(catalog, count);
             return <ProductsModule key={key} c={content} products={products} siteMode={siteMode} />;
           }
-          case "featured_products":
+          case "featured_products": {
+            const slugs = (content.slugs as string[]) ?? [];
+            const featured =
+              slugs.length > 0
+                ? pickBySlugs(catalog, slugs, Number(content.count) || 6)
+                : catalog.filter((p) => p.isFeatured).slice(0, Number(content.count) || 6);
             return (
               <ProductsModule
                 key={key}
                 c={content}
-                products={pickBySlugs(catalog, (content.slugs as string[]) ?? [], Number(content.count) || 6)}
+                products={featured}
                 siteMode={siteMode}
               />
             );
+          }
           case "featured_video":
             return <FeaturedVideoModule key={key} c={content} />;
           case "become_a_brand":

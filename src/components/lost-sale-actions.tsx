@@ -19,20 +19,20 @@ export function LostSaleActions({ id, status, quantity }: { id: string; status: 
     <span className="space-x-2 whitespace-nowrap">
       {status !== "contacted" && (
         <button type="button" disabled={pending} className="underline" onClick={() => run(() => setLostSaleStatus([id], "contacted"))}>
-          Contacted
+          Contatado
         </button>
       )}
-      <input value={revenue} onChange={(e) => setRevenue(e.target.value)} placeholder="revenue" className="w-16 border border-border px-1" />
+      <input value={revenue} onChange={(e) => setRevenue(e.target.value)} placeholder="receita" className="w-16 border border-border px-1" />
       <button
         type="button"
         disabled={pending}
         className="underline"
         onClick={() => run(() => setLostSaleStatus([id], "recovered", { units: quantity, revenue: Number(revenue || 0) }))}
       >
-        Recovered
+        Recuperada
       </button>
       <button type="button" disabled={pending} className="underline" onClick={() => run(() => setLostSaleStatus([id], "not_recovered"))}>
-        Not recovered
+        Não recuperada
       </button>
     </span>
   );

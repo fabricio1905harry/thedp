@@ -3,9 +3,9 @@ import { DEFAULT_WHATSAPP_SETTINGS, normalizeWhatsAppSettings } from "@/lib/what
 import { saveWhatsAppSettings } from "./actions";
 
 const KINDS = [
-  ["general", "General (any page)", ""],
-  ["product", "Product page", "Use {product} (name + code) and {url}."],
-  ["order", "Order pages", "Use {order} for the order number."],
+  ["general", "Geral (qualquer página)", ""],
+  ["product", "Página de produto", "Use {product} (nome + código) e {url}."],
+  ["order", "Páginas de pedido", "Use {order} para o número do pedido."],
 ] as const;
 
 function daysAgoIso(days: number) {
@@ -26,18 +26,18 @@ export default async function AdminWhatsAppPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="font-serif text-2xl mb-1">WhatsApp button</h1>
+      <h1 className="font-serif text-2xl mb-1">Botão do WhatsApp</h1>
       <p className="text-sm text-muted mb-6">
-        Floating button on desktop + mobile. Messages follow the site language. Only product name/code + URL or the
-        order number are added automatically — never personal data or values. Clicks are tracked as
-        <code> whatsapp_click</code> (last 30 days: {clicks30d ?? 0}).
+        Botão flutuante no desktop + celular. As mensagens seguem o idioma do site. Apenas nome/código do produto + URL ou o
+        número do pedido são adicionados automaticamente — nunca dados pessoais ou valores. Os cliques são registrados como
+        <code> whatsapp_click</code> (últimos 30 dias: {clicks30d ?? 0}).
       </p>
       <form action={saveWhatsAppSettings} className="space-y-5 text-sm">
         <label className="flex items-center gap-2">
-          <input type="checkbox" name="active" defaultChecked={s.active} /> Active
+          <input type="checkbox" name="active" defaultChecked={s.active} /> Ativo
         </label>
         <label className="flex flex-col max-w-xs">
-          Number (with country code, digits only)
+          Número (com código do país, só dígitos)
           <input name="number" defaultValue={s.number} placeholder="5511999999999" className="border border-border px-2 py-1" />
         </label>
         {KINDS.map(([kind, label, hint]) => (
@@ -52,7 +52,7 @@ export default async function AdminWhatsAppPage() {
             ))}
           </fieldset>
         ))}
-        <button type="submit" className="btn-primary px-4 py-2 text-sm">Save</button>
+        <button type="submit" className="btn-primary px-4 py-2 text-sm">Salvar</button>
       </form>
     </div>
   );

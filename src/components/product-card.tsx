@@ -91,7 +91,6 @@ export function ProductCard({
               <p className="text-sm font-semibold text-foreground tracking-tight">
                 {priceLabel}
               </p>
-              <p className="text-[10px] text-muted tracking-wider">{t("installmentsLabel")}</p>
             </div>
           ) : (
             <span className="text-xs font-medium text-accent hover-underline-link inline-block">

@@ -25,26 +25,26 @@ import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 type SP = Record<string, string | undefined>;
 
 const PERIODS = [
-  ["today", "Today"],
-  ["7d", "7 Days"],
-  ["30d", "30 Days"],
-  ["this_month", "This Month"],
-  ["this_year", "This Year"],
-  ["custom", "Custom"],
+  ["today", "Hoje"],
+  ["7d", "7 dias"],
+  ["30d", "30 dias"],
+  ["this_month", "Este mês"],
+  ["this_year", "Este ano"],
+  ["custom", "Personalizado"],
 ] as const;
 
 const COMPARES = [
-  ["previous_period", "Previous period"],
-  ["previous_year", "Same period last year"],
-  ["custom", "Custom comparison"],
-  ["none", "No comparison"],
+  ["previous_period", "Período anterior"],
+  ["previous_year", "Mesmo período do ano anterior"],
+  ["custom", "Comparação personalizada"],
+  ["none", "Sem comparação"],
 ] as const;
 
 const WINDOWS = [
-  ["3m", "Last 3 Months"],
-  ["6m", "Last 6 Months"],
-  ["12m", "Last 12 Months"],
-  ["year", "Consolidated Year"],
+  ["3m", "Últimos 3 meses"],
+  ["6m", "Últimos 6 meses"],
+  ["12m", "Últimos 12 meses"],
+  ["year", "Ano consolidado"],
 ] as const;
 
 export default async function AdminOverviewPage({ searchParams }: { searchParams: Promise<SP> }) {
@@ -78,7 +78,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="font-serif text-2xl">Dashboard</h1>
         {!conv.available && (
-          <p className="text-xs text-accent">No FX rate for {filters.currency} — values shown as 0. Update FX first.</p>
+          <p className="text-xs text-accent">Sem cotação de câmbio para {filters.currency} — valores exibidos como 0. Atualize o câmbio primeiro.</p>
         )}
       </div>
 
@@ -89,7 +89,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium uppercase tracking-wide">Action Center</h2>
           <Link href="/admin/acoes" className="text-xs underline">
-            Full queue ({actionCenter.queue.length}) →
+            Fila completa ({actionCenter.queue.length}) →
           </Link>
         </div>
         <ActionCards cards={actionCenter.cards} />
@@ -105,9 +105,9 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
       <section>
         <h2 className="text-sm font-medium uppercase tracking-wide mb-1">KPIs</h2>
         <p className="text-[11px] text-muted mb-3">
-          Revenue = merchandise of confirmed payments in the period (no freight, insurance, DHL charges, duties,
-          export declaration or bank fees). Values converted to {filters.currency} for analysis only.
-          {previous && ` Comparison: ${rangeLabel(filters.compareRange!)}.`}
+          Receita = mercadoria dos pagamentos confirmados no período (sem frete, seguro, cobranças DHL, impostos,
+          declaração de exportação ou tarifas bancárias). Valores convertidos para {filters.currency} apenas para análise.
+          {previous && ` Comparação: ${rangeLabel(filters.compareRange!)}.`}
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {KPI_DEFS.map((k) => (
@@ -120,16 +120,16 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
               selected={k.key === filters.kpi}
             />
           ))}
-          <KpiTile label="Outstanding Order Value" value={fmt(aging.total)} />
-          <KpiTile label="Reserved Order Value" value={fmt(aging.reservedValue)} />
-          <KpiTile label="Orders Awaiting Payment" value={String(aging.awaitingPayment)} />
+          <KpiTile label="Valor de pedidos em aberto" value={fmt(aging.total)} />
+          <KpiTile label="Valor de pedidos reservados" value={fmt(aging.reservedValue)} />
+          <KpiTile label="Pedidos aguardando pagamento" value={String(aging.awaitingPayment)} />
         </div>
       </section>
 
       {/* EVOLUTION */}
       <section className="border border-border p-4">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h2 className="text-sm font-medium uppercase tracking-wide">{kpiDef.label} — month by month</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide">{kpiDef.label} — mês a mês</h2>
           <div className="flex flex-wrap gap-1 text-xs">
             {WINDOWS.map(([key, label]) => (
               <Link key={key} href={hrefWith(sp, { window: key })} className={`border px-2 py-0.5 ${filters.window === key ? "border-foreground font-semibold" : "border-border"}`}>
@@ -138,20 +138,20 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
             ))}
           </div>
         </div>
-        <p className="text-[11px] text-muted mb-2">Click any KPI tile above to chart it.</p>
+        <p className="text-[11px] text-muted mb-2">Clique em qualquer KPI acima para exibi-lo no gráfico.</p>
         <MonthlyBars data={evolution} format={(v) => formatKpi(filters.kpi, v, fmt)} />
       </section>
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* AGING */}
         <section className="border border-border p-4">
-          <h2 className="text-sm font-medium uppercase tracking-wide mb-1">Outstanding Order Value — aging</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide mb-1">Valor de pedidos em aberto — aging</h2>
           <p className="text-2xl font-semibold mb-3">{fmt(aging.total)}</p>
           <div className="space-y-2">
             {aging.buckets.map((b) => (
               <details key={b.key} className="text-xs">
                 <summary className="cursor-pointer flex justify-between">
-                  <span>{b.label} · {b.orders.length} order(s)</span>
+                  <span>{b.label} · {b.orders.length} pedido(s)</span>
                   <span className="font-semibold">{fmt(b.value)}</span>
                 </summary>
                 <ul className="mt-1 ml-3 space-y-0.5">
@@ -168,16 +168,16 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
 
         {/* PAYMENT MIX */}
         <section className="border border-border p-4">
-          <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Payment Method Mix</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Mix de métodos de pagamento</h2>
           {mix.length === 0 ? (
-            <p className="text-xs text-muted">No confirmed payments in the period.</p>
+            <p className="text-xs text-muted">Nenhum pagamento confirmado no período.</p>
           ) : (
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-left text-muted border-b border-border">
-                  <th className="py-1">Method</th>
-                  <th className="py-1 text-right">Transactions</th>
-                  <th className="py-1 text-right">Value</th>
+                  <th className="py-1">Método</th>
+                  <th className="py-1 text-right">Transações</th>
+                  <th className="py-1 text-right">Valor</th>
                 </tr>
               </thead>
               <tbody>
@@ -195,10 +195,10 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
 
         {/* PASS-THROUGH */}
         <section className="border border-border p-4">
-          <h2 className="text-sm font-medium uppercase tracking-wide mb-1">Operational charges collected (not revenue)</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide mb-1">Cobranças operacionais recebidas (não são receita)</h2>
           <p className="text-[11px] text-muted mb-3">
-            Total Collected {fmt(current.totalCollected)} = Revenue {fmt(current.revenue)} + charges below. Kept apart
-            to compare later with actual costs (e.g. Shipping Charged vs Actual DHL Cost).
+            Total recebido {fmt(current.totalCollected)} = Receita {fmt(current.revenue)} + cobranças abaixo. Mantidas à parte
+            para comparar depois com os custos reais (ex.: frete cobrado vs custo real DHL).
           </p>
           <table className="w-full text-xs">
             <tbody>
@@ -215,42 +215,42 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         {/* LOST SALES */}
         <section className="border border-border p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium uppercase tracking-wide">Lost Sales — Out of Stock</h2>
-            <Link href="/admin/vendas-perdidas" className="text-xs underline">Open list →</Link>
+            <h2 className="text-sm font-medium uppercase tracking-wide">Vendas perdidas — sem estoque</h2>
+            <Link href="/admin/vendas-perdidas" className="text-xs underline">Abrir lista →</Link>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <Mini label="Lost Sales Value" value={fmt(lost.value)} />
-            <Mini label="Lost Units" value={String(lost.units)} />
-            <Mini label="Affected Customers" value={String(lost.customers)} />
-            <Mini label="Restock Opportunities" value={String(lost.restockOpportunities)} />
-            <Mini label="Recovered Sales" value={fmt(current.recoveredSales)} />
-            <Mini label="Recovery Rate" value={lost.recoveryRate === null ? "—" : `${lost.recoveryRate.toFixed(0)}%`} />
+            <Mini label="Valor de vendas perdidas" value={fmt(lost.value)} />
+            <Mini label="Unidades perdidas" value={String(lost.units)} />
+            <Mini label="Clientes afetados" value={String(lost.customers)} />
+            <Mini label="Oportunidades de reposição" value={String(lost.restockOpportunities)} />
+            <Mini label="Vendas recuperadas" value={fmt(current.recoveredSales)} />
+            <Mini label="Taxa de recuperação" value={lost.recoveryRate === null ? "—" : `${lost.recoveryRate.toFixed(0)}%`} />
           </div>
         </section>
 
         {/* FUNNEL */}
         <section className="border border-border p-4">
-          <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Funnel (orders created in the period)</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Funil (pedidos criados no período)</h2>
           <HBars
             data={[
               { label: "Order Request", value: funnel.requests },
               { label: "Confirmed Order", value: funnel.confirmed },
-              { label: "Paid", value: funnel.paid },
+              { label: "Pago", value: funnel.paid },
             ]}
             format={(v) => String(v)}
           />
         </section>
 
         <section className="border border-border p-4">
-          <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Orders by Status</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Pedidos por status</h2>
           <HBars data={statusCounts.map(([s, n]) => ({ label: ORDER_STATUS_LABELS[s] ?? s, value: n }))} format={(v) => String(v)} />
         </section>
 
-        <RankCard title="Sales by Channel" data={breakdowns.byChannel.map((r) => ({ ...r, label: CHANNEL_LABELS[r.label] ?? r.label }))} fmt={fmt} />
-        <RankCard title="Sales by Country" data={breakdowns.byCountry} fmt={fmt} />
-        <RankCard title="Top Products" data={breakdowns.topProducts.map((p) => ({ label: `${p.label} (${p.units} pcs)`, value: p.value }))} fmt={fmt} />
-        <RankCard title="Top Brands" data={breakdowns.topBrands} fmt={fmt} />
-        <RankCard title="Top Customers" data={breakdowns.topCustomers} fmt={fmt} />
+        <RankCard title="Vendas por canal" data={breakdowns.byChannel.map((r) => ({ ...r, label: CHANNEL_LABELS[r.label] ?? r.label }))} fmt={fmt} />
+        <RankCard title="Vendas por país" data={breakdowns.byCountry} fmt={fmt} />
+        <RankCard title="Top produtos" data={breakdowns.topProducts.map((p) => ({ label: `${p.label} (${p.units} pçs)`, value: p.value }))} fmt={fmt} />
+        <RankCard title="Top marcas" data={breakdowns.topBrands} fmt={fmt} />
+        <RankCard title="Top clientes" data={breakdowns.topCustomers} fmt={fmt} />
       </div>
     </div>
   );
@@ -292,50 +292,50 @@ function FilterBar({ filters, sp }: { filters: DashboardFilters; sp: SP }) {
       <input type="hidden" name="kpi" value={filters.kpi} />
       <input type="hidden" name="window" value={filters.window} />
       <label className="flex flex-col">
-        Period
+        Período
         <select name="period" defaultValue={filters.period} className="border border-border px-2 py-1">
           {PERIODS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
       </label>
       <label className="flex flex-col">
-        From
+        De
         <input type="date" name="from" defaultValue={sp.from ?? iso(filters.range.from)} className="border border-border px-2 py-1" />
       </label>
       <label className="flex flex-col">
-        To
+        Até
         <input type="date" name="to" defaultValue={sp.to ?? lastDay(filters.range.to)} className="border border-border px-2 py-1" />
       </label>
       <label className="flex flex-col">
-        Compare with
+        Comparar com
         <select name="compare" defaultValue={filters.compare} className="border border-border px-2 py-1">
           {COMPARES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
       </label>
       <label className="flex flex-col">
-        Compare from
+        Comparar de
         <input type="date" name="cfrom" defaultValue={sp.cfrom} className="border border-border px-2 py-1" />
       </label>
       <label className="flex flex-col">
-        Compare to
+        Comparar até
         <input type="date" name="cto" defaultValue={sp.cto} className="border border-border px-2 py-1" />
       </label>
       <label className="flex flex-col">
-        Channel
+        Canal
         <select name="channel" defaultValue={filters.channel} className="border border-border px-2 py-1">
-          <option value="all">All Channels</option>
+          <option value="all">Todos os canais</option>
           {Object.entries(CHANNEL_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
       </label>
       <label className="flex flex-col">
-        Show in
+        Exibir em
         <select name="currency" defaultValue={filters.currency} className="border border-border px-2 py-1">
           <option value="USD">USD</option>
           <option value="EUR">EUR</option>
           <option value="BRL">BRL</option>
         </select>
       </label>
-      <button type="submit" className="btn-primary px-3 py-1.5">Apply</button>
-      <p className="w-full text-[11px] text-muted">From/To apply when Period = Custom; Compare from/to when Compare = Custom.</p>
+      <button type="submit" className="btn-primary px-3 py-1.5">Aplicar</button>
+      <p className="w-full text-[11px] text-muted">De/Até valem quando Período = Personalizado; Comparar de/até quando Comparar com = Comparação personalizada.</p>
     </form>
   );
 }
@@ -359,8 +359,8 @@ function KpiTile({
       <p className="text-[11px] text-muted leading-tight">{label}</p>
       {delta !== undefined && (
         <p className="text-[11px] mt-1">
-          {delta === null ? "new" : `${delta >= 0 ? "▲ +" : "▼ "}${delta.toFixed(1)}%`}{" "}
-          <span className="text-muted">vs comparison</span>
+          {delta === null ? "novo" : `${delta >= 0 ? "▲ +" : "▼ "}${delta.toFixed(1)}%`}{" "}
+          <span className="text-muted">vs comparação</span>
         </p>
       )}
     </>
@@ -401,7 +401,7 @@ function MonthlyBars({ data, format }: { data: { label: string; value: number }[
 }
 
 function HBars({ data, format }: { data: { label: string; value: number }[]; format: (v: number) => string }) {
-  if (data.length === 0) return <p className="text-xs text-muted">No data in the period.</p>;
+  if (data.length === 0) return <p className="text-xs text-muted">Sem dados no período.</p>;
   const max = Math.max(1, ...data.map((d) => d.value));
   return (
     <div className="space-y-1.5">

@@ -16,7 +16,7 @@ const image = (key: string, label: string, hint?: string): FieldDef => ({
   key,
   label,
   kind: "image",
-  hint: hint ?? "Paste an image URL or a Google Drive link (shared as “anyone with the link”), or upload a file.",
+  hint: hint ?? "Cole a URL de uma imagem ou um link do Google Drive (compartilhado como “qualquer pessoa com o link”), ou envie um arquivo.",
 });
 
 const INTL_B2B = ["intl_b2b" as const];
@@ -30,19 +30,19 @@ function pageDef(key: string, label: string, sort: number): BlockDef {
     scope: "pages",
     key,
     label,
-    description: "Leave sections empty to show the “content being prepared” notice. Sections are shown in the order listed.",
+    description: "Deixe as seções vazias para mostrar o aviso de “conteúdo em preparação”. As seções aparecem na ordem da lista.",
     defaultActive: true,
     defaultSort: sort,
     defaultOperations: ALL_OPERATIONS,
     fields: [
-      text("title", "Page title", "Leave empty to use the standard title."),
-      area("intro", "Introduction"),
+      text("title", "Título da página", "Deixe vazio para usar o título padrão."),
+      area("intro", "Introdução"),
       {
         key: "sections",
-        label: "Sections",
+        label: "Seções",
         kind: "list",
-        itemLabel: "Section",
-        itemFields: [text("heading", "Heading"), area("body", "Text")],
+        itemLabel: "Seção",
+        itemFields: [text("heading", "Subtítulo"), area("body", "Texto")],
       },
     ],
     defaults: { title: t("", "", ""), intro: t("", "", ""), sections: [] },
@@ -56,18 +56,18 @@ export const BLOCK_DEFS: BlockDef[] = [
     key: "hero",
     label: "Hero",
     description:
-      "Main banner. When possible keep headline, text and CTA as text (not inside the image) so languages, SEO and mobile adapt. If the artwork already carries the text, leave the headline empty and upload one image per language.",
+      "Banner principal. Sempre que possível, mantenha título, texto e CTA como texto (não dentro da imagem) para que idiomas, SEO e mobile se adaptem. Se a arte já traz o texto, deixe o título vazio e envie uma imagem por idioma.",
     defaultActive: true,
     defaultSort: 10,
     defaultOperations: ALL_OPERATIONS,
     fields: [
-      image("desktop_image", "Desktop image"),
-      image("mobile_image", "Mobile image"),
-      text("alt", "Alt text"),
-      text("headline", "Headline"),
-      area("text", "Supporting text"),
-      text("cta_text", "CTA text"),
-      url("cta_link", "CTA link"),
+      image("desktop_image", "Imagem desktop"),
+      image("mobile_image", "Imagem mobile"),
+      text("alt", "Texto alternativo (alt)"),
+      text("headline", "Título principal"),
+      area("text", "Texto de apoio"),
+      text("cta_text", "Texto do CTA"),
+      url("cta_link", "Link do CTA"),
     ],
     defaults: {
       desktop_image: "/brand/banner-horizontal-1.png",
@@ -86,11 +86,11 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "institutional_banner",
-    label: "Institutional banner",
+    label: "Banner institucional",
     defaultActive: true,
     defaultSort: 20,
     defaultOperations: ALL_OPERATIONS,
-    fields: [text("headline", "Headline"), text("subheadline", "Subheadline")],
+    fields: [text("headline", "Título principal"), text("subheadline", "Subtítulo")],
     defaults: {
       headline: t("THE DRESSING PROJECT", "THE DRESSING PROJECT", "THE DRESSING PROJECT"),
       subheadline: t(
@@ -103,18 +103,18 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "ready_to_ship",
-    label: "Ready to Ship — positioning",
-    description: "The first thing the buyer should understand: ready-to-ship stock, confirmed before payment.",
+    label: "Pronta entrega — posicionamento",
+    description: "A primeira coisa que o comprador deve entender: estoque de pronta entrega, confirmado antes do pagamento.",
     defaultActive: true,
     defaultSort: 30,
     defaultOperations: INTL_B2B,
     fields: [
       {
         key: "items",
-        label: "Highlights",
+        label: "Destaques",
         kind: "list",
-        itemLabel: "Highlight",
-        itemFields: [text("text", "Text")],
+        itemLabel: "Destaque",
+        itemFields: [text("text", "Texto")],
       },
     ],
     defaults: {
@@ -135,23 +135,23 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "how_it_works",
-    label: "How it works",
+    label: "Como funciona",
     defaultActive: true,
     defaultSort: 40,
     defaultOperations: INTL_B2B,
     fields: [
-      text("title", "Title"),
-      area("intro", "Intro"),
+      text("title", "Título"),
+      area("intro", "Introdução"),
       {
         key: "steps",
-        label: "Steps",
+        label: "Etapas",
         kind: "list",
-        itemLabel: "Step",
-        itemFields: [text("title", "Title"), area("text", "Text")],
+        itemLabel: "Etapa",
+        itemFields: [text("title", "Título"), area("text", "Texto")],
       },
-      text("payment_note", "Payment methods line"),
-      area("reserve_note", "Reservation / later delivery text"),
-      text("reserve_cta", "“Learn more” label"),
+      text("payment_note", "Linha de formas de pagamento"),
+      area("reserve_note", "Texto de reserva / entrega posterior"),
+      text("reserve_cta", "Texto do “Saiba mais”"),
     ],
     defaults: {
       title: t("How it works", "Cómo funciona", "Como funciona"),
@@ -210,11 +210,11 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "start_small",
-    label: "Start small",
+    label: "Comece pequeno",
     defaultActive: true,
     defaultSort: 50,
     defaultOperations: INTL_B2B,
-    fields: [text("headline", "Headline"), area("text", "Text")],
+    fields: [text("headline", "Título principal"), area("text", "Texto")],
     defaults: {
       headline: t(
         "START SMALL. DISCOVER WHAT SELLS.",
@@ -231,27 +231,27 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "best_sellers",
-    label: "Best sellers",
+    label: "Mais vendidos",
     description:
-      "Automatic = all-time sales ranking among products with stock available now (products without stock leave the module on their own). Manual = you choose and order the products.",
+      "Automático = ranking de vendas de todos os tempos entre produtos com estoque disponível agora (produtos sem estoque saem do módulo sozinhos). Manual = você escolhe e ordena os produtos.",
     defaultActive: true,
     defaultSort: 60,
     defaultOperations: ALL_OPERATIONS,
     fields: [
-      text("title", "Title"),
+      text("title", "Título"),
       {
         key: "mode",
-        label: "Mode",
+        label: "Modo",
         kind: "select",
         options: [
-          { value: "automatic", label: "Automatic" },
+          { value: "automatic", label: "Automático" },
           { value: "manual", label: "Manual" },
         ],
       },
-      { key: "count", label: "Number of products", kind: "number" },
-      { key: "slugs", label: "Products (manual mode) — one slug per line, in display order", kind: "slugs" },
-      text("cta_text", "“View all” label"),
-      url("cta_link", "“View all” link"),
+      { key: "count", label: "Quantidade de produtos", kind: "number" },
+      { key: "slugs", label: "Produtos (modo manual) — um slug por linha, na ordem de exibição", kind: "slugs" },
+      text("cta_text", "Texto do “Ver tudo”"),
+      url("cta_link", "Link do “Ver tudo”"),
     ],
     defaults: {
       title: t("Best sellers", "Más vendidos", "Mais vendidos"),
@@ -265,16 +265,16 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "featured_products",
-    label: "Featured products",
-    description: "Manually selected products (slug = the product address, shown in Admin → Produtos).",
+    label: "Produtos em destaque",
+    description: "Produtos escolhidos manualmente (slug = o endereço do produto, mostrado em Admin → Produtos).",
     defaultActive: true,
     defaultSort: 70,
     defaultOperations: ALL_OPERATIONS,
     placement: true,
     fields: [
-      text("title", "Title"),
-      { key: "count", label: "Number of products", kind: "number" },
-      { key: "slugs", label: "Products — one slug per line, in display order", kind: "slugs" },
+      text("title", "Título"),
+      { key: "count", label: "Quantidade de produtos", kind: "number" },
+      { key: "slugs", label: "Produtos — um slug por linha, na ordem de exibição", kind: "slugs" },
     ],
     defaults: {
       title: t("Featured products", "Productos destacados", "Produtos em destaque"),
@@ -285,19 +285,19 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "featured_video",
-    label: "Featured video / campaign film",
+    label: "Vídeo em destaque / filme de campanha",
     defaultActive: false,
     defaultSort: 80,
     defaultOperations: ALL_OPERATIONS,
     placement: true,
     fields: [
-      text("title", "Title"),
-      area("text", "Supporting text"),
-      url("video_url", "Video URL (YouTube, Vimeo or a direct .mp4)"),
-      image("thumbnail_desktop", "Thumbnail — desktop"),
-      image("thumbnail_mobile", "Thumbnail — mobile"),
-      text("cta_text", "CTA text"),
-      url("cta_link", "CTA link"),
+      text("title", "Título"),
+      area("text", "Texto de apoio"),
+      url("video_url", "URL do vídeo (YouTube, Vimeo ou um .mp4 direto)"),
+      image("thumbnail_desktop", "Miniatura — desktop"),
+      image("thumbnail_mobile", "Miniatura — mobile"),
+      text("cta_text", "Texto do CTA"),
+      url("cta_link", "Link do CTA"),
     ],
     defaults: {
       title: t("", "", ""),
@@ -312,11 +312,11 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "become_a_brand",
-    label: "Become a brand",
+    label: "Seja uma marca parceira",
     defaultActive: true,
     defaultSort: 90,
     defaultOperations: INTL_B2B,
-    fields: [text("title", "Title"), area("text", "Text"), text("cta_text", "CTA text"), url("cta_link", "CTA link")],
+    fields: [text("title", "Título"), area("text", "Texto"), text("cta_text", "Texto do CTA"), url("cta_link", "Link do CTA")],
     defaults: {
       title: t(
         "Interested in joining The Dressing Project?",
@@ -337,11 +337,11 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "about",
     key: "hero",
-    label: "About — hero",
+    label: "Sobre — Hero",
     defaultActive: true,
     defaultSort: 10,
     defaultOperations: ALL_OPERATIONS,
-    fields: [image("image", "Photo"), text("title", "Title"), area("intro", "Introduction")],
+    fields: [image("image", "Foto"), text("title", "Título"), area("intro", "Introdução")],
     defaults: {
       image: ABOUT_PHOTO_DRIVE_URL,
       title: t("The Dressing Project", "The Dressing Project", "The Dressing Project"),
@@ -355,11 +355,11 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "about",
     key: "history",
-    label: "About — our story",
+    label: "Sobre — nossa história",
     defaultActive: true,
     defaultSort: 20,
     defaultOperations: ALL_OPERATIONS,
-    fields: [text("title", "Title"), area("text", "Text")],
+    fields: [text("title", "Título"), area("text", "Texto")],
     defaults: {
       title: t("Our story", "Nuestra historia", "Nossa história"),
       text: t(
@@ -372,19 +372,19 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "about",
     key: "journey",
-    label: "About — our journey (timeline)",
-    description: "Add, remove and reorder milestones. Dates are optional.",
+    label: "Sobre — nossa trajetória (linha do tempo)",
+    description: "Adicione, remova e reordene os marcos. As datas são opcionais.",
     defaultActive: true,
     defaultSort: 30,
     defaultOperations: ALL_OPERATIONS,
     fields: [
-      text("title", "Title"),
+      text("title", "Título"),
       {
         key: "items",
-        label: "Milestones",
+        label: "Marcos",
         kind: "list",
-        itemLabel: "Milestone",
-        itemFields: [plain("year", "Date / year (optional)"), text("title", "Title"), area("text", "Text"), image("image", "Image (optional)")],
+        itemLabel: "Marco",
+        itemFields: [plain("year", "Data / ano (opcional)"), text("title", "Título"), area("text", "Texto"), image("image", "Imagem (opcional)")],
       },
     ],
     defaults: {
@@ -426,11 +426,11 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "about",
     key: "vision",
-    label: "About — our vision",
+    label: "Sobre — nossa visão",
     defaultActive: true,
     defaultSort: 40,
     defaultOperations: ALL_OPERATIONS,
-    fields: [text("title", "Title"), area("text", "Text")],
+    fields: [text("title", "Título"), area("text", "Texto")],
     defaults: {
       title: t("Our vision", "Nuestra visión", "Nossa visão"),
       text: t(
@@ -443,19 +443,19 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "about",
     key: "founders",
-    label: "About — meet the founders",
-    description: "Draft texts based on the brief — review and replace with the final bios.",
+    label: "Sobre — conheça os fundadores",
+    description: "Textos provisórios baseados no briefing — revise e substitua pelas biografias finais.",
     defaultActive: true,
     defaultSort: 50,
     defaultOperations: ALL_OPERATIONS,
     fields: [
-      text("title", "Title"),
+      text("title", "Título"),
       {
         key: "people",
-        label: "People",
+        label: "Pessoas",
         kind: "list",
-        itemLabel: "Person",
-        itemFields: [plain("name", "Name"), text("role", "Role"), area("bio", "Short bio"), image("photo", "Photo (optional)")],
+        itemLabel: "Pessoa",
+        itemFields: [plain("name", "Nome"), text("role", "Cargo"), area("bio", "Mini biografia"), image("photo", "Foto (opcional)")],
       },
     ],
     defaults: {
@@ -487,12 +487,12 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "about",
     key: "film",
-    label: "About — institutional film",
-    description: "Master film of about 45–60 seconds.",
+    label: "Sobre — filme institucional",
+    description: "Filme principal de cerca de 45–60 segundos.",
     defaultActive: false,
     defaultSort: 60,
     defaultOperations: ALL_OPERATIONS,
-    fields: [text("title", "Title"), url("video_url", "Video URL (YouTube, Vimeo or a direct .mp4)"), image("poster", "Poster image")],
+    fields: [text("title", "Título"), url("video_url", "URL do vídeo (YouTube, Vimeo ou um .mp4 direto)"), image("poster", "Imagem de capa (poster)")],
     defaults: {
       title: t("Institutional film", "Película institucional", "Filme institucional"),
       video_url: "",
@@ -504,16 +504,16 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "contact",
     key: "intro",
-    label: "Contact — introduction and channels",
+    label: "Contato — introdução e canais",
     defaultActive: true,
     defaultSort: 10,
     defaultOperations: ALL_OPERATIONS,
     fields: [
-      text("title", "Title"),
-      area("text", "Introduction"),
-      plain("whatsapp", "WhatsApp number or link", "Leave empty to use the number from Admin → WhatsApp."),
-      plain("email", "Contact e-mail"),
-      area("extra", "Additional contact information (optional)"),
+      text("title", "Título"),
+      area("text", "Introdução"),
+      plain("whatsapp", "Número ou link do WhatsApp", "Deixe vazio para usar o número de Admin → WhatsApp."),
+      plain("email", "E-mail de contato"),
+      area("extra", "Informações de contato adicionais (opcional)"),
     ],
     defaults: {
       title: t("Get in touch", "Ponte en contacto", "Fale conosco"),
@@ -530,18 +530,18 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "contact",
     key: "form",
-    label: "Contact — form",
+    label: "Contato — formulário",
     defaultActive: true,
     defaultSort: 20,
     defaultOperations: ALL_OPERATIONS,
     fields: [
-      text("title", "Form title"),
+      text("title", "Título do formulário"),
       {
         key: "subjects",
-        label: "Subject options",
+        label: "Opções de assunto",
         kind: "list",
-        itemLabel: "Subject",
-        itemFields: [plain("value", "Code (no spaces, e.g. brand)"), text("label", "Label")],
+        itemLabel: "Assunto",
+        itemFields: [plain("value", "Código (sem espaços, ex.: brand)"), text("label", "Rótulo")],
       },
     ],
     defaults: {
@@ -560,11 +560,11 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "contact",
     key: "wholesale_cta",
-    label: "Contact — wholesale account CTA",
+    label: "Contato — CTA de conta de atacado",
     defaultActive: true,
     defaultSort: 30,
     defaultOperations: INTL_B2B,
-    fields: [area("text", "Text"), text("cta_text", "Button text"), url("cta_link", "Button link")],
+    fields: [area("text", "Texto"), text("cta_text", "Texto do botão"), url("cta_link", "Link do botão")],
     defaults: {
       text: t(
         "Interested in accessing wholesale pricing and placing orders?",
@@ -578,11 +578,11 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "contact",
     key: "brand_cta",
-    label: "Contact — brands / partnerships CTA",
+    label: "Contato — CTA de marcas / parcerias",
     defaultActive: true,
     defaultSort: 40,
     defaultOperations: INTL_B2B,
-    fields: [area("text", "Text"), text("cta_text", "Button text"), url("cta_link", "Button link")],
+    fields: [area("text", "Texto"), text("cta_text", "Texto do botão"), url("cta_link", "Link do botão")],
     defaults: {
       text: t(
         "Interested in joining The Dressing Project or exploring distribution and commercial opportunities with us?",
@@ -597,29 +597,29 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "site",
     key: "announcement",
-    label: "Top announcement bar (international site)",
+    label: "Barra de anúncio no topo (site internacional)",
     defaultActive: true,
     defaultSort: 10,
     defaultOperations: ["intl_b2b", "intl_b2c"],
-    fields: [text("text", "Text", "Leave empty to use the standard text."), url("link", "Link (optional)")],
+    fields: [text("text", "Texto", "Deixe vazio para usar o texto padrão."), url("link", "Link (opcional)")],
     defaults: { text: t("", "", ""), link: "" },
   },
   {
     scope: "site",
     key: "national_notice",
-    label: "Top notice bar (national site)",
+    label: "Barra de aviso no topo (site nacional)",
     defaultActive: true,
     defaultSort: 20,
     defaultOperations: ["br_b2b", "br_b2c"],
-    fields: [text("text", "Text", "Leave empty to use the standard text."), url("link", "Link (optional)")],
+    fields: [text("text", "Texto", "Deixe vazio para usar o texto padrão."), url("link", "Link (opcional)")],
     defaults: { text: t("", "", ""), link: "" },
   },
 
   // ------------------------------------------------------------- PAGES
   pageDef("faq", "FAQ", 10),
-  pageDef("terms", "Terms of use", 20),
-  pageDef("privacy", "Privacy policy", 30),
-  pageDef("returns", "Exchanges and returns", 40),
+  pageDef("terms", "Termos de uso", 20),
+  pageDef("privacy", "Política de privacidade", 30),
+  pageDef("returns", "Trocas e devoluções", 40),
 ];
 
 export function getBlockDef(scope: string, key: string): BlockDef | undefined {
@@ -628,8 +628,8 @@ export function getBlockDef(scope: string, key: string): BlockDef | undefined {
 
 export const CMS_SCOPE_LABELS: Record<string, string> = {
   home: "Home",
-  about: "About",
-  contact: "Contact",
-  site: "Site bars",
-  pages: "Pages (FAQ, terms…)",
+  about: "Sobre",
+  contact: "Contato",
+  site: "Barras do site",
+  pages: "Páginas (FAQ, termos…)",
 };

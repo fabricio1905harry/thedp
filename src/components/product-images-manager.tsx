@@ -31,11 +31,11 @@ export interface ImageRow {
 }
 
 const STATUS_LABEL: Record<ImageRow["review_status"], string> = {
-  pending_review: "PENDING REVIEW",
-  approved: "APPROVED",
-  hidden: "HIDDEN",
-  rejected: "REJECTED",
-  replaced: "REPLACED",
+  pending_review: "AGUARDANDO REVISÃO",
+  approved: "APROVADA",
+  hidden: "OCULTA",
+  rejected: "REJEITADA",
+  replaced: "SUBSTITUÍDA",
 };
 
 const STATUS_CLASS: Record<ImageRow["review_status"], string> = {
@@ -87,7 +87,7 @@ export function ProductImagesManager({
         setSelected(new Set());
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Action failed.");
+        setError(err instanceof Error ? err.message : "A ação falhou.");
       }
     });
   }
@@ -151,10 +151,10 @@ export function ProductImagesManager({
       {mode === "product" && (
         <div className="text-xs mb-3 flex flex-wrap gap-x-4 gap-y-1">
           <span>
-            Publish requirements: {approvedCount > 0 ? "✓" : "✗"} 1+ approved image · {hasCover ? "✓" : "✗"} main image/cover
+            Requisitos para publicar: {approvedCount > 0 ? "✓" : "✗"} 1+ imagem aprovada · {hasCover ? "✓" : "✗"} imagem principal/capa
           </span>
           <button type="button" className="underline text-muted" onClick={() => setShowArchived((v) => !v)}>
-            {showArchived ? "Show active images" : `Show rejected/replaced (${archived.length})`}
+            {showArchived ? "Mostrar imagens ativas" : `Mostrar rejeitadas/substituídas (${archived.length})`}
           </button>
         </div>
       )}
@@ -165,27 +165,27 @@ export function ProductImagesManager({
           onClick={() => setSelected(new Set(visible.map((i) => i.id)))}
           className="border border-border px-2 py-1"
         >
-          Select all
+          Selecionar todas
         </button>
         <button type="button" onClick={() => setSelected(new Set())} className="border border-border px-2 py-1">
-          Clear
+          Limpar
         </button>
-        <span className="text-muted">{selected.size} selected</span>
+        <span className="text-muted">{selected.size} selecionada(s)</span>
         <button type="button" disabled={pending || selected.size === 0} onClick={() => bulk("approved")} className="btn-primary px-3 py-1 disabled:opacity-50">
-          APPROVE SELECTED
+          APROVAR SELECIONADAS
         </button>
         <button type="button" disabled={pending || selected.size === 0} onClick={() => bulk("rejected")} className="border border-red-600 text-red-700 px-3 py-1 disabled:opacity-50">
-          REJECT SELECTED
+          REJEITAR SELECIONADAS
         </button>
         {mode === "product" && (
           <button type="button" disabled={pending || selected.size === 0} onClick={() => bulk("hidden")} className="border border-border px-3 py-1 disabled:opacity-50">
-            Hide selected
+            Ocultar selecionadas
           </button>
         )}
       </div>
 
       {visible.length === 0 ? (
-        <p className="text-sm text-muted mb-3">{mode === "queue" ? "No images waiting for review." : "No photos yet."}</p>
+        <p className="text-sm text-muted mb-3">{mode === "queue" ? "Nenhuma imagem aguardando revisão." : "Nenhuma foto ainda."}</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
           {visible.map((img, idx) => {
@@ -199,7 +199,7 @@ export function ProductImagesManager({
                     type="button"
                     onClick={() => toggle(img.id)}
                     className="relative block w-full aspect-[2/3] overflow-hidden bg-surface"
-                    title="Select"
+                    title="Selecionar"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {src ? <img src={src} alt="" style={croppedImageStyle(crop)} /> : null}
@@ -209,44 +209,44 @@ export function ProductImagesManager({
                     checked={isSelected}
                     onChange={() => toggle(img.id)}
                     className="absolute top-1 left-1"
-                    aria-label="Select image"
+                    aria-label="Selecionar imagem"
                   />
                   <span className={`absolute top-1 right-1 px-1 py-0.5 font-semibold ${STATUS_CLASS[img.review_status]}`}>
                     {STATUS_LABEL[img.review_status]}
                   </span>
                   {img.is_cover && (
-                    <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-foreground text-background font-semibold">COVER</span>
+                    <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-foreground text-background font-semibold">CAPA</span>
                   )}
                   {img.origin === "tdp_upload" && (
                     <span className="absolute bottom-1 right-1 px-1 py-0.5 bg-background/90">
-                      TDP{img.replaces_image_id ? " version" : ""}
+                      TDP{img.replaces_image_id ? " (versão)" : ""}
                     </span>
                   )}
                 </div>
                 <div className="p-1.5 flex flex-wrap gap-x-2 gap-y-1">
                   {mode === "queue" && img.product_id && (
                     <Link href={`/admin/produtos/${img.product_id}`} className="w-full truncate underline">
-                      {img.product_title ?? "Product"}
+                      {img.product_title ?? "Produto"}
                     </Link>
                   )}
                   {img.review_status !== "approved" && img.review_status !== "replaced" && (
                     <ActionLink onClick={() => run(() => setImagesReviewStatus([img.id], "approved"))}>
-                      {img.review_status === "hidden" ? "Reactivate" : "Approve"}
+                      {img.review_status === "hidden" ? "Reativar" : "Aprovar"}
                     </ActionLink>
                   )}
                   {img.review_status !== "rejected" && img.review_status !== "replaced" && (
-                    <ActionLink onClick={() => run(() => setImagesReviewStatus([img.id], "rejected"))}>Reject</ActionLink>
+                    <ActionLink onClick={() => run(() => setImagesReviewStatus([img.id], "rejected"))}>Rejeitar</ActionLink>
                   )}
                   {img.review_status === "approved" && (
-                    <ActionLink onClick={() => run(() => setImagesReviewStatus([img.id], "hidden"))}>Hide</ActionLink>
+                    <ActionLink onClick={() => run(() => setImagesReviewStatus([img.id], "hidden"))}>Ocultar</ActionLink>
                   )}
                   {img.review_status === "approved" && !img.is_cover && (
-                    <ActionLink onClick={() => run(() => setCoverImage(img.id))}>Set cover</ActionLink>
+                    <ActionLink onClick={() => run(() => setCoverImage(img.id))}>Definir capa</ActionLink>
                   )}
-                  {src && <ActionLink onClick={() => setCropping(img)}>Crop</ActionLink>}
-                  {src && <ActionLink onClick={() => setPreview(src)}>View</ActionLink>}
+                  {src && <ActionLink onClick={() => setCropping(img)}>Recortar</ActionLink>}
+                  {src && <ActionLink onClick={() => setPreview(src)}>Ver</ActionLink>}
                   {mode === "product" && img.origin === "source" && img.review_status !== "replaced" && (
-                    <ActionLink onClick={() => setReplacing(img)}>Replace</ActionLink>
+                    <ActionLink onClick={() => setReplacing(img)}>Substituir</ActionLink>
                   )}
                   {mode === "product" && !showArchived && (
                     <>
@@ -255,7 +255,7 @@ export function ProductImagesManager({
                     </>
                   )}
                   {img.origin === "tdp_upload" && productId && (
-                    <ActionLink onClick={() => run(() => removeProductImage(img.id, productId))}>Delete</ActionLink>
+                    <ActionLink onClick={() => run(() => removeProductImage(img.id, productId))}>Excluir</ActionLink>
                   )}
                 </div>
               </div>
@@ -267,10 +267,10 @@ export function ProductImagesManager({
       {mode === "product" && productId && (
         <div className="border border-border p-3 space-y-2 max-w-xl">
           <p className="text-xs font-medium">
-            {replacing ? "Replace with a TDP-treated version (the original stays linked as SOURCE → TDP VERSION)" : "Add TDP image"}
+            {replacing ? "Substituir por uma versão tratada pela TDP (a original fica vinculada como ORIGEM → VERSÃO TDP)" : "Adicionar imagem TDP"}
             {replacing && (
               <button type="button" onClick={() => setReplacing(null)} className="ml-2 underline text-muted">
-                cancel
+                cancelar
               </button>
             )}
           </p>
@@ -279,15 +279,15 @@ export function ProductImagesManager({
               type="url"
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
-              placeholder="https://…/photo.jpg"
+              placeholder="https://…/foto.jpg"
               className="flex-1 border border-border px-3 py-1.5 text-sm"
             />
             <button type="submit" disabled={pending || !newUrl.trim()} className="text-xs border border-border px-3 py-1.5 disabled:opacity-50">
-              Add by URL
+              Adicionar por URL
             </button>
           </form>
           <label className="text-xs flex items-center gap-2">
-            <span>or upload file:</span>
+            <span>ou envie um arquivo:</span>
             <input type="file" accept="image/*" disabled={pending} onChange={(e) => handleUpload(e.target.files?.[0])} />
           </label>
         </div>

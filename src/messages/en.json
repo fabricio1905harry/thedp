@@ -217,10 +217,26 @@
     "categoriesSubtitle": "Discover the ideal piece for every event, finished with impeccable haute couture craftsmanship.",
     "exploreCollection": "Explore Collection",
     "categories": {
-      "festa": { "title": "Party Dresses", "subtitle": "Exclusive haute couture pieces for events and galas", "tag": "Main Collection" },
-      "longos": { "title": "Long Dresses", "subtitle": "Mermaid and A-line silhouettes with flawless drape", "tag": "Haute Couture" },
-      "midi": { "title": "Midi & Silk Dresses", "subtitle": "Contemporary elegance in silk and noble fabrics", "tag": "Ready to Ship" },
-      "atacado": { "title": "International Wholesale", "subtitle": "Special terms and DHL Express shipping for resellers", "tag": "Retailers & B2B" }
+      "festa": {
+        "title": "Party Dresses",
+        "subtitle": "Exclusive haute couture pieces for events and galas",
+        "tag": "Main Collection"
+      },
+      "longos": {
+        "title": "Long Dresses",
+        "subtitle": "Mermaid and A-line silhouettes with flawless drape",
+        "tag": "Haute Couture"
+      },
+      "midi": {
+        "title": "Midi & Silk Dresses",
+        "subtitle": "Contemporary elegance in silk and noble fabrics",
+        "tag": "Ready to Ship"
+      },
+      "atacado": {
+        "title": "International Wholesale",
+        "subtitle": "Special terms and DHL Express shipping for resellers",
+        "tag": "Retailers & B2B"
+      }
     }
   },
   "category": {
@@ -412,7 +428,14 @@
     "phone": "WhatsApp / phone",
     "businessType": "Type of business",
     "choose": "Choose",
-    "types": {"boutique": "Boutique", "multibrand": "Multi-brand store", "department": "Department store", "ecommerce": "E-commerce", "showroom": "Showroom", "other": "Other"},
+    "types": {
+      "boutique": "Boutique",
+      "multibrand": "Multi-brand store",
+      "department": "Department store",
+      "ecommerce": "E-commerce",
+      "showroom": "Showroom",
+      "other": "Other"
+    },
     "taxId": "Tax / company registration number (if applicable)",
     "physicalStore": "Physical store?",
     "yes": "Yes",
@@ -434,6 +457,12 @@
     "orders": "Orders",
     "noOrders": "You have no orders yet.",
     "browse": "Browse the shop",
-    "addresses": "Manage delivery addresses"
+    "addresses": "Manage delivery addresses",
+    "appStatusTitle": "Your wholesale application",
+    "appPending": "Your application is being reviewed by our team. You will receive an e-mail when it is approved.",
+    "appMoreInfo": "We need a bit more information to continue reviewing your application:",
+    "appReply": "Reply to our team",
+    "appRejected": "Your application was not approved at this time. Contact us if you would like to know more.",
+    "appApproved": "Your wholesale account is approved."
   }
 }

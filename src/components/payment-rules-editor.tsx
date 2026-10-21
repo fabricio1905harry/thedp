@@ -36,7 +36,7 @@ export function PaymentRulesEditor({
         await fn();
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed");
+        setError(err instanceof Error ? err.message : "Falha");
       }
     });
   };
@@ -48,11 +48,11 @@ export function PaymentRulesEditor({
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">1. Channel defaults</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">1. Padrões por canal</h2>
         <table className="text-xs">
           <thead>
             <tr className="text-left text-muted">
-              <th className="pr-4 py-1">Channel</th>
+              <th className="pr-4 py-1">Canal</th>
               {methods.map((m) => <th key={m.code} className="pr-4 py-1">{m.name}</th>)}
             </tr>
           </thead>
@@ -77,7 +77,7 @@ export function PaymentRulesEditor({
       </section>
 
       <section>
-        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">2. Customer exceptions</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">2. Exceções por cliente</h2>
         <form
           className="flex flex-wrap items-end gap-2 text-xs mb-3"
           onSubmit={(e) => {
@@ -85,34 +85,34 @@ export function PaymentRulesEditor({
             run(() => setCustomerPaymentRule(email, method, value === "inherit" ? null : value === "on"));
           }}
         >
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="customer e-mail" className="border border-border px-2 py-1" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e-mail do cliente" className="border border-border px-2 py-1" />
           <select value={method} onChange={(e) => setMethod(e.target.value)} className="border border-border px-2 py-1">
             {methods.map((m) => <option key={m.code} value={m.code}>{m.name}</option>)}
           </select>
           <select value={value} onChange={(e) => setValue(e.target.value)} className="border border-border px-2 py-1">
-            <option value="on">Allow</option>
-            <option value="off">Block</option>
-            <option value="inherit">Remove exception</option>
+            <option value="on">Permitir</option>
+            <option value="off">Bloquear</option>
+            <option value="inherit">Remover exceção</option>
           </select>
-          <button type="submit" disabled={pending} className="border border-border px-3 py-1">Save</button>
+          <button type="submit" disabled={pending} className="border border-border px-3 py-1">Salvar</button>
         </form>
         {customerRules.length === 0 ? (
-          <p className="text-xs text-muted">No customer exceptions.</p>
+          <p className="text-xs text-muted">Nenhuma exceção por cliente.</p>
         ) : (
           <ul className="text-xs space-y-1">
             {customerRules.map((r) => (
               <li key={`${r.customer_id}-${r.method_code}`}>
                 {r.customers?.company_name || r.customers?.email} — {methods.find((m) => m.code === r.method_code)?.name}:{" "}
-                <strong>{r.enabled ? "allowed" : "blocked"}</strong>{" "}
+                <strong>{r.enabled ? "permitido" : "bloqueado"}</strong>{" "}
                 <button type="button" className="underline" onClick={() => r.customers && run(() => setCustomerPaymentRule(r.customers!.email, r.method_code, null))}>
-                  remove
+                  remover
                 </button>
               </li>
             ))}
           </ul>
         )}
       </section>
-      <p className="text-xs text-muted">3. Order exceptions are set on each order page (Payment methods for this order).</p>
+      <p className="text-xs text-muted">3. As exceções por pedido são definidas na página de cada pedido (Formas de pagamento deste pedido).</p>
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );

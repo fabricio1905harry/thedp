@@ -54,7 +54,7 @@ export default async function AdminProductEditPage({
   return (
     <div>
       <Link href="/admin/produtos" className="text-xs text-muted hover:text-accent">
-        ← Products
+        ← Produtos
       </Link>
       <h1 className="font-serif text-2xl mt-2 mb-6">{product.title}</h1>
 
@@ -65,7 +65,7 @@ export default async function AdminProductEditPage({
         sourceSnapshot={product.source_snapshot as Record<string, unknown> | null}
       />
 
-      <h2 className="text-sm font-medium uppercase tracking-wide mb-4">Photos</h2>
+      <h2 className="text-sm font-medium uppercase tracking-wide mb-4">Fotos</h2>
       <div className="mb-10">
         <ProductImagesManager productId={id} images={(images ?? []) as ImageRow[]} />
       </div>
@@ -79,7 +79,7 @@ export default async function AdminProductEditPage({
       <ProductPricingPanel product={product as unknown as ProductPricingData} />
 
       <h2 className="text-sm font-medium uppercase tracking-wide mt-10 mb-4">
-        Variant stock (size × color matrix)
+        Estoque por variante (matriz tamanho × cor)
       </h2>
       <VariantStockTable variants={variants ?? []} />
     </div>

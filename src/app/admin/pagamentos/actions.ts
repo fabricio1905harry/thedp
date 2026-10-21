@@ -6,7 +6,7 @@ import { getCurrentStaff } from "@/lib/admin-auth";
 
 async function requireStaff() {
   const staff = await getCurrentStaff();
-  if (!staff) throw new Error("Not authorized");
+  if (!staff) throw new Error("Não autorizado");
   return staff;
 }
 
@@ -27,7 +27,7 @@ export async function setCustomerPaymentRule(customerEmail: string, methodCode: 
   const staff = await requireStaff();
   const supabase = await createClient();
   const { data: customer } = await supabase.from("customers").select("id").eq("email", customerEmail.trim()).maybeSingle();
-  if (!customer) throw new Error(`Customer not found: ${customerEmail}`);
+  if (!customer) throw new Error(`Cliente não encontrado: ${customerEmail}`);
   await supabase.from("payment_method_rules").delete().eq("scope", "customer").eq("customer_id", customer.id).eq("method_code", methodCode);
   if (enabled !== null) {
     const { error } = await supabase
@@ -42,10 +42,10 @@ const NUMERIC_SETTINGS = new Set(["bank_processing_fee_brl", "reserve_markup_pct
 
 export async function saveNumericSetting(key: string, formData: FormData) {
   const staff = await requireStaff();
-  if (!NUMERIC_SETTINGS.has(key)) throw new Error("Unknown setting");
+  if (!NUMERIC_SETTINGS.has(key)) throw new Error("Configuração desconhecida");
   const raw = String(formData.get("value") ?? "").trim();
   const value = raw === "" ? null : Number(raw);
-  if (value !== null && (!Number.isFinite(value) || value < 0)) throw new Error("Value must be a positive number.");
+  if (value !== null && (!Number.isFinite(value) || value < 0)) throw new Error("O valor deve ser um número positivo.");
   const supabase = await createClient();
   const { error } = await supabase
     .from("app_settings")
