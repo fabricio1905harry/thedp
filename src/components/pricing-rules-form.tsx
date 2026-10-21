@@ -34,7 +34,7 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
     setMsg(null);
     start(async () => {
       const res = await savePricingRules(rules);
-      setMsg(res.error ?? "Regras salvas — todos os produtos foram recalculados.");
+      setMsg(res.error ?? `Regras salvas — ${res.count ?? 0} produtos atualizados com os novos preços.`);
       router.refresh();
     });
   }
@@ -150,10 +150,10 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
 
         <div className="flex flex-wrap items-center gap-3">
           <button onClick={save} disabled={pending || pctSum >= 95} className="bg-foreground text-background px-5 py-2 text-sm disabled:opacity-50">
-            {pending ? "Salvando…" : "Salvar regras e recalcular todos"}
+            {pending ? "Atualizando…" : "Salvar e atualizar preços dos produtos"}
           </button>
           <button onClick={recompute} disabled={pending} className="border border-border px-4 py-2 text-sm">
-            Só recalcular
+            Atualizar produtos com as regras salvas
           </button>
           {msg && <span className="text-xs">{msg}</span>}
         </div>
