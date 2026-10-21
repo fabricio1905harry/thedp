@@ -73,9 +73,6 @@ export function ProductEditForm({
     defaultStock: product.default_stock,
   });
 
-  const brlPreview =
-    Math.round((Number(form.originalPrice || 0) + Number(form.markup || 0)) * 100) / 100;
-
   function toggleConnector(id: string) {
     setSelectedConnectorIds((prev) =>
       prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
@@ -244,7 +241,7 @@ export function ProductEditForm({
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Original price (BRL, as received from supplier)">
+          <Field label="Custo da peça (R$, recebido do fornecedor)">
             <input
               type="number"
               step="0.01"
@@ -253,24 +250,13 @@ export function ProductEditForm({
               className="w-full border border-border px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Markup (BRL, flat amount added)">
-            <input
-              type="number"
-              step="0.01"
-              value={form.markup}
-              onChange={(e) => setForm((f) => ({ ...f, markup: Number(e.target.value) }))}
-              className="w-full border border-border px-3 py-2 text-sm"
-            />
-          </Field>
         </div>
         <p className="text-xs text-muted -mt-2">
-          BRL preview: {brlPreview} — USD/EUR are recalculated on save from
-          the rate saved in{" "}
-          <Link href="/admin/cambio" className="underline">
-            /admin/cambio
-          </Link>
-          . Current: {product.price_brl ?? "—"} BRL / {product.price_usd ?? "—"} USD /{" "}
-          {product.price_eur ?? "—"} EUR.
+          O preço de venda é calculado automaticamente a partir deste custo e das regras em{" "}
+          <Link href="/admin/precificacao" className="underline">
+            Precificação
+          </Link>{" "}
+          (veja “Preço calculado” abaixo). Atual: {product.price_brl ?? "—"} BRL / {product.price_usd ?? "—"} USD / {product.price_eur ?? "—"} EUR.
         </p>
 
         <Field label="Sizes (comma-separated, as received from supplier)">

@@ -5,6 +5,7 @@ import { ProductEditForm } from "@/components/product-edit-form";
 import { VariantStockTable } from "@/components/variant-stock-table";
 import { ProductImagesManager, type ImageRow } from "@/components/product-images-manager";
 import { SyncLocksPanel } from "@/components/sync-locks-panel";
+import { ProductPricingPanel, type ProductPricingData } from "@/components/product-pricing-panel";
 
 export default async function AdminProductEditPage({
   params,
@@ -16,7 +17,7 @@ export default async function AdminProductEditPage({
   const { data: product } = await supabase
     .from("products")
     .select(
-      "id, title, title_en, title_es, category, status, is_featured, connector_id, original_price, markup, price_brl, price_usd, price_eur, hs_code, weight_g, dims_cm, sizes, colors, default_stock, locked_fields, last_synced_at, source_snapshot"
+      "id, title, title_en, title_es, category, status, is_featured, connector_id, original_price, markup, price_brl, price_usd, price_eur, extra_cost_brl, margin_pct_override, commission_pct_override, price_adjust_pct, retail_usd, retail_eur, hs_code, weight_g, dims_cm, sizes, colors, default_stock, locked_fields, last_synced_at, source_snapshot"
     )
     .eq("id", id)
     .single();
@@ -74,6 +75,8 @@ export default async function AdminProductEditPage({
         connectors={connectors ?? []}
         initialConnectorIds={initialConnectorIds}
       />
+
+      <ProductPricingPanel product={product as unknown as ProductPricingData} />
 
       <h2 className="text-sm font-medium uppercase tracking-wide mt-10 mb-4">
         Variant stock (size × color matrix)
