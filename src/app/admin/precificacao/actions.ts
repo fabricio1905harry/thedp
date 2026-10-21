@@ -24,8 +24,9 @@ const num = (v: unknown, min = 0, max = 1_000_000) => {
 };
 
 /** Saving the rules recalculates every product (trigger pricing_rules_recompute). */
-export async function savePricingRules(rules: PricingRules): Promise<{ error?: string }> {
+export async function savePricingRules(rules: PricingRules): Promise<{ error?: string; count?: number }> {
   try {
+    const startedAt = new Date().toISOString();
     const staff = await requireStaff();
     const pctSum = num(rules.margin_pct) + num(rules.commission_pct) + num(rules.icms_pct) + num(rules.pis_cofins_pct) + num(rules.card_fee_pct);
     if (pctSum >= 95) return { error: "Margem + comissão + impostos precisam somar menos de 95%." };
@@ -53,8 +54,10 @@ export async function savePricingRules(rules: PricingRules): Promise<{ error?: s
       })
       .eq("id", 1);
     if (error) return { error: error.message };
+    // The database recalculates every product when the rules change; count them for the confirmation.
+    const { count } = await supabase.from("products").select("id", { count: "exact", head: true }).gte("priced_at", startedAt);
     refresh();
-    return {};
+    return { count: count ?? 0 };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Falha ao salvar" };
   }
