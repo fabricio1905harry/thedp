@@ -30,7 +30,7 @@ export function VariantStockTable({ variants }: { variants: VariantRow[] }) {
   if (variants.length === 0) {
     return (
       <p className="text-sm text-muted">
-        No variants yet — add sizes/colors above and save to generate the matrix.
+        Nenhuma variante ainda — adicione tamanhos/cores acima e salve para gerar a matriz.
       </p>
     );
   }
@@ -49,19 +49,19 @@ export function VariantStockTable({ variants }: { variants: VariantRow[] }) {
           }
           className="text-xs underline mb-2"
         >
-          Reset all to Source Stock/Availability ({overridden.length})
+          Restaurar tudo para o estoque/disponibilidade do fornecedor ({overridden.length})
         </button>
       )}
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-muted uppercase border-b border-border">
-            <th className="py-2 pr-3">Size (BR)</th>
-            <th className="py-2 pr-3">Size (US)</th>
-            <th className="py-2 pr-3">Size (EU)</th>
-            <th className="py-2 pr-3">Color</th>
+            <th className="py-2 pr-3">Tamanho (BR)</th>
+            <th className="py-2 pr-3">Tamanho (US)</th>
+            <th className="py-2 pr-3">Tamanho (EU)</th>
+            <th className="py-2 pr-3">Cor</th>
             <th className="py-2 pr-3">SKU</th>
-            <th className="py-2 pr-3">Source</th>
-            <th className="py-2">Stock on site</th>
+            <th className="py-2 pr-3">Fornecedor</th>
+            <th className="py-2">Estoque no site</th>
           </tr>
         </thead>
         <tbody>
@@ -120,7 +120,7 @@ function VariantRowItem({ variant }: { variant: VariantRow }) {
               }
               className="text-[11px] underline"
             >
-              Reset to source
+              Restaurar do fornecedor
             </button>
           </>
         )}

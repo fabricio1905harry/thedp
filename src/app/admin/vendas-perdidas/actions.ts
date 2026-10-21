@@ -15,7 +15,7 @@ export async function setLostSaleStatus(
   recovered?: { units: number; revenue: number; orderId?: string }
 ) {
   const staff = await getCurrentStaff();
-  if (!staff) throw new Error("Not authorized");
+  if (!staff) throw new Error("Não autorizado");
   const supabase = await createClient();
   const now = new Date().toISOString();
   const patch: Record<string, unknown> = { status };

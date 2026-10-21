@@ -36,12 +36,12 @@ export interface ActionItem {
 }
 
 export const PRIORITY_GROUP_LABELS: Record<number, string> = {
-  1: "Money ready to come in",
-  2: "Sale in progress",
-  3: "Recoverable revenue",
-  4: "Paid order / shipping commitment",
-  5: "Financial / commercial risk",
-  6: "Catalog curation",
+  1: "Dinheiro pronto para entrar",
+  2: "Venda em andamento",
+  3: "Receita recuperável",
+  4: "Pedido pago / compromisso de envio",
+  5: "Risco financeiro / comercial",
+  6: "Curadoria de catálogo",
 };
 
 const HOUR = 60 * 60 * 1000;

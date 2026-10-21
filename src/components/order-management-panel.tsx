@@ -138,10 +138,14 @@ export function OrderManagementPanel({
     setError(null);
     startTransition(async () => {
       try {
-        await fn();
+        const res = await fn();
+        if (res && typeof res === "object" && "error" in res && (res as { error?: string }).error) {
+          setError((res as { error: string }).error);
+          return;
+        }
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Action failed.");
+        setError(err instanceof Error ? err.message : "Falha na ação.");
       }
     });
   }
@@ -152,19 +156,19 @@ export function OrderManagementPanel({
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h2 className="text-sm font-medium uppercase tracking-wide">Order composition</h2>
+          <h2 className="text-sm font-medium uppercase tracking-wide">Composição do pedido</h2>
           {canReopen && (
             <button type="button" disabled={pending} onClick={() => run(() => reopenOrderForEditing(order.id))} className="border border-foreground px-2 py-1 text-xs font-medium">
-              Reopen for editing
+              Reabrir para edição
             </button>
           )}
           {editable && (
             <div className="flex gap-2 text-xs">
               <button type="button" disabled={pending} onClick={() => run(() => setOrderStage(order.id, "stock_confirmation"))} className="border border-border px-2 py-1">
-                Mark: confirming stock
+                Marcar: confirmando estoque
               </button>
               <button type="button" disabled={pending} onClick={() => run(() => setOrderStage(order.id, "awaiting_buyer_decision"))} className="border border-border px-2 py-1">
-                Mark: waiting buyer decision
+                Marcar: aguardando decisão do comprador
               </button>
             </div>
           )}
@@ -196,6 +200,29 @@ export function OrderManagementPanel({
 
 type Run = (fn: () => Promise<unknown>) => void;
 
+const DECIDED_BY_LABELS: Record<string, string> = {
+  channel: "canal",
+  customer: "cliente",
+  order: "pedido",
+  none: "nenhuma regra",
+};
+
+const PAYMENT_KIND_LABELS: Record<string, string> = {
+  full: "integral",
+  reserve_deposit: "depósito de Reserve",
+  balance: "saldo",
+  other: "outro",
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending_verification: "aguardando verificação",
+  confirmed: "confirmado",
+  rejected: "rejeitado",
+  refunded: "reembolsado",
+  chargeback: "estorno (chargeback)",
+  canceled: "cancelado",
+};
+
 function ItemsTable({
   order,
   items,
@@ -219,11 +246,11 @@ function ItemsTable({
         <table className="w-full text-xs min-w-[760px]">
           <thead>
             <tr className="text-left text-muted uppercase border-b border-border">
-              <th className="py-2 pr-2">Product</th>
-              <th className="py-2 pr-2">Color / Size</th>
-              <th className="py-2 pr-2">Qty</th>
-              <th className="py-2 pr-2">Unit price ({order.currency})</th>
-              <th className="py-2 pr-2 text-right">Line total</th>
+              <th className="py-2 pr-2">Produto</th>
+              <th className="py-2 pr-2">Cor / Tamanho</th>
+              <th className="py-2 pr-2">Qtd.</th>
+              <th className="py-2 pr-2">Preço unitário ({order.currency})</th>
+              <th className="py-2 pr-2 text-right">Total da linha</th>
               <th className="py-2">Status</th>
               <th className="py-2" />
             </tr>
@@ -236,16 +263,16 @@ function ItemsTable({
         </table>
       </div>
       <p className="text-[11px] text-muted mt-1">
-        The buyer&apos;s original request is always kept (shown under each changed line and in the history below).
-        EM FALTA (OUT OF STOCK) also makes the variant unavailable in the catalog and records a Lost Sale. ORDER ONLY /
-        OTHER REASON affects only this order.
+        O Original Request do comprador é sempre mantido (exibido abaixo de cada linha alterada e no histórico abaixo).
+        EM FALTA (SEM ESTOQUE) também torna a variante indisponível no catálogo e registra uma venda perdida. SOB ENCOMENDA /
+        OUTRO MOTIVO afeta somente este pedido.
       </p>
       <p className="text-xs mt-2">
-        Subtotal (merchandise): <strong>{money(currentSubtotal, order.currency)}</strong>
+        Subtotal (mercadoria): <strong>{money(currentSubtotal, order.currency)}</strong>
         {Math.abs(currentSubtotal - originalSubtotal) > 0.004 && (
-          <span className="text-muted"> · original request {money(originalSubtotal, order.currency)}</span>
+          <span className="text-muted"> · Original Request {money(originalSubtotal, order.currency)}</span>
         )}
-        {" "}· Total with freight & duties: <strong>{money(order.total, order.currency)}</strong>
+        {" "}· Total com frete e impostos: <strong>{money(order.total, order.currency)}</strong>
       </p>
 
       {editable && <AddItemForm order={order} items={items} pending={pending} run={run} />}
@@ -279,9 +306,9 @@ function ItemRow({
       <td className="py-2 pr-2">
         <span className={inactive ? "line-through" : ""}>{item.product_title ?? "—"}</span>
         <span className="block text-muted font-mono">{item.sku}</span>
-        {item.added_by_tdp && <span className="block text-[10px] uppercase text-accent">added by TDP</span>}
+        {item.added_by_tdp && <span className="block text-[10px] uppercase text-accent">adicionado pela TDP</span>}
         {substitutedFor && (
-          <span className="block text-[10px] text-muted">substitutes {substitutedFor.product_title} {substitutedFor.color}/{substitutedFor.size}</span>
+          <span className="block text-[10px] text-muted">substitui {substitutedFor.product_title} {substitutedFor.color}/{substitutedFor.size}</span>
         )}
       </td>
       <td className="py-2 pr-2">
@@ -303,7 +330,7 @@ function ItemRow({
         ) : (
           item.qty
         )}
-        {qtyChanged && <span className="block text-[10px] text-muted">was {item.original_qty}</span>}
+        {qtyChanged && <span className="block text-[10px] text-muted">antes {item.original_qty}</span>}
       </td>
       <td className="py-2 pr-2">
         {editable ? (
@@ -322,7 +349,7 @@ function ItemRow({
         ) : (
           money(item.unit_price, order.currency)
         )}
-        {priceChanged && <span className="block text-[10px] text-muted">was {money(item.original_unit_price, order.currency)}</span>}
+        {priceChanged && <span className="block text-[10px] text-muted">antes {money(item.original_unit_price, order.currency)}</span>}
       </td>
       <td className="py-2 pr-2 text-right whitespace-nowrap">{money(Number(item.qty) * Number(item.unit_price), order.currency)}</td>
       <td className="py-2 pr-2">
@@ -347,7 +374,7 @@ function ItemRow({
                 onClick={() => run(() => setOrderItemStatus(order.id, item.id, "unavailable_out_of_stock"))}
                 className="text-left underline text-red-700"
               >
-                Marcar em falta (out of stock)
+                Marcar em falta (sem estoque)
               </button>
             )}
           </div>
@@ -358,7 +385,7 @@ function ItemRow({
       <td className="py-2 whitespace-nowrap">
         {editable && differs && item.original_qty !== null && (
           <button type="button" disabled={pending} onClick={() => run(() => restoreOrderItem(order.id, item.id))} className="underline">
-            Restore original
+            Restaurar original
           </button>
         )}
       </td>
@@ -416,7 +443,8 @@ function AddItemForm({
         e.preventDefault();
         if (!picked) return;
         run(async () => {
-          await addOrderItemBySku(order.id, picked.sku, qty, substitutes || undefined, price === "" ? undefined : Number(price));
+          const res = await addOrderItemBySku(order.id, picked.sku, qty, substitutes || undefined, price === "" ? undefined : Number(price));
+          if (res && typeof res === "object" && "error" in res) return res;
           setQuery("");
           setPicked(null);
           setPrice("");
@@ -425,24 +453,24 @@ function AddItemForm({
         });
       }}
     >
-      <p className="font-medium">Add a piece / substitute a line</p>
+      <p className="font-medium">Adicionar peça / substituir linha</p>
       <div className="relative">
         <input
           value={query}
           onChange={(e) => search(e.target.value)}
-          placeholder="Search by product name or SKU…"
+          placeholder="Buscar por nome do produto ou SKU…"
           className="w-full border border-border px-2 py-1"
         />
         {(results.length > 0 || searching) && (
           <ul className="absolute z-10 left-0 right-0 bg-background border border-border max-h-56 overflow-auto shadow">
-            {searching && <li className="px-2 py-1 text-muted">Searching…</li>}
+            {searching && <li className="px-2 py-1 text-muted">Buscando…</li>}
             {results.map((r) => (
               <li key={r.sku}>
                 <button type="button" onClick={() => pick(r)} className="w-full text-left px-2 py-1 hover:bg-surface">
                   {r.title} — {r.color ?? "—"} / {r.size ?? "—"}{" "}
                   <span className="text-muted font-mono">{r.sku}</span>{" "}
                   <span className="text-muted">
-                    · stock {r.stock} · {r.price !== null ? money(r.price, order.currency) : "no price"}
+                    · estoque {r.stock} · {r.price !== null ? money(r.price, order.currency) : "sem preço"}
                   </span>
                 </button>
               </li>
@@ -452,17 +480,17 @@ function AddItemForm({
       </div>
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col">
-          Qty
+          Qtd.
           <input type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value))} className="w-16 border border-border px-2 py-1" />
         </label>
         <label className="flex flex-col">
-          Unit price ({order.currency})
+          Preço unitário ({order.currency})
           <input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="w-28 border border-border px-2 py-1" />
         </label>
         <label className="flex flex-col">
-          Replaces line (optional)
+          Substitui linha (opcional)
           <select value={substitutes} onChange={(e) => setSubstitutes(e.target.value)} className="border border-border px-2 py-1">
-            <option value="">— new line —</option>
+            <option value="">— nova linha —</option>
             {items
               .filter((i) => i.item_status !== "removed")
               .map((i) => (
@@ -473,7 +501,7 @@ function AddItemForm({
           </select>
         </label>
         <button type="submit" disabled={pending || !picked} className="border border-foreground px-3 py-1 font-medium disabled:opacity-40">
-          Add to order
+          Adicionar ao pedido
         </button>
       </div>
     </form>
@@ -484,10 +512,10 @@ function OrderHistoryPanel({ order, items, events }: { order: OrderSummary; item
   const original = items.filter((i) => i.original_qty !== null);
   return (
     <section>
-      <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Original request & change history</h2>
+      <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Original Request e histórico de alterações</h2>
       <details className="mb-3 text-xs" open={false}>
         <summary className="cursor-pointer">
-          Original request — {money(order.original_subtotal, order.currency)} ({original.length} line(s))
+          Original Request — {money(order.original_subtotal, order.currency)} ({original.length} linha(s))
         </summary>
         <ul className="mt-1 ml-3 space-y-0.5">
           {original.map((i) => (
@@ -498,7 +526,7 @@ function OrderHistoryPanel({ order, items, events }: { order: OrderSummary; item
         </ul>
       </details>
       {events.length === 0 ? (
-        <p className="text-xs text-muted">No changes recorded yet.</p>
+        <p className="text-xs text-muted">Nenhuma alteração registrada ainda.</p>
       ) : (
         <ul className="text-xs space-y-1">
           {events.map((e) => (
@@ -515,14 +543,14 @@ function OrderHistoryPanel({ order, items, events }: { order: OrderSummary; item
 }
 
 const CHARGE_FIELDS: { key: keyof OrderChargesInput; column: keyof OrderSummary; label: string }[] = [
-  { key: "freightAmount", column: "freight_amount", label: "Freight (DHL)" },
-  { key: "fuelSurchargeAmount", column: "fuel_surcharge_amount", label: "Fuel surcharge" },
-  { key: "demandSurchargeAmount", column: "demand_surcharge_amount", label: "Demand surcharge" },
-  { key: "otherDhlAmount", column: "other_dhl_amount", label: "Other DHL charges" },
-  { key: "insuranceAmount", column: "insurance_amount", label: "Insurance" },
-  { key: "exportDeclarationAmount", column: "export_declaration_amount", label: "Export declaration" },
-  { key: "dutiesTaxesAmount", column: "duties_taxes_amount", label: "Import duties & taxes (DDP)" },
-  { key: "otherChargesAmount", column: "other_charges_amount", label: "Other operational charges" },
+  { key: "freightAmount", column: "freight_amount", label: "Frete (DHL)" },
+  { key: "fuelSurchargeAmount", column: "fuel_surcharge_amount", label: "Sobretaxa de combustível" },
+  { key: "demandSurchargeAmount", column: "demand_surcharge_amount", label: "Sobretaxa de demanda" },
+  { key: "otherDhlAmount", column: "other_dhl_amount", label: "Outras cobranças DHL" },
+  { key: "insuranceAmount", column: "insurance_amount", label: "Seguro" },
+  { key: "exportDeclarationAmount", column: "export_declaration_amount", label: "Declaração de exportação" },
+  { key: "dutiesTaxesAmount", column: "duties_taxes_amount", label: "Impostos de importação (DDP)" },
+  { key: "otherChargesAmount", column: "other_charges_amount", label: "Outras cobranças operacionais" },
 ];
 
 /**
@@ -543,16 +571,16 @@ function ChargesPanel({ order, editable, pending, run }: { order: OrderSummary; 
   return (
     <section id="charges" className="border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <h2 className="text-sm font-medium uppercase tracking-wide">Freight & import duties ({order.currency})</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide">Frete e impostos de importação ({order.currency})</h2>
         <span className={`text-[11px] px-2 py-0.5 ${order.charges_informed_at ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>
           {order.charges_informed_at
-            ? `Informed ${new Date(order.charges_informed_at).toLocaleString("pt-BR")}`
-            : "Not informed — buyer sees “to be informed after stock confirmation”"}
+            ? `Informado em ${new Date(order.charges_informed_at).toLocaleString("pt-BR")}`
+            : "Não informado — o comprador vê “a informar após a confirmação de estoque”"}
         </span>
       </div>
       {pkg && (
         <p className="text-[11px] text-muted mb-2">
-          Suggested packaging: {pkg.number_of_packages ?? "?"} volume(s)
+          Embalagem sugerida: {pkg.number_of_packages ?? "?"} volume(s)
           {pkg.packages?.[0]?.packaging_name ? ` · ${pkg.packages[0].packaging_name}` : ""}
           {pkg.packages?.[0]?.final_weight_kg ? ` · ${pkg.packages[0].final_weight_kg} kg` : ""}
         </p>
@@ -583,25 +611,25 @@ function ChargesPanel({ order, editable, pending, run }: { order: OrderSummary; 
           </label>
         ))}
         <label className="flex flex-col">
-          DHL delivery (business days)
+          Entrega DHL (dias úteis)
           <input type="number" min="1" disabled={!editable || pending} value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} className="border border-border px-2 py-1" />
         </label>
         <label className="flex flex-col col-span-2 md:col-span-3">
-          Note (internal)
-          <input disabled={!editable || pending} value={note} onChange={(e) => setNote(e.target.value)} placeholder="DHL quote ref., service…" className="border border-border px-2 py-1" />
+          Observação (interna)
+          <input disabled={!editable || pending} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ref. da cotação DHL, serviço…" className="border border-border px-2 py-1" />
         </label>
         <p className="col-span-2 md:col-span-3 self-end">
-          Products {money(order.subtotal, order.currency)} + charges {money(charges, order.currency)} ={" "}
+          Produtos {money(order.subtotal, order.currency)} + cobranças {money(charges, order.currency)} ={" "}
           <strong>{money(Number(order.subtotal) + charges, order.currency)}</strong>
         </p>
         {editable && (
           <button type="submit" disabled={pending} className="btn-primary px-3 py-1.5">
-            Save freight & duties
+            Salvar frete e impostos
           </button>
         )}
       </form>
       <p className="text-[11px] text-muted mt-2">
-        Required before generating the Confirmed Order. Kept separate from revenue (Dashboard → operational charges).
+        Obrigatório antes de gerar o Confirmed Order. Mantido separado da receita (Dashboard → cobranças operacionais).
       </p>
     </section>
   );
@@ -613,17 +641,17 @@ function ReleasePanel({ order, editable, pending, run }: { order: OrderSummary; 
 
   return (
     <section className="border border-border p-4">
-      <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Confirmed Order & Temporary Stock Hold</h2>
+      <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Confirmed Order e reserva temporária de estoque (Temporary Stock Hold)</h2>
       {order.stock_hold_type && (
         <p className="text-xs mb-2">
-          Current: <strong>{STOCK_HOLD_LABELS[order.stock_hold_type]}</strong>
-          {order.stock_hold_until && <> — Inventory Reserved Until {new Date(order.stock_hold_until).toLocaleString("pt-BR")}</>}
+          Atual: <strong>{STOCK_HOLD_LABELS[order.stock_hold_type]}</strong>
+          {order.stock_hold_until && <> — Estoque reservado até {new Date(order.stock_hold_until).toLocaleString("pt-BR")}</>}
         </p>
       )}
       {editable ? (
         <div className="flex flex-wrap items-end gap-2 text-xs">
           <label className="flex flex-col">
-            Can the supplier hold the pieces?
+            O fornecedor consegue reservar as peças?
             <select value={hold} onChange={(e) => setHold(e.target.value as typeof hold)} className="border border-border px-2 py-1">
               {Object.entries(STOCK_HOLD_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -634,7 +662,7 @@ function ReleasePanel({ order, editable, pending, run }: { order: OrderSummary; 
           </label>
           {hold === "custom" && (
             <label className="flex flex-col">
-              Hold until
+              Reservar até
               <input type="datetime-local" value={customUntil} onChange={(e) => setCustomUntil(e.target.value)} className="border border-border px-2 py-1" />
             </label>
           )}
@@ -645,22 +673,22 @@ function ReleasePanel({ order, editable, pending, run }: { order: OrderSummary; 
             className="btn-primary px-3 py-1.5"
           >
             {order.status === "payment_window_expired" || order.status === "payment_coordination_required"
-              ? "Stock reconfirmed — reopen payment"
-              : "Generate Confirmed Order"}
+              ? "Estoque reconfirmado — reabrir pagamento"
+              : "Gerar Confirmed Order"}
           </button>
           <p className="w-full text-muted">
-            The hold starts when the Confirmed Order is released. Expired windows disable payment and go to the
-            Action Center. Recalculate DHL/costs before reopening an expired or coordination order.
+            A reserva começa quando o Confirmed Order é liberado. Prazos expirados desativam o pagamento e vão para o
+            Action Center. Recalcule DHL/custos antes de reabrir um pedido expirado ou em coordenação.
           </p>
         </div>
       ) : (
-        <p className="text-xs text-muted">Already released.</p>
+        <p className="text-xs text-muted">Já liberado.</p>
       )}
       <div className="mt-3 text-xs flex flex-wrap items-center gap-3">
         <span>
-          Mode: <strong>{order.payment_mode === "reserve" ? "Reserve for Later Delivery" : "Standard"}</strong>
+          Modo: <strong>{order.payment_mode === "reserve" ? "Reserve for Later Delivery" : "Padrão"}</strong>
           {order.payment_mode === "reserve" && order.reserve_amount !== null && (
-            <> — reserve {money(order.reserve_amount, order.currency)} ({order.reserve_pct_of_sale}% of sale)</>
+            <> — reserva {money(order.reserve_amount, order.currency)} ({order.reserve_pct_of_sale}% da venda)</>
           )}
         </span>
         <button
@@ -669,7 +697,7 @@ function ReleasePanel({ order, editable, pending, run }: { order: OrderSummary; 
           onClick={() => run(() => setReserveMode(order.id, order.payment_mode !== "reserve"))}
           className="underline"
         >
-          {order.payment_mode === "reserve" ? "Switch to standard" : "Use Reserve (cost + %)"}
+          {order.payment_mode === "reserve" ? "Mudar para padrão" : "Usar Reserve (custo + %)"}
         </button>
       </div>
     </section>
@@ -691,8 +719,8 @@ function PaymentMethodsPanel({
 }) {
   return (
     <section>
-      <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Payment methods for this order</h2>
-      <p className="text-[11px] text-muted mb-2">Channel default → customer exception → order exception (most specific wins).</p>
+      <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Formas de pagamento deste pedido</h2>
+      <p className="text-[11px] text-muted mb-2">Padrão do canal → exceção do cliente → exceção do pedido (a mais específica prevalece).</p>
       <table className="text-xs">
         <tbody>
           {methods.map((m) => {
@@ -702,7 +730,7 @@ function PaymentMethodsPanel({
               <tr key={m.method_code}>
                 <td className="pr-4 py-1">{m.method_name}</td>
                 <td className="pr-4 py-1">
-                  <strong>{m.enabled ? "Enabled" : "Disabled"}</strong> <span className="text-muted">({m.decided_by})</span>
+                  <strong>{m.enabled ? "Habilitado" : "Desabilitado"}</strong> <span className="text-muted">({DECIDED_BY_LABELS[m.decided_by] ?? m.decided_by})</span>
                 </td>
                 <td className="py-1">
                   <select
@@ -715,9 +743,9 @@ function PaymentMethodsPanel({
                     }
                     className="border border-border px-1 py-0.5"
                   >
-                    <option value="inherit">Order: inherit</option>
-                    <option value="on">Order: allow</option>
-                    <option value="off">Order: block</option>
+                    <option value="inherit">Pedido: herdar</option>
+                    <option value="on">Pedido: permitir</option>
+                    <option value="off">Pedido: bloquear</option>
                   </select>
                 </td>
                 <td className="py-1 pl-3">
@@ -728,7 +756,7 @@ function PaymentMethodsPanel({
                       onClick={() => run(() => setOrderPaymentRule(order.id, "stripe_card", true))}
                       className="underline font-medium"
                     >
-                      Enable Stripe for this order
+                      Habilitar Stripe para este pedido
                     </button>
                   )}
                 </td>
@@ -798,43 +826,43 @@ function PaymentsPanel({
 
   return (
     <section id="payments">
-      <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Payments (one row per transaction)</h2>
+      <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Pagamentos (uma linha por transação)</h2>
       {payments.length === 0 ? (
-        <p className="text-xs text-muted mb-3">No payments yet.</p>
+        <p className="text-xs text-muted mb-3">Nenhum pagamento ainda.</p>
       ) : (
         <table className="w-full text-xs mb-4">
           <thead>
             <tr className="text-left text-muted uppercase border-b border-border">
-              <th className="py-1 pr-2">Method / kind</th>
-              <th className="py-1 pr-2">Merchandise</th>
-              <th className="py-1 pr-2">Bank fee</th>
+              <th className="py-1 pr-2">Forma / tipo</th>
+              <th className="py-1 pr-2">Mercadoria</th>
+              <th className="py-1 pr-2">Taxa bancária</th>
               <th className="py-1 pr-2">Total</th>
               <th className="py-1 pr-2">Status</th>
-              <th className="py-1">Actions</th>
+              <th className="py-1">Ações</th>
             </tr>
           </thead>
           <tbody>
             {payments.map((p) => (
               <tr key={p.id} className="border-b border-border">
                 <td className="py-1 pr-2">
-                  {PAYMENT_METHOD_LABELS[p.method_code] ?? p.method_code} · {p.kind}
+                  {PAYMENT_METHOD_LABELS[p.method_code] ?? p.method_code} · {PAYMENT_KIND_LABELS[p.kind] ?? p.kind}
                 </td>
                 <td className="py-1 pr-2">{money(p.merchandise_amount, p.currency)}</td>
                 <td className="py-1 pr-2">{money(p.bank_fee_amount, p.currency)}</td>
                 <td className="py-1 pr-2">
                   {money(p.amount, p.currency)}
                   {p.received_amount !== null && Number(p.received_amount) !== Number(p.amount) && (
-                    <span className="block text-red-600">received {money(p.received_amount, p.currency)}</span>
+                    <span className="block text-red-600">recebido {money(p.received_amount, p.currency)}</span>
                   )}
                 </td>
-                <td className="py-1 pr-2 uppercase">{p.status.replace(/_/g, " ")}</td>
+                <td className="py-1 pr-2 uppercase">{PAYMENT_STATUS_LABELS[p.status] ?? p.status.replace(/_/g, " ")}</td>
                 <td className="py-1 space-x-2">
                   {p.status === "pending_verification" && (
                     <>
                       <input
                         type="number"
                         step="0.01"
-                        placeholder="received"
+                        placeholder="recebido"
                         value={received[p.id] ?? ""}
                         onChange={(e) => setReceived((r) => ({ ...r, [p.id]: e.target.value }))}
                         className="w-20 border border-border px-1"
@@ -847,20 +875,20 @@ function PaymentsPanel({
                         }
                         className="underline"
                       >
-                        Confirm
+                        Confirmar
                       </button>
                       <button type="button" disabled={pending} onClick={() => run(() => setPaymentStatus(order.id, p.id, "rejected"))} className="underline">
-                        Reject
+                        Rejeitar
                       </button>
                     </>
                   )}
                   {p.status === "confirmed" && (
                     <>
                       <button type="button" disabled={pending} onClick={() => run(() => setPaymentStatus(order.id, p.id, "refunded"))} className="underline">
-                        Refunded
+                        Reembolsado
                       </button>
                       <button type="button" disabled={pending} onClick={() => run(() => setPaymentStatus(order.id, p.id, "chargeback"))} className="underline">
-                        Chargeback
+                        Estorno (chargeback)
                       </button>
                     </>
                   )}
@@ -879,41 +907,41 @@ function PaymentsPanel({
         }}
       >
         <label className="flex flex-col">
-          Method
+          Forma de pagamento
           <select value={form.methodCode} onChange={(e) => setForm((f) => ({ ...f, methodCode: e.target.value }))} className="border border-border px-1 py-1">
             {methods.map((m) => (
               <option key={m.method_code} value={m.method_code}>
                 {m.method_name}
-                {m.enabled ? "" : " (not enabled for the buyer)"}
+                {m.enabled ? "" : " (não habilitada para o comprador)"}
               </option>
             ))}
           </select>
         </label>
         <label className="flex flex-col">
-          Kind
+          Tipo
           <select value={form.kind} onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as PaymentInput["kind"] }))} className="border border-border px-1 py-1">
-            <option value="full">Full</option>
-            <option value="reserve_deposit">Reserve deposit</option>
-            <option value="balance">Balance</option>
-            <option value="other">Other</option>
+            <option value="full">Integral</option>
+            <option value="reserve_deposit">Depósito de Reserve</option>
+            <option value="balance">Saldo</option>
+            <option value="other">Outro</option>
           </select>
         </label>
         <label className="flex flex-col">
-          Merchandise ({order.currency})
+          Mercadoria ({order.currency})
           <input type="number" step="0.01" value={form.merchandiseAmount ?? ""} onChange={setNum("merchandiseAmount")} className="border border-border px-1 py-1" />
         </label>
         {PASS_THROUGH_COMPONENTS.filter((c) => c.key !== "bank_fee_amount").map((c) => (
           <label key={c.key} className="flex flex-col">
-            {c.label.replace(" Collected", "")}
+            {c.label.replace(/ recebid[oa]s?/, "")}
             <input type="number" step="0.01" value={(form[camel[c.key]] as number | undefined) ?? ""} onChange={setNum(camel[c.key])} className="border border-border px-1 py-1" />
           </label>
         ))}
         <p className="col-span-2 md:col-span-4 text-muted">
-          Bank Transfer adds one Bank Processing Fee per transfer (R$ {bankFeeBrl.toFixed(2)} converted to {order.currency}).
+          Bank Transfer (transferência bancária) adiciona uma taxa bancária por transferência (R$ {bankFeeBrl.toFixed(2)} convertidos para {order.currency}).
         </p>
         <div className="col-span-2 md:col-span-4 flex flex-wrap items-center gap-2">
           <button type="submit" disabled={pending || enabled.length === 0} className="border border-border px-3 py-1.5">
-            Register payment (to verify)
+            Registrar pagamento (a verificar)
           </button>
           <button
             type="button"
@@ -921,11 +949,11 @@ function PaymentsPanel({
             onClick={() => run(() => registerPayment(order.id, { ...form, confirmNow: true }))}
             className="btn-primary px-3 py-1.5"
           >
-            Payment received — mark as paid
+            Pagamento recebido — marcar como pago
           </button>
           <span className="text-muted">
-            “Mark as paid” records the money as confirmed now (any method) and sets the order to PAID once the
-            merchandise is fully covered.
+            “Marcar como pago” registra o valor como confirmado agora (qualquer forma) e define o pedido como PAGO quando a
+            mercadoria estiver totalmente coberta.
           </span>
         </div>
       </form>

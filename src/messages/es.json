@@ -217,10 +217,26 @@
     "categoriesSubtitle": "Descubre el modelo ideal para cada evento con acabado impecable en alta costura.",
     "exploreCollection": "Explorar Colección",
     "categories": {
-      "festa": { "title": "Vestidos de Fiesta", "subtitle": "Modelos exclusivos de alta costura para eventos y galas", "tag": "Colección Principal" },
-      "longos": { "title": "Vestidos Largos", "subtitle": "Modelado sirena, evasé y caída fluida impecable", "tag": "Alta Costura" },
-      "midi": { "title": "Vestidos Midi & Seda", "subtitle": "Elegancia contemporánea en seda y tejidos nobles", "tag": "Entrega Inmediata" },
-      "atacado": { "title": "Mayorista Internacional", "subtitle": "Condiciones especiales y envío DHL Express para revendedores", "tag": "Comercios & B2B" }
+      "festa": {
+        "title": "Vestidos de Fiesta",
+        "subtitle": "Modelos exclusivos de alta costura para eventos y galas",
+        "tag": "Colección Principal"
+      },
+      "longos": {
+        "title": "Vestidos Largos",
+        "subtitle": "Modelado sirena, evasé y caída fluida impecable",
+        "tag": "Alta Costura"
+      },
+      "midi": {
+        "title": "Vestidos Midi & Seda",
+        "subtitle": "Elegancia contemporánea en seda y tejidos nobles",
+        "tag": "Entrega Inmediata"
+      },
+      "atacado": {
+        "title": "Mayorista Internacional",
+        "subtitle": "Condiciones especiales y envío DHL Express para revendedores",
+        "tag": "Comercios & B2B"
+      }
     }
   },
   "category": {
@@ -412,7 +428,14 @@
     "phone": "WhatsApp / teléfono",
     "businessType": "Tipo de negocio",
     "choose": "Elige",
-    "types": {"boutique": "Boutique", "multibrand": "Tienda multimarca", "department": "Tienda departamental", "ecommerce": "E-commerce", "showroom": "Showroom", "other": "Otro"},
+    "types": {
+      "boutique": "Boutique",
+      "multibrand": "Tienda multimarca",
+      "department": "Tienda departamental",
+      "ecommerce": "E-commerce",
+      "showroom": "Showroom",
+      "other": "Otro"
+    },
     "taxId": "Número de registro fiscal / empresa (si aplica)",
     "physicalStore": "¿Tienda física?",
     "yes": "Sí",
@@ -434,6 +457,12 @@
     "orders": "Pedidos",
     "noOrders": "Aún no tienes pedidos.",
     "browse": "Ver la tienda",
-    "addresses": "Gestionar direcciones de entrega"
+    "addresses": "Gestionar direcciones de entrega",
+    "appStatusTitle": "Tu solicitud mayorista",
+    "appPending": "Tu solicitud está siendo revisada por nuestro equipo. Recibirás un e-mail cuando sea aprobada.",
+    "appMoreInfo": "Necesitamos un poco más de información para seguir revisando tu solicitud:",
+    "appReply": "Responder al equipo",
+    "appRejected": "Tu solicitud no fue aprobada en este momento. Contáctanos si quieres saber más.",
+    "appApproved": "Tu cuenta mayorista está aprobada."
   }
 }

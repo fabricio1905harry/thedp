@@ -18,20 +18,20 @@ export function UiTextRow({ row }: { row: UiTextRowData }) {
   function save() {
     start(async () => {
       const res = await saveUiText(row.key, vals);
-      setMsg(res.error ?? "Saved");
+      setMsg(res.error ?? "Salvo");
     });
   }
   function reset() {
     start(async () => {
       const res = await resetUiText(row.key);
       if (!res.error) setVals({ en: "", es: "", pt: "" });
-      setMsg(res.error ?? "Back to default");
+      setMsg(res.error ?? "Voltou ao padrão");
     });
   }
 
   return (
     <div className={`border p-3 space-y-2 ${customised ? "border-foreground" : "border-border"}`}>
-      <p className="font-mono text-[11px] text-muted">{row.key}{customised && <span className="ml-2 font-semibold text-foreground">EDITED</span>}</p>
+      <p className="font-mono text-[11px] text-muted">{row.key}{customised && <span className="ml-2 font-semibold text-foreground">EDITADO</span>}</p>
       <div className="grid md:grid-cols-3 gap-2">
         {(["en", "es", "pt"] as const).map((l) => (
           <label key={l} className="block text-[11px]">
@@ -47,8 +47,8 @@ export function UiTextRow({ row }: { row: UiTextRowData }) {
         ))}
       </div>
       <div className="flex items-center gap-3 text-xs">
-        <button onClick={save} disabled={pending} className="bg-foreground text-background px-3 py-1.5 disabled:opacity-50">Save</button>
-        {customised && <button onClick={reset} disabled={pending} className="border border-border px-3 py-1.5">Restore default</button>}
+        <button onClick={save} disabled={pending} className="bg-foreground text-background px-3 py-1.5 disabled:opacity-50">Salvar</button>
+        {customised && <button onClick={reset} disabled={pending} className="border border-border px-3 py-1.5">Restaurar padrão</button>}
         {msg && <span className="text-muted">{msg}</span>}
       </div>
     </div>

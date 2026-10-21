@@ -217,10 +217,26 @@
     "categoriesSubtitle": "Descubra o modelo ideal para cada evento com acabamento impecável em alta costura.",
     "exploreCollection": "Explorar Coleção",
     "categories": {
-      "festa": { "title": "Vestidos de Festa", "subtitle": "Modelos exclusivos de alta costura para eventos e galas", "tag": "Coleção Principal" },
-      "longos": { "title": "Vestidos Longos", "subtitle": "Modelagem sereia, evasê e caimento fluido impecável", "tag": "Alta Costura" },
-      "midi": { "title": "Vestidos Midi & Seda", "subtitle": "Elegância contemporânea em seda e tecidos nobres", "tag": "Pronta Entrega" },
-      "atacado": { "title": "Atacado Internacional", "subtitle": "Condições especiais e envio DHL Express para revendedores", "tag": "Lojistas & B2B" }
+      "festa": {
+        "title": "Vestidos de Festa",
+        "subtitle": "Modelos exclusivos de alta costura para eventos e galas",
+        "tag": "Coleção Principal"
+      },
+      "longos": {
+        "title": "Vestidos Longos",
+        "subtitle": "Modelagem sereia, evasê e caimento fluido impecável",
+        "tag": "Alta Costura"
+      },
+      "midi": {
+        "title": "Vestidos Midi & Seda",
+        "subtitle": "Elegância contemporânea em seda e tecidos nobres",
+        "tag": "Pronta Entrega"
+      },
+      "atacado": {
+        "title": "Atacado Internacional",
+        "subtitle": "Condições especiais e envio DHL Express para revendedores",
+        "tag": "Lojistas & B2B"
+      }
     }
   },
   "category": {
@@ -412,7 +428,14 @@
     "phone": "WhatsApp / telefone",
     "businessType": "Tipo de negócio",
     "choose": "Escolha",
-    "types": {"boutique": "Boutique", "multibrand": "Multimarcas", "department": "Loja de departamento", "ecommerce": "E-commerce", "showroom": "Showroom", "other": "Outro"},
+    "types": {
+      "boutique": "Boutique",
+      "multibrand": "Multimarcas",
+      "department": "Loja de departamento",
+      "ecommerce": "E-commerce",
+      "showroom": "Showroom",
+      "other": "Outro"
+    },
     "taxId": "Número de registro fiscal / empresa (se aplicável)",
     "physicalStore": "Loja física?",
     "yes": "Sim",
@@ -434,6 +457,12 @@
     "orders": "Pedidos",
     "noOrders": "Você ainda não tem pedidos.",
     "browse": "Ver a loja",
-    "addresses": "Gerenciar endereços de entrega"
+    "addresses": "Gerenciar endereços de entrega",
+    "appStatusTitle": "Seu cadastro de atacado",
+    "appPending": "Seu cadastro está em análise pela nossa equipe. Você receberá um e-mail quando for aprovado.",
+    "appMoreInfo": "Precisamos de mais algumas informações para continuar a análise do seu cadastro:",
+    "appReply": "Responder à equipe",
+    "appRejected": "Seu cadastro não foi aprovado neste momento. Fale conosco se quiser saber mais.",
+    "appApproved": "Sua conta de atacado foi aprovada."
   }
 }

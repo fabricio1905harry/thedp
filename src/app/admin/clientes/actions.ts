@@ -18,7 +18,7 @@ export async function setCustomerStatus(
   const staff = await getCurrentStaff();
   if (!staff) throw new Error("Não autorizado");
   if (status === "more_info" && !note?.trim()) {
-    throw new Error("Write what information is needed.");
+    throw new Error("Escreva quais informações são necessárias.");
   }
 
   const supabase = await createClient();
@@ -27,7 +27,7 @@ export async function setCustomerStatus(
     .select("email, locale, name, company_name")
     .eq("id", customerId)
     .single();
-  if (readError || !customer) throw new Error(readError?.message ?? "Customer not found");
+  if (readError || !customer) throw new Error(readError?.message ?? "Cliente não encontrado");
 
   const { error } = await supabase
     .from("customers")
@@ -56,8 +56,8 @@ export async function setCustomerStatus(
   let emailNote: string | undefined;
   if (status === "approved" || status === "more_info") {
     const flush = await flushEmailOutbox(10).catch((e) => ({ configured: true, sent: 0, failed: 1, firstError: String(e) }));
-    if (!flush.configured) emailNote = "E-mail NOT sent: configure RESEND_API_KEY and EMAIL_FROM (it stays queued and goes out once configured).";
-    else if (flush.failed > 0) emailNote = `E-mail failed (will retry hourly): ${flush.firstError ?? "unknown error"}`;
+    if (!flush.configured) emailNote = "E-mail NÃO enviado: configure RESEND_API_KEY e EMAIL_FROM (ele fica na fila e é enviado assim que configurado).";
+    else if (flush.failed > 0) emailNote = `Falha no e-mail (nova tentativa a cada hora): ${flush.firstError ?? "erro desconhecido"}`;
   }
   return { emailNote };
 }

@@ -26,10 +26,10 @@ export function placeholders(text: string): string[] {
 /** An override must keep exactly the placeholders of the original and have no stray braces. */
 export function validateOverride(base: string, value: string): string | null {
   const stripped = value.replace(/\{\w+\}/g, "");
-  if (/[{}]/.test(stripped)) return "Unbalanced { } — only {placeholders} are allowed.";
+  if (/[{}]/.test(stripped)) return "Chaves { } desbalanceadas — só são permitidos {marcadores}.";
   const a = placeholders(base).join(",");
   const b = placeholders(value).join(",");
-  if (a !== b) return `Keep the placeholders exactly as in the original: ${placeholders(base).map((p) => `{${p}}`).join(" ") || "(none)"}.`;
+  if (a !== b) return `Mantenha os marcadores exatamente como no original: ${placeholders(base).map((p) => `{${p}}`).join(" ") || "(nenhum)"}.`;
   return null;
 }
 

@@ -6,7 +6,7 @@ import { getCurrentStaff } from "@/lib/admin-auth";
 
 async function requireStaff() {
   const staff = await getCurrentStaff();
-  if (!staff) throw new Error("Not authorized");
+  if (!staff) throw new Error("Não autorizado");
   return staff;
 }
 
@@ -37,7 +37,7 @@ export async function markActionResolved(itemId: string) {
     .single();
   const manual = (item?.action_types as unknown as { manual_resolve: boolean } | null)?.manual_resolve;
   if (!manual) {
-    throw new Error("This item closes automatically when the underlying action is done.");
+    throw new Error("Este item fecha automaticamente quando a ação correspondente é concluída.");
   }
   const { error } = await supabase
     .from("action_items")

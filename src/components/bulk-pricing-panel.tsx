@@ -91,9 +91,9 @@ export function BulkPricingPanel({
         </select>
         <select name="status" defaultValue={filter.status} className="border border-border px-3 py-1.5">
           <option value="">Todos os status</option>
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-          <option value="archived">Archived</option>
+          <option value="draft">Rascunho</option>
+          <option value="published">Publicado</option>
+          <option value="archived">Arquivado</option>
         </select>
         <button className="bg-foreground text-background px-4 py-1.5">Filtrar</button>
         <span className="self-center text-xs text-muted">{total} produto(s) no filtro</span>

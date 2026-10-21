@@ -20,7 +20,7 @@ export interface ContactRow {
   customer_id: string | null;
 }
 
-const STATUS_LABEL = { new: "NEW", in_progress: "IN PROGRESS", resolved: "RESOLVED" } as const;
+const STATUS_LABEL = { new: "NOVO", in_progress: "EM ANDAMENTO", resolved: "RESOLVIDO" } as const;
 const STATUS_CLASS = {
   new: "bg-foreground text-background",
   in_progress: "bg-amber-100 text-amber-900",
@@ -55,20 +55,20 @@ export function ContactMessageRow({ row }: { row: ContactRow }) {
           <p className="whitespace-pre-wrap">{row.message}</p>
           <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted">
             <div>E-mail: <a href={`mailto:${row.email}`} className="underline text-foreground">{row.email}</a></div>
-            {row.phone && <div>WhatsApp/Phone: <span className="text-foreground">{row.phone}</span></div>}
-            {row.country && <div>Country: <span className="text-foreground">{row.country}</span></div>}
-            {row.locale && <div>Language: <span className="text-foreground uppercase">{row.locale}</span></div>}
-            {row.customer_id && <div>Buyer account: <span className="text-foreground">linked</span></div>}
+            {row.phone && <div>WhatsApp/Telefone: <span className="text-foreground">{row.phone}</span></div>}
+            {row.country && <div>País: <span className="text-foreground">{row.country}</span></div>}
+            {row.locale && <div>Idioma: <span className="text-foreground uppercase">{row.locale}</span></div>}
+            {row.customer_id && <div>Conta de comprador: <span className="text-foreground">vinculada</span></div>}
           </dl>
           <label className="block text-xs">
-            Internal note
+            Nota interna
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="mt-1 w-full border border-border px-2 py-1" />
           </label>
           <div className="flex flex-wrap gap-2 text-xs">
-            {row.status !== "in_progress" && <button type="button" disabled={pending} onClick={() => run("in_progress")} className="border border-border px-3 py-1.5">Mark in progress</button>}
-            {row.status !== "resolved" && <button type="button" disabled={pending} onClick={() => run("resolved")} className="btn-primary px-3 py-1.5">Mark resolved</button>}
-            {row.status !== "new" && <button type="button" disabled={pending} onClick={() => run("new")} className="border border-border px-3 py-1.5">Reopen</button>}
-            {note !== (row.internal_note ?? "") && <button type="button" disabled={pending} onClick={() => run(row.status)} className="underline">Save note</button>}
+            {row.status !== "in_progress" && <button type="button" disabled={pending} onClick={() => run("in_progress")} className="border border-border px-3 py-1.5">Marcar em andamento</button>}
+            {row.status !== "resolved" && <button type="button" disabled={pending} onClick={() => run("resolved")} className="btn-primary px-3 py-1.5">Marcar como resolvido</button>}
+            {row.status !== "new" && <button type="button" disabled={pending} onClick={() => run("new")} className="border border-border px-3 py-1.5">Reabrir</button>}
+            {note !== (row.internal_note ?? "") && <button type="button" disabled={pending} onClick={() => run(row.status)} className="underline">Salvar nota</button>}
           </div>
         </div>
       )}

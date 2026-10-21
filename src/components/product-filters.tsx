@@ -54,7 +54,7 @@ export function ProductFilters({
         type="text"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search by title…"
+        placeholder="Buscar por título…"
         className="border border-border px-3 py-1.5 text-sm w-56"
       />
       <select
@@ -62,17 +62,17 @@ export function ProductFilters({
         onChange={(e) => handleStatusChange(e.target.value)}
         className="border border-border px-3 py-1.5 text-sm bg-background"
       >
-        <option value="">All statuses</option>
-        <option value="draft">Draft</option>
-        <option value="published">Published</option>
-        <option value="archived">Archived</option>
+        <option value="">Todos os status</option>
+        <option value="draft">Rascunho</option>
+        <option value="published">Publicado</option>
+        <option value="archived">Arquivado</option>
       </select>
       <select
         value={category}
         onChange={(e) => handleCategoryChange(e.target.value)}
         className="border border-border px-3 py-1.5 text-sm bg-background"
       >
-        <option value="">All categories</option>
+        <option value="">Todas as categorias</option>
         {categories.map((c) => (
           <option key={c} value={c}>
             {c}
@@ -90,7 +90,7 @@ export function ProductFilters({
           }}
           className="text-xs text-muted hover:text-accent underline"
         >
-          Clear filters
+          Limpar filtros
         </button>
       )}
     </div>

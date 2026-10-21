@@ -5,11 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markActionResolved, setActionPinned } from "@/app/admin/acoes/actions";
 import { displayLevel, waitingTime, type ActionItem } from "@/lib/action-center";
+import { actionTitlePt, actionTypeLabelPt } from "@/lib/action-labels-pt";
 
 const LEVEL_CLASS = {
   critical: "bg-red-600 text-white",
   high: "bg-amber-200 text-amber-950",
   normal: "bg-zinc-200 text-zinc-800",
+};
+
+const LEVEL_LABEL = {
+  critical: "crítico",
+  high: "alto",
+  normal: "normal",
 };
 
 /** The single ACTION REQUIRED queue. */
@@ -37,19 +44,19 @@ export function ActionQueue({
     });
   }
 
-  if (items.length === 0) return <p className="text-xs text-muted">Nothing waiting for action. 🎉</p>;
+  if (items.length === 0) return <p className="text-xs text-muted">Nada aguardando ação. 🎉</p>;
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs min-w-[720px]">
         <thead>
           <tr className="text-left text-muted uppercase border-b border-border">
-            <th className="py-2 pr-2">Priority</th>
-            <th className="py-2 pr-2">Action</th>
-            <th className="py-2 pr-2">Reference</th>
-            <th className="py-2 pr-2">Customer / Product</th>
-            <th className="py-2 pr-2 text-right">Value</th>
-            <th className="py-2 pr-2">Waiting</th>
+            <th className="py-2 pr-2">Prioridade</th>
+            <th className="py-2 pr-2">Ação</th>
+            <th className="py-2 pr-2">Referência</th>
+            <th className="py-2 pr-2">Cliente / Produto</th>
+            <th className="py-2 pr-2 text-right">Valor</th>
+            <th className="py-2 pr-2">Aguardando</th>
             <th className="py-2" />
           </tr>
         </thead>
@@ -59,14 +66,14 @@ export function ActionQueue({
             return (
               <tr key={item.id} className="border-b border-border align-top">
                 <td className="py-2 pr-2">
-                  <span className={`px-1.5 py-0.5 font-semibold uppercase text-[10px] ${LEVEL_CLASS[level]}`}>{level}</span>
-                  {item.pinned && <span className="ml-1" title="Pinned">📌</span>}
+                  <span className={`px-1.5 py-0.5 font-semibold uppercase text-[10px] ${LEVEL_CLASS[level]}`}>{LEVEL_LABEL[level]}</span>
+                  {item.pinned && <span className="ml-1" title="Fixado">📌</span>}
                 </td>
                 <td className="py-2 pr-2">
                   <Link href={item.href ?? "#"} className="font-medium underline hover:text-accent">
-                    {labels[item.action_type] ?? item.action_type}
+                    {actionTypeLabelPt(item.action_type, labels[item.action_type] ?? item.action_type)}
                   </Link>
-                  <span className="block text-muted">{item.title}</span>
+                  <span className="block text-muted">{actionTitlePt(item.title)}</span>
                 </td>
                 <td className="py-2 pr-2">{item.reference_label ?? "—"}</td>
                 <td className="py-2 pr-2">{item.subject_label ?? "—"}</td>
@@ -78,11 +85,11 @@ export function ActionQueue({
                 <td className="py-2 pr-2 whitespace-nowrap">{waitingTime(item.created_at, now)}</td>
                 <td className="py-2 whitespace-nowrap space-x-2">
                   <button type="button" disabled={pending} onClick={() => run(() => setActionPinned(item.id, !item.pinned))} className="underline">
-                    {item.pinned ? "Unpin" : "Pin"}
+                    {item.pinned ? "Desafixar" : "Fixar"}
                   </button>
                   {manualTypes.includes(item.action_type) && (
                     <button type="button" disabled={pending} onClick={() => run(() => markActionResolved(item.id))} className="underline">
-                      Mark as resolved
+                      Marcar como resolvido
                     </button>
                   )}
                 </td>

@@ -3,10 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { ContactMessageRow, type ContactRow } from "@/components/contact-message-row";
 
 const FILTERS = [
-  ["", "All"],
-  ["new", "NEW"],
-  ["in_progress", "IN PROGRESS"],
-  ["resolved", "RESOLVED"],
+  ["", "Todos"],
+  ["new", "NOVO"],
+  ["in_progress", "EM ANDAMENTO"],
+  ["resolved", "RESOLVIDO"],
 ] as const;
 
 export default async function AdminContactsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {

@@ -55,7 +55,7 @@ export default async function LocaleLayout({
     <html lang={locale} className={`${display.variable} ${body.variable} h-full`}>
       <body className="min-h-full flex flex-col font-sans antialiased bg-background text-foreground">
         <NextIntlClientProvider>
-          <CurrencyProvider>
+          <CurrencyProvider defaultCurrency={siteMode === "nacional" ? "BRL" : "USD"} locked={siteMode === "nacional"}>
             <CartProvider>
               <WhatsAppProvider settings={whatsapp}>
                 <SiteChrome siteMode={siteMode}>{children}</SiteChrome>

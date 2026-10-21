@@ -133,7 +133,7 @@ export function ProductEditForm({
     startTransition(async () => {
       const result = await deleteProducts([product.id]);
       if (result.blockedCount > 0) {
-        setDeleteError("Can't delete — this product already has orders. Archive it instead.");
+        setDeleteError("Não é possível excluir — este produto já tem pedidos. Arquive-o em vez disso.");
       } else {
         router.push("/admin/produtos");
       }
@@ -144,19 +144,19 @@ export function ProductEditForm({
     <div className="max-w-xl">
       <div className="flex items-center gap-2 mb-2">
         <StatusButton
-          label="Draft"
+          label="Rascunho"
           active={product.status === "draft"}
           onClick={() => changeStatus("draft")}
           disabled={pending}
         />
         <StatusButton
-          label="Published"
+          label="Publicado"
           active={product.status === "published"}
           onClick={() => changeStatus("published")}
           disabled={pending}
         />
         <StatusButton
-          label="Archived"
+          label="Arquivado"
           active={product.status === "archived"}
           onClick={() => changeStatus("archived")}
           disabled={pending}
@@ -167,7 +167,7 @@ export function ProductEditForm({
           onClick={handleDelete}
           className="ml-auto text-xs border border-red-600 text-red-600 px-3 py-1.5 disabled:opacity-50"
         >
-          Delete product
+          Excluir produto
         </button>
       </div>
       {deleteError && <p className="text-xs text-red-600 mb-4">{deleteError}</p>}
@@ -178,11 +178,11 @@ export function ProductEditForm({
           disabled={pending}
           onChange={toggleFeatured}
         />
-        Featured (shows in the &quot;Destaques&quot; home section)
+        Destaque (aparece na seção &quot;Destaques&quot; da home)
       </label>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Title (PT)">
+        <Field label="Título (PT)">
           <input
             required
             value={form.title}
@@ -191,14 +191,14 @@ export function ProductEditForm({
           />
         </Field>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Title (EN)">
+          <Field label="Título (EN)">
             <input
               value={form.titleEn}
               onChange={(e) => setForm((f) => ({ ...f, titleEn: e.target.value }))}
               className="w-full border border-border px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Title (ES)">
+          <Field label="Título (ES)">
             <input
               value={form.titleEs}
               onChange={(e) => setForm((f) => ({ ...f, titleEs: e.target.value }))}
@@ -207,7 +207,7 @@ export function ProductEditForm({
           </Field>
         </div>
 
-        <Field label="Category">
+        <Field label="Categoria">
           <input
             value={form.category}
             onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
@@ -216,9 +216,9 @@ export function ProductEditForm({
         </Field>
 
         <div>
-          <span className="block text-sm mb-1 font-medium">Linked Supplier(s) / Connectors</span>
+          <span className="block text-sm mb-1 font-medium">Fornecedor(es) / Conectores vinculados</span>
           {connectors.length === 0 ? (
-            <p className="text-xs text-muted">No connectors registered yet.</p>
+            <p className="text-xs text-muted">Nenhum conector cadastrado ainda.</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 border border-border rounded-sm p-3">
               {connectors.map((c) => {
@@ -259,7 +259,7 @@ export function ProductEditForm({
           (veja “Preço calculado” abaixo). Atual: {product.price_brl ?? "—"} BRL / {product.price_usd ?? "—"} USD / {product.price_eur ?? "—"} EUR.
         </p>
 
-        <Field label="Sizes (comma-separated, as received from supplier)">
+        <Field label="Tamanhos (separados por vírgula, como recebidos do fornecedor)">
           <input
             value={form.sizesText}
             onChange={(e) => setForm((f) => ({ ...f, sizesText: e.target.value }))}
@@ -267,7 +267,7 @@ export function ProductEditForm({
             className="w-full border border-border px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Colors (comma-separated, as received from supplier)">
+        <Field label="Cores (separadas por vírgula, como recebidas do fornecedor)">
           <input
             value={form.colorsText}
             onChange={(e) => setForm((f) => ({ ...f, colorsText: e.target.value }))}
@@ -275,7 +275,7 @@ export function ProductEditForm({
             className="w-full border border-border px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Default stock per new size/color combination">
+        <Field label="Estoque padrão por nova combinação tamanho/cor">
           <input
             type="number"
             min={0}
@@ -285,9 +285,9 @@ export function ProductEditForm({
           />
         </Field>
         <p className="text-xs text-muted -mt-2">
-          Saving regenerates the size×color matrix below — existing
-          combinations and their stock aren&apos;t touched, only new ones are
-          added.
+          Salvar regenera a matriz tamanho×cor abaixo — combinações existentes
+          e seus estoques não são alterados, apenas as novas são
+          adicionadas.
         </p>
 
         <Field label="HS code">
@@ -295,12 +295,12 @@ export function ProductEditForm({
             value={form.hsCode}
             onChange={(e) => setForm((f) => ({ ...f, hsCode: e.target.value }))}
             className="w-full border border-border px-3 py-2 text-sm"
-            placeholder="e.g. 6204.44"
+            placeholder="ex.: 6204.44"
           />
         </Field>
 
         <div className="grid grid-cols-4 gap-4">
-          <Field label="Weight (g)">
+          <Field label="Peso (g)">
             <input
               type="number"
               value={form.weightG}
@@ -308,7 +308,7 @@ export function ProductEditForm({
               className="w-full border border-border px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Length (cm)">
+          <Field label="Comprimento (cm)">
             <input
               type="number"
               value={form.length}
@@ -316,7 +316,7 @@ export function ProductEditForm({
               className="w-full border border-border px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Width (cm)">
+          <Field label="Largura (cm)">
             <input
               type="number"
               value={form.width}
@@ -324,7 +324,7 @@ export function ProductEditForm({
               className="w-full border border-border px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Height (cm)">
+          <Field label="Altura (cm)">
             <input
               type="number"
               value={form.height}
@@ -340,18 +340,18 @@ export function ProductEditForm({
             disabled={pending}
             className="btn-primary px-4 py-2 text-sm uppercase tracking-wide"
           >
-            {pending ? "Saving..." : "Save"}
+            {pending ? "Salvando..." : "Salvar"}
           </button>
-          {saved && !pending && <span className="text-xs text-muted">Saved.</span>}
+          {saved && !pending && <span className="text-xs text-muted">Salvo.</span>}
         </div>
       </form>
 
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background max-w-md w-full p-6 rounded-sm border border-border shadow-xl space-y-4">
-            <h3 className="font-serif text-lg font-bold">Delete permanently?</h3>
+            <h3 className="font-serif text-lg font-bold">Excluir permanentemente?</h3>
             <p className="text-sm text-muted">
-              Delete &quot;{product.title}&quot; permanently? This cannot be undone.
+              Excluir &quot;{product.title}&quot; permanentemente? Esta ação não pode ser desfeita.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -359,7 +359,7 @@ export function ProductEditForm({
                 onClick={() => setConfirmDelete(false)}
                 className="text-xs border border-border px-3 py-1.5"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -367,7 +367,7 @@ export function ProductEditForm({
                 onClick={runConfirmedDelete}
                 className="text-xs border border-red-600 text-red-600 px-3 py-1.5 disabled:opacity-50"
               >
-                Delete
+                Excluir
               </button>
             </div>
           </div>

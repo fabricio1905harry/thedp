@@ -8,7 +8,7 @@ import { parseCrop, type ImageCrop } from "@/lib/image-crop";
 
 async function requireStaff() {
   const staff = await getCurrentStaff();
-  if (!staff) throw new Error("Not authorized");
+  if (!staff) throw new Error("Não autorizado");
   return staff;
 }
 
@@ -27,7 +27,7 @@ export async function setProductStatus(
   if (error) {
     if (error.message.includes("PUBLISH_REQUIRES_COVER")) {
       throw new Error(
-        "To publish, the product needs at least 1 APPROVED image set as MAIN IMAGE/COVER. Pending images do not block publishing."
+        "Para publicar, o produto precisa de pelo menos 1 imagem APROVADA definida como IMAGEM PRINCIPAL/CAPA. Imagens pendentes não bloqueiam a publicação."
       );
     }
     throw new Error(error.message);
@@ -127,7 +127,7 @@ export async function updateProduct(productId: string, input: UpdateProductInput
     .select("title, title_en, title_es, category, original_price, markup, hs_code, weight_g, dims_cm, sizes, colors, locked_fields")
     .eq("id", productId)
     .single();
-  if (readError || !current) throw new Error(readError?.message ?? "Product not found");
+  if (readError || !current) throw new Error(readError?.message ?? "Produto não encontrado");
 
   // Every field edited by hand is protected from the next syncs.
   const edited = changedFields(current as Partial<Record<SyncableField, unknown>>, next);
@@ -174,7 +174,7 @@ export async function resetFieldsToSource(productId: string, fields: string[]) {
     .select("locked_fields, source_snapshot")
     .eq("id", productId)
     .single();
-  if (readError || !product) throw new Error(readError?.message ?? "Product not found");
+  if (readError || !product) throw new Error(readError?.message ?? "Produto não encontrado");
 
   const toReset = fields.filter(isSyncableField);
   const snapshot = (product.source_snapshot as Record<string, unknown> | null) ?? {};
@@ -211,7 +211,7 @@ export async function setProductFeatured(productId: string, isFeatured: boolean)
 export async function setVariantStock(variantId: string, stock: number) {
   const staff = await requireStaff();
   if (!Number.isInteger(stock) || stock < 0) {
-    throw new Error("Stock must be a non-negative integer.");
+    throw new Error("O estoque deve ser um número inteiro não negativo.");
   }
   const supabase = await createClient();
   const { error, data } = await supabase
@@ -291,7 +291,7 @@ export async function setImagesReviewStatus(imageIds: string[], status: ReviewSt
     if (blocked.length > 0) {
       const titles = blocked.map((r) => (r.products as unknown as { title: string } | null)?.title ?? r.product_id);
       throw new Error(
-        `Choose another MAIN IMAGE/COVER first — this image is the cover of a published product: ${titles.join(", ")}`
+        `Escolha outra IMAGEM PRINCIPAL/CAPA primeiro — esta imagem é a capa de um produto publicado: ${titles.join(", ")}`
       );
     }
     const covers = editable.filter((r) => r.is_cover).map((r) => r.id);
@@ -320,8 +320,8 @@ export async function setCoverImage(imageId: string) {
     .select("id, product_id, review_status")
     .eq("id", imageId)
     .single();
-  if (error || !img) throw new Error(error?.message ?? "Image not found");
-  if (img.review_status !== "approved") throw new Error("Only an APPROVED image can be the cover.");
+  if (error || !img) throw new Error(error?.message ?? "Imagem não encontrada");
+  if (img.review_status !== "approved") throw new Error("Somente uma imagem APROVADA pode ser a capa.");
 
   await supabase.from("product_images").update({ is_cover: false }).eq("product_id", img.product_id).eq("is_cover", true);
   const { error: setError } = await supabase.from("product_images").update({ is_cover: true }).eq("id", imageId);
@@ -345,7 +345,7 @@ export async function reorderProductImages(productId: string, orderedIds: string
 export async function setImageCrop(imageId: string, crop: ImageCrop | null) {
   await requireStaff();
   const parsed = crop === null ? null : parseCrop(crop);
-  if (crop !== null && !parsed) throw new Error("Invalid crop.");
+  if (crop !== null && !parsed) throw new Error("Recorte inválido.");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("product_images")
@@ -388,7 +388,7 @@ async function insertTdpImage(
     .select("id, product_id, position, is_cover")
     .eq("id", replacesImageId)
     .single();
-  if (srcError || !source) throw new Error(srcError?.message ?? "Original image not found");
+  if (srcError || !source) throw new Error(srcError?.message ?? "Imagem original não encontrada");
 
   await supabase
     .from("product_images")
@@ -414,7 +414,7 @@ async function insertTdpImage(
 export async function addProductImage(productId: string, storagePath: string, replacesImageId?: string) {
   const staff = await requireStaff();
   const path = storagePath.trim();
-  if (!path) throw new Error("Image URL cannot be empty.");
+  if (!path) throw new Error("A URL da imagem não pode ficar vazia.");
   await insertTdpImage(productId, path, replacesImageId ?? null, staff.id);
   revalidateImages([productId]);
 }
@@ -425,8 +425,8 @@ export async function uploadProductImage(formData: FormData) {
   const productId = String(formData.get("productId") ?? "");
   const replacesImageId = (formData.get("replacesImageId") as string | null) || null;
   const file = formData.get("file");
-  if (!productId || !(file instanceof File) || file.size === 0) throw new Error("Choose an image file.");
-  if (!file.type.startsWith("image/")) throw new Error("Only image files can be uploaded.");
+  if (!productId || !(file instanceof File) || file.size === 0) throw new Error("Escolha um arquivo de imagem.");
+  if (!file.type.startsWith("image/")) throw new Error("Somente arquivos de imagem podem ser enviados.");
 
   const service = createServiceRoleClient();
   const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
@@ -453,12 +453,12 @@ export async function removeProductImage(imageId: string, productId: string) {
     .select("origin, is_cover, products ( status )")
     .eq("id", imageId)
     .single();
-  if (!img) throw new Error("Image not found");
+  if (!img) throw new Error("Imagem não encontrada");
   if (img.origin !== "tdp_upload") {
-    throw new Error("Supplier images can't be deleted — reject them instead so they never come back in a sync.");
+    throw new Error("Imagens do fornecedor não podem ser excluídas — rejeite-as para que não voltem em uma sincronização.");
   }
   if (img.is_cover && (img.products as unknown as { status: string } | null)?.status === "published") {
-    throw new Error("Choose another MAIN IMAGE/COVER before deleting this one.");
+    throw new Error("Escolha outra IMAGEM PRINCIPAL/CAPA antes de excluir esta.");
   }
   const { error } = await supabase.from("product_images").delete().eq("id", imageId);
   if (error) throw new Error(error.message);

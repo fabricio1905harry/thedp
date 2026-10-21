@@ -26,19 +26,19 @@ export const SYNCABLE_FIELDS = [
 export type SyncableField = (typeof SYNCABLE_FIELDS)[number];
 
 export const SYNCABLE_FIELD_LABELS: Record<SyncableField, string> = {
-  title: "Title",
-  title_en: "Title (EN)",
-  title_es: "Title (ES)",
-  description: "Description",
-  category: "Category",
-  brand: "Brand",
-  original_price: "Source cost",
+  title: "Título",
+  title_en: "Título (EN)",
+  title_es: "Título (ES)",
+  description: "Descrição",
+  category: "Categoria",
+  brand: "Marca",
+  original_price: "Custo do fornecedor",
   markup: "Markup",
   hs_code: "HS code",
-  weight_g: "Weight",
-  dims_cm: "Dimensions",
-  sizes: "Sizes",
-  colors: "Colors",
+  weight_g: "Peso",
+  dims_cm: "Dimensões",
+  sizes: "Tamanhos",
+  colors: "Cores",
 };
 
 export function isSyncableField(value: string): value is SyncableField {

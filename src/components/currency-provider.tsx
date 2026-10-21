@@ -12,52 +12,46 @@ const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 
 export const AVAILABLE_CURRENCIES: Currency[] = ["BRL", "USD", "EUR"];
 
-function detectBrowserCurrency(): Currency {
-  if (typeof window === "undefined" || !navigator) return "USD";
-  const languages = navigator.languages ? Array.from(navigator.languages) : [navigator.language];
+const COOKIE = "tdp_currency";
 
-  for (const lang of languages) {
-    if (!lang) continue;
-    const l = lang.toLowerCase();
-    if (l === "pt-br" || l === "pt") {
-      return "BRL";
-    }
-    if (
-      l.includes("-de") ||
-      l.includes("-fr") ||
-      l.includes("-es") ||
-      l.includes("-it") ||
-      l.includes("-nl") ||
-      l.startsWith("de") ||
-      l.startsWith("fr") ||
-      l.startsWith("it") ||
-      l.startsWith("nl") ||
-      l === "pt-pt"
-    ) {
-      return "EUR";
-    }
-  }
-
-  return "USD";
+function readSaved(): Currency | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(new RegExp(`(?:^|; )${COOKIE}=(BRL|USD|EUR)`));
+  return m ? (m[1] as Currency) : null;
 }
 
 /**
- * Tracks the buyer's display currency. Automatically detects currency
- * from browser headers/locale on mount.
+ * Buyer's display currency. It follows the sales channel, NOT the language:
+ * the national site is always BRL; the international site defaults to USD
+ * (the buyer can switch to EUR and the choice is remembered in a cookie).
  */
-export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const [currency, setCurrency] = useState<Currency>("USD");
+export function CurrencyProvider({
+  children,
+  defaultCurrency = "USD",
+  locked = false,
+}: {
+  children: ReactNode;
+  defaultCurrency?: Currency;
+  /** National site: currency cannot be changed. */
+  locked?: boolean;
+}) {
+  const [currency, setCurrencyState] = useState<Currency>(defaultCurrency);
 
   useEffect(() => {
-    const detected = detectBrowserCurrency();
-    setCurrency(detected);
-  }, []);
+    if (locked) return;
+    const saved = readSaved();
+    if (saved && saved !== "BRL") setCurrencyState(saved);
+  }, [locked]);
 
-  const value = useMemo(() => ({ currency, setCurrency }), [currency]);
+  const setCurrency = (c: Currency) => {
+    if (locked) return;
+    setCurrencyState(c);
+    document.cookie = `${COOKIE}=${c}; path=/; max-age=31536000; samesite=lax`;
+  };
 
-  return (
-    <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>
-  );
+  const value = useMemo(() => ({ currency, setCurrency }), [currency]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
 }
 
 export function useCurrency() {

@@ -32,7 +32,7 @@ export interface EditorBlock {
   isLast: boolean;
 }
 
-const LOCALE_LABEL: Record<string, string> = { en: "EN (master)", es: "ES", pt: "PT" };
+const LOCALE_LABEL: Record<string, string> = { en: "EN (principal)", es: "ES", pt: "PT" };
 
 export function CmsBlockEditor({ block }: { block: EditorBlock }) {
   const router = useRouter();
@@ -53,7 +53,7 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
         if (ok) setMessage(ok);
         router.refresh();
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "Action failed.");
+        setMessage(err instanceof Error ? err.message : "A ação falhou.");
       }
     });
   }
@@ -62,13 +62,13 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
     <div className={`border ${block.active ? "border-border" : "border-dashed border-border opacity-75"}`}>
       <div className="flex flex-wrap items-center gap-3 p-3">
         <div className="flex flex-col">
-          <button type="button" disabled={pending || block.isFirst} onClick={() => run(() => moveCmsBlock(block.scope, block.key, "up"))} className="text-xs leading-none disabled:opacity-20" aria-label="Move up">▲</button>
-          <button type="button" disabled={pending || block.isLast} onClick={() => run(() => moveCmsBlock(block.scope, block.key, "down"))} className="text-xs leading-none disabled:opacity-20" aria-label="Move down">▼</button>
+          <button type="button" disabled={pending || block.isFirst} onClick={() => run(() => moveCmsBlock(block.scope, block.key, "up"))} className="text-xs leading-none disabled:opacity-20" aria-label="Subir">▲</button>
+          <button type="button" disabled={pending || block.isLast} onClick={() => run(() => moveCmsBlock(block.scope, block.key, "down"))} className="text-xs leading-none disabled:opacity-20" aria-label="Descer">▼</button>
         </div>
         <div className="flex-1 min-w-[12rem]">
           <p className="text-sm font-medium">{block.label}</p>
           <p className="text-[11px] text-muted">
-            {block.customised ? "Customised" : "Default content"} · {block.operations.length === OPERATIONS.length ? "all operations" : block.operations.join(", ") || "no operation"}
+            {block.customised ? "Personalizado" : "Conteúdo padrão"} · {block.operations.length === OPERATIONS.length ? "todas as operações" : block.operations.join(", ") || "nenhuma operação"}
           </p>
         </div>
         <label className="flex items-center gap-2 text-xs cursor-pointer">
@@ -78,10 +78,10 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
             disabled={pending}
             onChange={(e) => run(() => toggleCmsBlock(block.scope, block.key, e.target.checked))}
           />
-          {block.active ? "ON" : "OFF"}
+          {block.active ? "Ligado" : "Desligado"}
         </label>
         <button type="button" onClick={() => setOpen((v) => !v)} className="text-xs border border-border px-3 py-1">
-          {open ? "Close" : "Edit"}
+          {open ? "Fechar" : "Editar"}
         </button>
       </div>
 
@@ -90,7 +90,7 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
           {block.description && <p className="text-xs text-muted max-w-3xl">{block.description}</p>}
 
           <div>
-            <p className="text-xs font-medium mb-1">Visible in</p>
+            <p className="text-xs font-medium mb-1">Visível em</p>
             <div className="flex flex-wrap gap-4 text-xs">
               {OPERATIONS.map((op) => (
                 <label key={op.code} className="flex items-center gap-1.5">
@@ -122,19 +122,19 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
           {block.placement && (
             <div className="grid sm:grid-cols-3 gap-3 text-xs border-t border-border pt-3">
               <label className="flex flex-col">
-                Brand / commercial partner (paid placement)
+                Marca / parceiro comercial (posição paga)
                 <input value={partner} onChange={(e) => setPartner(e.target.value)} className="border border-border px-2 py-1" />
               </label>
               <label className="flex flex-col">
-                Start date
+                Data de início
                 <input type="date" value={placementStart} onChange={(e) => setPlacementStart(e.target.value)} className="border border-border px-2 py-1" />
               </label>
               <label className="flex flex-col">
-                End date
+                Data de término
                 <input type="date" value={placementEnd} onChange={(e) => setPlacementEnd(e.target.value)} className="border border-border px-2 py-1" />
               </label>
               <p className="sm:col-span-3 text-muted">
-                When the end date passes, only this Home placement ends — products, brands and pages stay active.
+                Quando a data de término passar, só esta posição na Home é encerrada — produtos, marcas e páginas continuam ativos.
               </p>
             </div>
           )}
@@ -154,19 +154,19 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
                       placementStart,
                       placementEnd,
                     }),
-                  "Saved."
+                  "Salvo."
                 )
               }
               className="btn-primary px-4 py-1.5 text-xs"
             >
-              Save
+              Salvar
             </button>
             {block.customised && (
               <button
                 type="button"
                 disabled={pending}
                 onClick={() => {
-                  if (confirm("Restore the default content and state of this block?")) {
+                  if (confirm("Restaurar o conteúdo e o estado padrão deste bloco?")) {
                     run(async () => {
                       await resetCmsBlock(block.scope, block.key);
                       setOpen(false);
@@ -175,7 +175,7 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
                 }}
                 className="text-xs underline"
               >
-                Restore default
+                Restaurar padrão
               </button>
             )}
             {message && <span className="text-xs">{message}</span>}
@@ -218,9 +218,9 @@ function FieldEditor({
                   {field.itemLabel ?? "Item"} {idx + 1}
                 </span>
                 <span className="space-x-3">
-                  <button type="button" disabled={idx === 0} onClick={() => { const n = [...items]; [n[idx - 1], n[idx]] = [n[idx], n[idx - 1]]; update(n); }} className="underline disabled:opacity-30">Up</button>
-                  <button type="button" disabled={idx === items.length - 1} onClick={() => { const n = [...items]; [n[idx + 1], n[idx]] = [n[idx], n[idx + 1]]; update(n); }} className="underline disabled:opacity-30">Down</button>
-                  <button type="button" onClick={() => update(items.filter((_, i) => i !== idx))} className="underline text-red-700">Remove</button>
+                  <button type="button" disabled={idx === 0} onClick={() => { const n = [...items]; [n[idx - 1], n[idx]] = [n[idx], n[idx - 1]]; update(n); }} className="underline disabled:opacity-30">Subir</button>
+                  <button type="button" disabled={idx === items.length - 1} onClick={() => { const n = [...items]; [n[idx + 1], n[idx]] = [n[idx], n[idx + 1]]; update(n); }} className="underline disabled:opacity-30">Descer</button>
+                  <button type="button" onClick={() => update(items.filter((_, i) => i !== idx))} className="underline text-red-700">Remover</button>
                 </span>
               </div>
               {(field.itemFields ?? []).map((sub) => (
@@ -239,7 +239,7 @@ function FieldEditor({
             onClick={() => update([...items, Object.fromEntries((field.itemFields ?? []).map((f) => [f.key, f.translatable ? { en: "", es: "", pt: "" } : ""]))])}
             className="text-xs border border-border px-3 py-1"
           >
-            + Add {(field.itemLabel ?? "item").toLowerCase()}
+            + Adicionar {(field.itemLabel ?? "item").toLowerCase()}
           </button>
         </div>
       </div>
@@ -362,7 +362,7 @@ function ImageField({
     const res = await uploadCmsAsset(fd);
     setUploading(false);
     if (res.url) onChange(res.url);
-    else setError(res.error ?? "Upload failed.");
+    else setError(res.error ?? "Falha no envio.");
   }
 
   return (
@@ -370,9 +370,9 @@ function ImageField({
       {label}
       <div className="flex flex-wrap items-start gap-3">
         <div className="flex-1 min-w-[16rem] space-y-1">
-          <input value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder="https://… or a Google Drive link" className="w-full border border-border px-2 py-1 text-xs" />
+          <input value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder="https://… ou um link do Google Drive" className="w-full border border-border px-2 py-1 text-xs" />
           <label className="text-[11px] flex items-center gap-2">
-            <span className="underline cursor-pointer">{uploading ? "Uploading…" : "Upload a file"}</span>
+            <span className="underline cursor-pointer">{uploading ? "Enviando…" : "Enviar um arquivo"}</span>
             <input type="file" accept="image/*" className="hidden" disabled={disabled || uploading} onChange={(e) => upload(e.target.files?.[0])} />
           </label>
           {error && <p className="text-[11px] text-red-600">{error}</p>}

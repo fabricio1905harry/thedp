@@ -10,7 +10,7 @@ import { normalizeImageUrl } from "@/lib/image-url";
 
 async function requireStaff() {
   const staff = await getCurrentStaff();
-  if (!staff) throw new Error("Not authorized");
+  if (!staff) throw new Error("Não autorizado");
   return staff;
 }
 
@@ -66,7 +66,7 @@ export interface SaveBlockInput {
 export async function saveCmsBlock(scope: CmsScope, key: string, input: SaveBlockInput) {
   const staff = await requireStaff();
   const def = getBlockDef(scope, key);
-  if (!def) throw new Error("Unknown block");
+  if (!def) throw new Error("Bloco desconhecido");
   const validOps = new Set(OPERATIONS.map((o) => o.code as string));
   const operations = input.operations.filter((o) => validOps.has(o));
 
@@ -92,7 +92,7 @@ export async function saveCmsBlock(scope: CmsScope, key: string, input: SaveBloc
 /** ON/OFF without opening the editor (keeps the rest of the override). */
 export async function toggleCmsBlock(scope: CmsScope, key: string, active: boolean) {
   const staff = await requireStaff();
-  if (!getBlockDef(scope, key)) throw new Error("Unknown block");
+  if (!getBlockDef(scope, key)) throw new Error("Bloco desconhecido");
   const supabase = await createClient();
   const { data: row } = await supabase.from("cms_blocks").select("scope").eq("scope", scope).eq("block_key", key).maybeSingle();
   const { error } = row
@@ -141,8 +141,8 @@ export async function uploadCmsAsset(formData: FormData): Promise<{ url?: string
   try {
     await requireStaff();
     const file = formData.get("file");
-    if (!(file instanceof File) || file.size === 0) return { error: "Choose a file." };
-    if (!file.type.startsWith("image/")) return { error: "Only image files can be uploaded." };
+    if (!(file instanceof File) || file.size === 0) return { error: "Escolha um arquivo." };
+    if (!file.type.startsWith("image/")) return { error: "Só é possível enviar arquivos de imagem." };
     const service = createServiceRoleClient();
     const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const path = `site/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -150,6 +150,6 @@ export async function uploadCmsAsset(formData: FormData): Promise<{ url?: string
     if (error) return { error: error.message };
     return { url: service.storage.from("tdp-images").getPublicUrl(path).data.publicUrl };
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Upload failed." };
+    return { error: err instanceof Error ? err.message : "Falha no envio." };
   }
 }

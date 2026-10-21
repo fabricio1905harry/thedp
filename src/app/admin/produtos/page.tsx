@@ -116,29 +116,29 @@ export default async function AdminProdutosPage({
 
   return (
     <div>
-      <h1 className="font-serif text-2xl mb-2">Products</h1>
+      <h1 className="font-serif text-2xl mb-2">Produtos</h1>
       <p className="text-sm text-muted mb-6">
-        Individual and bulk publish/unpublish (CAT-04), price/markup/HS code
-        editing (ADM-03). Catalog volume itself is still blocked on the n8n
-        supplier connectors (task #10).
+        Publicar/despublicar individualmente ou em massa (CAT-04), edição de
+        preço/markup/HS code (ADM-03). O volume do catálogo ainda depende dos
+        conectores de fornecedores no n8n (tarefa #10).
       </p>
 
       <ProductFilters categories={categories} initialQ={q} initialStatus={status} initialCategory={category} />
 
       {result === null ? (
-        <p className="text-sm text-muted mt-4">Could not load products.</p>
+        <p className="text-sm text-muted mt-4">Não foi possível carregar os produtos.</p>
       ) : result.products.length === 0 ? (
         <p className="text-sm text-muted mt-4">
           {q || status || category
-            ? "No products match these filters."
-            : "No products yet — automated ingestion (CAT-01) is blocked until the 5 suppliers are chosen (PRD pending decision #4)."}
+            ? "Nenhum produto corresponde a estes filtros."
+            : "Nenhum produto ainda — a importação automática (CAT-01) está bloqueada até a escolha dos 5 fornecedores (decisão pendente #4 do PRD)."}
         </p>
       ) : (
         <>
           <ProductModerationTable products={result.products} />
           <div className="flex items-center justify-between mt-4 text-xs text-muted">
             <span>
-              {result.total} product{result.total === 1 ? "" : "s"} — page {page} of {totalPages}
+              {result.total} produto{result.total === 1 ? "" : "s"} — página {page} de {totalPages}
             </span>
             <div className="flex items-center gap-3">
               <PageLink
@@ -148,7 +148,7 @@ export default async function AdminProdutosPage({
                 status={status}
                 category={category}
               >
-                ← Previous
+                ← Anterior
               </PageLink>
               <PageLink
                 page={page + 1}
@@ -157,7 +157,7 @@ export default async function AdminProdutosPage({
                 status={status}
                 category={category}
               >
-                Next →
+                Próxima →
               </PageLink>
             </div>
           </div>

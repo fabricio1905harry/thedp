@@ -33,9 +33,9 @@ async function persist(overrides: UiOverrides, staffId: string) {
 
 export async function saveUiText(key: string, values: { en: string; es: string; pt: string }): Promise<{ error?: string }> {
   const staff = await getCurrentStaff();
-  if (!staff) return { error: "Not authorized" };
+  if (!staff) return { error: "Não autorizado" };
   const base = flattenMessages(en as Record<string, unknown>)[key];
-  if (base === undefined) return { error: "Unknown text." };
+  if (base === undefined) return { error: "Texto desconhecido." };
 
   const entry: Partial<Record<(typeof LOCALES)[number], string>> = {};
   for (const l of LOCALES) {
@@ -54,7 +54,7 @@ export async function saveUiText(key: string, values: { en: string; es: string; 
 
 export async function resetUiText(key: string): Promise<{ error?: string }> {
   const staff = await getCurrentStaff();
-  if (!staff) return { error: "Not authorized" };
+  if (!staff) return { error: "Não autorizado" };
   const overrides = await load();
   delete overrides[key];
   await persist(overrides, staff.id);

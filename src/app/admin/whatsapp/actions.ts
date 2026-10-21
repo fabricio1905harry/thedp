@@ -7,7 +7,7 @@ import { normalizeWhatsAppSettings } from "@/lib/whatsapp";
 
 export async function saveWhatsAppSettings(formData: FormData) {
   const staff = await getCurrentStaff();
-  if (!staff) throw new Error("Not authorized");
+  if (!staff) throw new Error("Não autorizado");
   const messages: Record<string, Record<string, string>> = {};
   for (const kind of ["general", "product", "order"]) {
     messages[kind] = {};

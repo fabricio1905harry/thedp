@@ -6,7 +6,7 @@ import { getCurrentStaff } from "@/lib/admin-auth";
 
 export async function setContactStatus(id: string, status: "new" | "in_progress" | "resolved", note?: string) {
   const staff = await getCurrentStaff();
-  if (!staff) throw new Error("Not authorized");
+  if (!staff) throw new Error("Não autorizado");
   const supabase = await createClient();
   const { error } = await supabase
     .from("contact_messages")
