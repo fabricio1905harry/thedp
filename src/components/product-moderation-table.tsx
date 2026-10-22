@@ -10,6 +10,7 @@ interface Row {
   title: string;
   category: string | null;
   status: string;
+  favorites?: number;
   price_brl: number | null;
   suppliers?: string[];
   imageUrl?: string | null;
@@ -147,6 +148,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
             <th className="py-2 pr-4">Fornecedor(es)</th>
             <th className="py-2 pr-4">Status</th>
             <th className="py-2 pr-4">Preço</th>
+            <th className="py-2 pr-4" title="Compradores que favoritaram">Favoritos</th>
             <th className="py-2"></th>
           </tr>
         </thead>
@@ -193,6 +195,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
               <td className="py-2 pr-4">
                 {p.price_brl !== null ? `${p.price_brl} BRL` : "—"}
               </td>
+              <td className="py-2 pr-4 text-xs">{p.favorites ? `♥ ${p.favorites}` : "—"}</td>
               <td className="py-2 text-right whitespace-nowrap">
                 <Link href={`/admin/produtos/${p.id}`} className="text-xs text-accent underline mr-3">
                   Editar

@@ -8,6 +8,7 @@ import { LocaleSwitcher } from "@/components/locale-switcher";
 import { CurrencySwitcher } from "@/components/currency-switcher";
 import { getAllCategories } from "@/lib/catalog";
 import { mainNav, statusKey } from "@/lib/nav";
+import { getNavAvailability } from "@/lib/catalog-extra";
 import type { SiteMode } from "@/lib/site-mode";
 import { getCurrentCustomer } from "@/lib/auth";
 import { getPublicBlock } from "@/lib/cms";
@@ -43,7 +44,9 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
   const customer = await getCurrentCustomer();
   const isNacional = siteMode === "nacional";
   const bars = await barBlocks(siteMode);
-  const items = mainNav().map((entry) => ({ ...entry, label: t(entry.key) }));
+  // BRANDS / COLLECTIONS / LOOKBOOKS / EDITS show only when at least one active entry is visible
+  const available = await getNavAvailability();
+  const items = mainNav(available).map((entry) => ({ ...entry, label: t(entry.key) }));
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-30">
@@ -94,7 +97,7 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
           {!isNacional && <CurrencySwitcher />}
-          {!isNacional && <CartLink />}
+          {!isNacional && <CartLink signedIn={Boolean(customer)} />}
           {!isNacional &&
             (customer ? (
               <div className="hidden md:flex items-center gap-3">

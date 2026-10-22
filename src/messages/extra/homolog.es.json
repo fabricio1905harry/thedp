@@ -1,1 +1,74 @@
-{}
+{
+  "countrySelect": {
+    "search": "Buscar país…",
+    "choose": "Selecciona un país"
+  },
+  "checkout": {
+    "country": "País",
+    "useNewAddress": "Usar una dirección nueva",
+    "saveAddress": "Guardar esta dirección en Mi cuenta",
+    "errors": {
+      "auth": "Inicia sesión nuevamente.",
+      "empty": "Tu carrito está vacío.",
+      "address": "Completa el nombre del destinatario, la dirección y la ciudad.",
+      "country": "Elige el país de entrega.",
+      "generic": "No pudimos completar tu pedido. Inténtalo de nuevo."
+    }
+  },
+  "cart": {
+    "quantityNote": "Algunas cantidades pueden superar lo disponible — la disponibilidad se confirma antes del pago.",
+    "myOrdersLink": "Mis pedidos",
+    "viewMyOrders": "Ver mis pedidos"
+  },
+  "order": {
+    "statusStockConfirmation": "Nuestro equipo está confirmando la disponibilidad",
+    "statusShipped": "Enviado",
+    "statusDelivered": "Entregado",
+    "statusCanceled": "Cancelado",
+    "canceledBadge": "Pedido cancelado",
+    "canceledTitle": "Este pedido fue cancelado",
+    "canceledText": "No se realizó ningún cobro. Puedes enviar una nueva solicitud de pedido cuando quieras.",
+    "itemsRequestedTitle": "Piezas solicitadas ({count})"
+  },
+  "orderActions": {
+    "cancelCta": "Cancelar solicitud de pedido",
+    "cancelConfirmTitle": "¿Cancelar esta solicitud de pedido?",
+    "cancelConfirmText": "Aún no se ha pagado nada. Una vez cancelada, la solicitud no se puede reabrir — puedes enviar una nueva.",
+    "cancelReasonPlaceholder": "Motivo (opcional)",
+    "cancelConfirm": "Sí, cancelar",
+    "canceling": "Cancelando…",
+    "keepOrder": "Mantener mi pedido",
+    "returnTitle": "Solicitud de devolución o posventa",
+    "returnIntro": "Cuéntanos qué pasó con este pedido. Nuestro equipo responde por e-mail.",
+    "returnPlaceholder": "¿Qué piezas y cuál es el problema?",
+    "returnSubmit": "Enviar solicitud",
+    "returnSent": "Solicitud enviada. Nuestro equipo responderá por e-mail.",
+    "returnLink": "Devolución / posventa",
+    "sending": "Enviando…",
+    "errors": {
+      "auth": "Inicia sesión nuevamente.",
+      "notFound": "Pedido no encontrado.",
+      "notCancelable": "Este pedido ya no se puede modificar aquí. Contáctanos.",
+      "failed": "Algo salió mal. Inténtalo de nuevo.",
+      "invalid": "Describe tu solicitud."
+    }
+  },
+  "apply": {
+    "country": "País"
+  },
+  "footer": {
+    "myAccount": "Mi cuenta"
+  },
+  "product": {
+    "colorHelpBase": "Los colores pueden variar ligeramente según la pantalla y la iluminación. Para confirmar el tono exacto antes de hacer tu pedido, contacta a nuestro equipo",
+    "colorHelpVia": "por",
+    "colorHelpOr": "o",
+    "colorHelpContactPage": "a través de nuestra página de Contacto"
+  },
+  "reserve": {
+    "depositNoticeTitle": "El depósito no es reembolsable",
+    "depositNoticeText": "El depósito de reserva no es reembolsable. Garantiza tu mercadería hasta la fecha de envío acordada y se descuenta del total cuando pagas el saldo.",
+    "termsPrefix": "Las condiciones completas se describen en nuestros",
+    "termsLink": "Términos de uso"
+  }
+}

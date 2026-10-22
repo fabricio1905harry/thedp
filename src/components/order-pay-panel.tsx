@@ -6,6 +6,7 @@ import { startStripeCheckout } from "@/app/[locale]/pedidos/[id]/actions";
 import { formatCurrency } from "@/lib/currency";
 import type { Currency } from "@/lib/types";
 import { WhatsAppInlineLink } from "@/components/whatsapp-button";
+import { PaymentProofUpload } from "@/components/payment-proof-upload";
 
 export interface PayPanelProps {
   orderId: string;
@@ -18,11 +19,16 @@ export interface PayPanelProps {
   stripeEnabled: boolean;
   bankEnabled: boolean;
   bankInstructions: string;
+  /** buyer came back from a failed / canceled card payment */
+  paymentFailed?: boolean;
+  /** a bank transfer proof is already waiting for verification */
+  proofPending?: boolean;
 }
 
 /** Payment options for a Confirmed Order, limited to what is enabled for it. */
 export function OrderPayPanel(props: PayPanelProps) {
   const t = useTranslations("order");
+  const tc = useTranslations("commercial");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +49,17 @@ export function OrderPayPanel(props: PayPanelProps) {
 
   return (
     <div className="border border-border p-5 space-y-4 bg-white">
+      {props.paymentFailed && (
+        <div className="border border-accent p-4 space-y-2" role="alert">
+          <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-accent">{tc("payFailed.title")}</h3>
+          <p className="text-sm text-muted">{tc("payFailed.body")}</p>
+          {props.stripeEnabled && (
+            <button type="button" onClick={payByCard} disabled={pending} className="btn-primary px-5 py-2.5 text-[11px] uppercase tracking-[0.2em] font-semibold">
+              {pending ? t("payRedirecting") : tc("payFailed.retry")}
+            </button>
+          )}
+        </div>
+      )}
       <div>
         <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-accent">{t("payTitle")}</h3>
         <p className="text-sm mt-2">
@@ -58,7 +75,7 @@ export function OrderPayPanel(props: PayPanelProps) {
         )}
       </div>
 
-      {props.stripeEnabled && (
+      {props.stripeEnabled && !props.paymentFailed && (
         <button type="button" onClick={payByCard} disabled={pending} className="btn-primary w-full sm:w-auto px-6 py-3 text-xs uppercase tracking-[0.2em] font-semibold">
           {pending ? t("payRedirecting") : t("payByCard")}
         </button>
@@ -73,6 +90,7 @@ export function OrderPayPanel(props: PayPanelProps) {
             <p className="text-muted">{t("payTransferContact")}</p>
           )}
           <p className="text-muted">{t("payTransferNotice")}</p>
+          <PaymentProofUpload orderId={props.orderId} hasPending={Boolean(props.proofPending)} />
           <WhatsAppInlineLink source="order:send_transfer_proof" className="underline text-accent">
             {t("paySendProof")}
           </WhatsAppInlineLink>

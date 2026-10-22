@@ -1,1 +1,68 @@
-{}
+{
+  "commercial": {
+    "proof": {
+      "title": "Envie o comprovante da transferência",
+      "ourInstruction": "Importante: ao fazer a transferência, escolha a opção de despesas \"OUR\" (e não SHA ou BEN), para que todas as taxas bancárias sejam pagas pelo remetente e recebamos o valor integral.",
+      "help": "PDF, JPG ou PNG, até 8 MB. Nossa equipe confirma o pagamento manualmente após verificar o comprovante.",
+      "choose": "Escolher o arquivo do comprovante",
+      "submit": "Enviar comprovante",
+      "replace": "Enviar outro comprovante",
+      "uploading": "Enviando…",
+      "success": "Comprovante recebido. Nossa equipe vai verificá-lo e confirmar seu pagamento — a confirmação nunca é automática.",
+      "awaiting": "Seu comprovante está aguardando verificação da nossa equipe.",
+      "errSignIn": "Entre novamente na sua conta.",
+      "errNoFile": "Escolha um arquivo primeiro.",
+      "errTooBig": "O arquivo é maior que 8 MB.",
+      "errType": "Apenas arquivos PDF, JPG ou PNG são aceitos.",
+      "errOrder": "Pedido não encontrado.",
+      "errClosed": "Este pedido não está aberto para pagamento.",
+      "errMethod": "A transferência bancária não está habilitada para este pedido.",
+      "errUpload": "Não foi possível enviar o comprovante. Tente novamente ou fale conosco.",
+      "errNothingDue": "Não há valor pendente neste pedido."
+    },
+    "payFailed": {
+      "title": "Pagamento não concluído — tente novamente",
+      "body": "Seu pagamento com cartão não foi concluído e nada foi cobrado. Você pode tentar novamente agora ou pagar por transferência bancária.",
+      "retry": "Tentar novamente"
+    },
+    "compare": {
+      "title": "Solicitação original × Pedido confirmado",
+      "differences": "{count, plural, one {# diferença} other {# diferenças}} entre o que você solicitou e o que confirmamos.",
+      "noDifferences": "Seu pedido confirmado é igual à solicitação original.",
+      "item": "Item",
+      "original": "Solicitação original",
+      "confirmed": "Pedido confirmado",
+      "removed": "Removido do pedido",
+      "unavailable": "Indisponível",
+      "changed": "Alterado",
+      "added": "Adicionado pela nossa equipe",
+      "subtotal": "Produtos",
+      "freight": "Frete",
+      "duties": "Impostos de importação",
+      "notIncluded": "não incluído",
+      "afterConfirmation": "Informado após a confirmação de estoque",
+      "total": "Total do pedido",
+      "legendChanged": "Quantidade ou preço alterados",
+      "legendRemoved": "Removido / indisponível",
+      "legendAdded": "Adicionado pela nossa equipe"
+    },
+    "minimum": {
+      "title": "Pedido mínimo",
+      "addUnits": "Adicione mais {missing} {missing, plural, one {peça} other {peças}} para fazer seu pedido",
+      "addUnitsOf": "Adicione mais {missing} de {label} para fazer seu pedido",
+      "addAmount": "Adicione mais {missing} para atingir o mínimo de {minimum} e fazer seu pedido",
+      "addAmountOf": "Adicione mais {missing} de {label} para fazer seu pedido (mínimo {minimum})"
+    },
+    "volume": {
+      "applied": "Desconto por volume"
+    },
+    "duties": {
+      "label": "Impostos e taxas:",
+      "mode": {
+        "prepaid": "pré-pagos junto com o pedido",
+        "upon_import": "pagos na importação",
+        "customer_choice": "à sua escolha (pré-pagos ou na importação)"
+      }
+    }
+  }
+}

@@ -110,6 +110,24 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/pedidos", label: "Pedidos", icon: OrdersIcon },
       { href: "/admin/vendas-perdidas", label: "Vendas perdidas", icon: OrdersIcon },
       { href: "/admin/embalagens", label: "Embalagens DHL", icon: PackagingIcon },
+      { href: "/admin/pedido-minimo", label: "Regras de pedido mínimo", icon: OrdersIcon },
+      { href: "/admin/volume-pricing", label: "Volume Pricing", icon: OverviewIcon },
+      { href: "/admin/envios-futuros", label: "Envios futuros", icon: PackagingIcon },
+      { href: "/admin/carrinhos", label: "Carrinhos abandonados", icon: OrdersIcon },
+    ],
+  },
+  {
+    label: "Curadoria & Dados",
+    items: [
+      { href: "/admin/marcas", label: "Marcas", icon: ProductsIcon },
+      { href: "/admin/colecoes", label: "Coleções", icon: ProductsIcon },
+      { href: "/admin/lookbooks", label: "Lookbooks", icon: ProductsIcon },
+      { href: "/admin/edits", label: "TDP Edits", icon: ProductsIcon },
+      { href: "/admin/placements", label: "Placements pagos", icon: OverviewIcon },
+      { href: "/admin/avise-me", label: "Avise-me (reposição)", icon: AutomationIcon },
+      { href: "/admin/cores", label: "Cores", icon: OverviewIcon },
+      { href: "/admin/tamanhos", label: "Tamanhos", icon: OverviewIcon },
+      { href: "/admin/ncm", label: "NCM / HS", icon: OverviewIcon },
     ],
   },
   {
@@ -117,13 +135,16 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/pagamentos", label: "Pagamentos", icon: ExchangeIcon },
       { href: "/admin/cambio", label: "Câmbio", icon: ExchangeIcon },
+      { href: "/admin/impostos", label: "Impostos e taxas", icon: ExchangeIcon },
+      { href: "/admin/invoice", label: "Configurações da invoice", icon: ExchangeIcon },
     ],
   },
   {
     label: "Clientes & Sistema",
     items: [
-      { href: "/admin/clientes", label: "Contas atacado", icon: CustomersIcon },
+      { href: "/admin/clientes", label: "Clientes", icon: CustomersIcon },
       { href: "/admin/whatsapp", label: "WhatsApp", icon: CustomersIcon },
+      { href: "/admin/notificacoes", label: "Notificações", icon: AutomationIcon },
       { href: "/admin/automacao", label: "Automação", icon: AutomationIcon },
     ],
   },

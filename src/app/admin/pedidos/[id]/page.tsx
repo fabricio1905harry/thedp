@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { calculateShipmentPackages } from "@/lib/dhl-packaging";
+import { PostPaymentSections } from "@/components/post-payment-sections";
 import { DhlShipmentReviewPanel } from "@/components/dhl-shipment-review-panel";
 import { StatusBadge } from "@/components/status-badge";
 import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 import { CHANNEL_LABELS } from "@/lib/payments";
+import { resolveDutiesRule, orderCountryCode, type DutiesRule } from "@/lib/duties";
 import {
   OrderManagementPanel,
   type MethodAvailability,
@@ -13,6 +15,7 @@ import {
   type OrderItemRow,
   type OrderSummary,
   type PaymentRow,
+  type PaymentAttemptRow,
 } from "@/components/order-management-panel";
 
 export default async function AdminOrderDetailPage({
@@ -24,7 +27,7 @@ export default async function AdminOrderDetailPage({
   const supabase = await createClient();
 
   const ORDER_COLUMNS =
-    "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customer_id";
+    "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customer_id, canceled_at, cancel_reason, canceled_by_buyer, duties_mode, shipping_address";
 
   // Everything is requested at once (one round trip instead of several in a row).
   const [orderRes, itemsRes, paymentsRes, methodsRes, rulesRes, feeRes, eventsRes] = await Promise.all([
@@ -40,7 +43,7 @@ export default async function AdminOrderDetailPage({
       .order("id"),
     supabase
       .from("payments")
-      .select("id, method_code, kind, status, currency, amount, merchandise_amount, bank_fee_amount, received_amount, cogs_recognized_brl, confirmed_at, created_at, external_ref")
+      .select("id, method_code, kind, status, currency, amount, merchandise_amount, bank_fee_amount, received_amount, cogs_recognized_brl, confirmed_at, created_at, external_ref, proof_path, proof_name, proof_uploaded_at")
       .eq("order_id", id)
       .order("created_at"),
     supabase.rpc("available_payment_methods", { p_order_id: id }),
@@ -63,6 +66,9 @@ export default async function AdminOrderDetailPage({
     subtotal: number;
     total: number;
     customer_id: string;
+    canceled_at?: string | null;
+    cancel_reason?: string | null;
+    canceled_by_buyer?: boolean | null;
   };
   let order = orderRes.data as unknown as OrderRow | null;
   let customerRow = (orderRes.data as { customer?: unknown } | null)?.customer as
@@ -104,6 +110,21 @@ export default async function AdminOrderDetailPage({
   const rules = rulesRes.data;
   const feeSetting = feeRes.data;
   const events = eventsRes.data;
+
+  const { data: attempts } = await supabase
+    .from("payment_attempts")
+    .select("id, status, source, message, amount, currency, created_at")
+    .eq("order_id", id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const { data: dutiesRules } = await supabase
+    .from("duties_taxes_rules")
+    .select("id, market_type, market, mode, default_pct, note, active");
+  const resolvedDuties = resolveDutiesRule(
+    (dutiesRules ?? []).map((r) => ({ ...r, default_pct: r.default_pct === null ? null : Number(r.default_pct) })) as DutiesRule[],
+    orderCountryCode((order as { shipping_address?: unknown }).shipping_address)
+  );
 
   const paidMerchandise = (payments ?? [])
     .filter((p) => p.status === "confirmed")
@@ -152,6 +173,17 @@ export default async function AdminOrderDetailPage({
         </dl>
       </div>
 
+      {order.status === "canceled" && (
+        <div className="rounded-xl border border-red-200 bg-red-50 text-red-900 p-4 text-sm space-y-1">
+          <p className="font-semibold">
+            Pedido cancelado{order.canceled_by_buyer ? " pelo comprador" : ""}
+            {order.canceled_at ? ` em ${new Date(order.canceled_at).toLocaleString("pt-BR")}` : ""}
+          </p>
+          {order.cancel_reason && <p>Motivo: {order.cancel_reason}</p>}
+          <p className="text-xs">Nenhum pagamento foi recebido enquanto o pedido estava em solicitação.</p>
+        </div>
+      )}
+
       <OrderManagementPanel
         order={order as unknown as OrderSummary}
         items={(items ?? []) as OrderItemRow[]}
@@ -161,6 +193,8 @@ export default async function AdminOrderDetailPage({
         bankFeeBrl={Number(feeSetting?.value ?? 0)}
         events={(events ?? []) as unknown as OrderEventRow[]}
         outstandingMerchandise={outstandingMerchandise}
+        attempts={(attempts ?? []) as PaymentAttemptRow[]}
+        dutiesRule={resolvedDuties ? { mode: resolvedDuties.rule.mode, pct: resolvedDuties.rule.default_pct, note: resolvedDuties.rule.note, source: resolvedDuties.source } : null}
       />
 
       {showDhl && initialCalculation ? (
@@ -170,6 +204,15 @@ export default async function AdminOrderDetailPage({
           O envio DHL só é gerado depois do pagamento integral do pedido. Status atual: {ORDER_STATUS_LABELS[order.status] ?? order.status}.
         </section>
       )}
+
+      <PostPaymentSections
+        orderId={order.id}
+        status={order.status}
+        paymentMode={(order as unknown as { payment_mode: string }).payment_mode}
+        currency={order.currency}
+        total={Number(order.total)}
+        suggestedPackages={(initialCalculation?.packages ?? []) as unknown as { length_cm: number; width_cm: number; height_cm: number; final_weight_kg: number }[]}
+      />
     </div>
   );
 }

@@ -45,13 +45,31 @@ export function isSyncableField(value: string): value is SyncableField {
   return (SYNCABLE_FIELDS as readonly string[]).includes(value);
 }
 
-function normalize(value: unknown): string {
-  if (value === undefined || value === "" ) return "null";
-  if (typeof value === "number") return String(Math.round(value * 100) / 100);
-  if (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value))) {
-    return String(Math.round(Number(value) * 100) / 100);
+/** Canonical form so "empty" is always the same thing: null / undefined / "" / NaN / {} / [] / all-empty objects. */
+function canonical(value: unknown): unknown {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "number") return Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
+  if (typeof value === "string") {
+    const t = value.trim();
+    if (t === "") return null;
+    return Number.isNaN(Number(t)) ? t : Math.round(Number(t) * 100) / 100;
   }
-  return JSON.stringify(value ?? null);
+  if (Array.isArray(value)) {
+    const items = value.map(canonical).filter((v) => v !== null);
+    return items.length === 0 ? null : items;
+  }
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .map(([k, v]) => [k, canonical(v)] as const)
+      .filter(([, v]) => v !== null)
+      .sort(([a], [b]) => a.localeCompare(b));
+    return entries.length === 0 ? null : Object.fromEntries(entries);
+  }
+  return value;
+}
+
+function normalize(value: unknown): string {
+  return JSON.stringify(canonical(value));
 }
 
 /** Fields whose value differs between the current row and the edit. */

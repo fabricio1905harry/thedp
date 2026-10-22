@@ -2,6 +2,7 @@
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentCustomer } from "@/lib/auth";
+import { flushEmailOutbox, queueEmail, queueTeamNotice, siteOrigin } from "@/lib/email";
 
 export interface ContactState {
   status: "idle" | "success" | "error";
@@ -41,6 +42,19 @@ export async function submitContactMessage(_prev: ContactState, formData: FormDa
       customer_id: customer?.id ?? null,
     });
     if (error) return { status: "error", message: "unavailable" };
+
+    // confirmation to the sender + internal notice to the team (queued; never blocks the form)
+    const locale = String(formData.get("locale") ?? "");
+    const origin = siteOrigin();
+    await queueEmail(email, "contact_received", locale, { buyer_name: name, message });
+    await queueTeamNotice("internal_new_contact", {
+      subject,
+      sender: name,
+      email,
+      message,
+      admin_url: origin ? `${origin}/admin/contatos?status=new` : "",
+    });
+    await flushEmailOutbox(5).catch(() => undefined);
     return { status: "success" };
   } catch {
     return { status: "error", message: "unavailable" };

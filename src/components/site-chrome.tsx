@@ -2,19 +2,21 @@ import type { ReactNode } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import type { SiteMode } from "@/lib/site-mode";
+import { getCurrentCustomer } from "@/lib/auth";
 
-export function SiteChrome({
+export async function SiteChrome({
   siteMode,
   children,
 }: {
   siteMode: SiteMode;
   children: ReactNode;
 }) {
+  const customer = await getCurrentCustomer();
   return (
     <>
       <Header siteMode={siteMode} />
       <main className="flex-1">{children}</main>
-      <Footer siteMode={siteMode} />
+      <Footer siteMode={siteMode} signedIn={Boolean(customer)} />
     </>
   );
 }

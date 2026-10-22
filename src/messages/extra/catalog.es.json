@@ -1,1 +1,69 @@
-{}
+{
+  "c2": {
+    "favorites": {
+      "title": "Mis favoritos",
+      "add": "Añadir a favoritos",
+      "remove": "Quitar de favoritos",
+      "failed": "No se pudo actualizar",
+      "empty": "Aún no tienes favoritos.",
+      "browse": "Ver la tienda",
+      "backToAccount": "Mi cuenta"
+    },
+    "notify": {
+      "notifyMe": "Avisarme cuando esté disponible",
+      "waiting": "Te avisaremos — toca para cancelar",
+      "hint": "Toca la campana en una combinación no disponible para recibir un aviso cuando vuelva.",
+      "requested": "Listo: te enviaremos un e-mail cuando vuelva a estar disponible.",
+      "cancelled": "Aviso cancelado.",
+      "approval": "Los avisos están disponibles para cuentas mayoristas aprobadas.",
+      "login": "Inicia sesión para recibir avisos.",
+      "available": "Este artículo ya está disponible.",
+      "failed": "No se pudo guardar tu solicitud. Inténtalo de nuevo."
+    },
+    "sizes": {
+      "guide": "Guía de tallas",
+      "title": "Guía de tallas",
+      "close": "Cerrar",
+      "letter": "Talla",
+      "bust": "Busto",
+      "waist": "Cintura",
+      "hip": "Cadera",
+      "note": "Notas",
+      "cm": "Medidas en centímetros.",
+      "disclaimer": "BR = talla brasileña; US y EU son equivalencias internacionales. El calce puede variar según el modelo."
+    },
+    "common": {
+      "partner": "Socio"
+    },
+    "brands": {
+      "title": "Marcas",
+      "intro": "Marcas brasileñas seleccionadas por The Dressing Project.",
+      "empty": "Las marcas aparecerán aquí pronto.",
+      "productsTitle": "Modelos",
+      "noProducts": "No hay modelos disponibles de esta marca por ahora."
+    },
+    "collections": {
+      "title": "Colecciones",
+      "intro": "Colecciones seleccionadas, listas para enviar.",
+      "empty": "Las colecciones aparecerán aquí pronto.",
+      "productsTitle": "Modelos de esta colección",
+      "noProducts": "Aún no hay modelos en esta colección."
+    },
+    "lookbooks": {
+      "title": "Lookbooks",
+      "intro": "Inspírate y compra el look.",
+      "empty": "Los lookbooks aparecerán aquí pronto.",
+      "shopTheLook": "Compra el look",
+      "noImages": "Este lookbook aún no tiene imágenes.",
+      "productsTitle": "Modelos",
+      "noProducts": "Sin modelos vinculados."
+    },
+    "edits": {
+      "title": "TDP Edits",
+      "intro": "Selecciones editoriales de The Dressing Project.",
+      "empty": "Los edits aparecerán aquí pronto.",
+      "productsTitle": "La selección",
+      "noProducts": "Aún no hay modelos en este edit."
+    }
+  }
+}

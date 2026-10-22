@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { COUNTRY_CODES } from "@/lib/countries";
 
 export interface SignUpState {
   status: "idle" | "success" | "error";
@@ -23,9 +24,13 @@ export async function signUpCustomer(_prev: SignUpState, formData: FormData): Pr
   const deliveryAddress = text(formData, "deliveryAddress", 600) || companyAddress;
   const phone = text(formData, "phone", 60);
   const businessType = text(formData, "businessType", 80);
+  const country = text(formData, "country", 2).toUpperCase();
 
   if (!email || !name || !companyName || !companyAddress || !phone || !businessType || password.length < 8) {
     return { status: "error", message: "Please fill in all required fields (password: at least 8 characters)." };
+  }
+  if (!COUNTRY_CODES.includes(country)) {
+    return { status: "error", message: "Please select your country." };
   }
   if (formData.get("applicantConfirmed") !== "on") {
     return { status: "error", message: "Please confirm that you are applying as a business/retailer." };
@@ -47,6 +52,8 @@ export async function signUpCustomer(_prev: SignUpState, formData: FormData): Pr
           name,
           locale: text(formData, "locale", 8) || "en",
           customer_type: "business",
+          // ISO code; the DB trigger derives the channel from it (BR → br_b2b, else intl_b2b)
+          country,
           company_name: companyName,
           tax_id: text(formData, "taxId", 80) || null,
           company_address: companyAddress,

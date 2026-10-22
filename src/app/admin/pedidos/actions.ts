@@ -85,6 +85,7 @@ export interface OrderChargesInput {
   otherChargesAmount: number;
   deliveryDays: number | null;
   note: string;
+  dutiesMode?: "prepaid" | "upon_import" | "customer_choice";
 }
 
 /**
@@ -111,6 +112,7 @@ async function setOrderChargesImpl(orderId: string, input: OrderChargesInput) {
       other_dhl_amount: n(input.otherDhlAmount),
       duties_taxes_amount: n(input.dutiesTaxesAmount),
       other_charges_amount: n(input.otherChargesAmount),
+      duties_mode: input.dutiesMode ?? null,
       delivery_days: input.deliveryDays && input.deliveryDays > 0 ? Math.round(input.deliveryDays) : null,
       charges_note: input.note.trim() || null,
       charges_informed_at: new Date().toISOString(),
@@ -242,7 +244,19 @@ export interface VariantSearchResult {
 }
 
 /** Product/SKU search to add or substitute a line (price in the order currency). */
-export async function searchVariantsForOrder(orderId: string, query: string): Promise<VariantSearchResult[]> {
+export async function searchVariantsForOrder(
+  orderId: string,
+  query: string
+): Promise<{ results: VariantSearchResult[]; error?: string }> {
+  try {
+    return { results: await searchVariantsImpl(orderId, query) };
+  } catch (err) {
+    console.error("[admin/pedidos search]", err);
+    return { results: [], error: err instanceof Error ? err.message : "Falha na busca." };
+  }
+}
+
+async function searchVariantsImpl(orderId: string, query: string): Promise<VariantSearchResult[]> {
   await requireStaff();
   const q = query.replace(/[%,()*\\]/g, " ").trim();
   if (q.length < 2) return [];
@@ -255,6 +269,9 @@ export async function searchVariantsForOrder(orderId: string, query: string): Pr
     supabase.from("variants").select(select).ilike("sku", `%${q}%`).limit(20),
     supabase.from("variants").select(select).ilike("products.title", `%${q}%`).limit(20),
   ]);
+
+  if (bySku.error) throw new Error(bySku.error.message);
+  if (byTitle.error) throw new Error(byTitle.error.message);
 
   const seen = new Set<string>();
   const results: VariantSearchResult[] = [];

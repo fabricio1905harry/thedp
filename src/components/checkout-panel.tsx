@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useCart } from "@/components/cart-provider";
@@ -9,42 +9,62 @@ import { useCurrency } from "@/components/currency-provider";
 import { formatCurrency, pickPrice } from "@/lib/currency";
 import { placeOrderServerAction } from "@/app/[locale]/checkout/actions";
 import { ShipSmartAddress } from "@/lib/shipsmart";
+import { CountrySelect } from "@/components/country-select";
+import { toCountryCode } from "@/lib/countries";
+import { MinimumNotice, useCartCommercial, useShortfallText } from "@/components/cart-commercial";
 
 interface Address {
   id: string;
   country: string;
+  state?: string | null;
   city: string | null;
   line1: string;
   postal_code: string | null;
 }
 
-const COUNTRY_CODES = ["US", "PT", "ES", "FR", "DE", "IT", "GB", "CA", "MX"] as const;
+/** Defaults from the account / wholesale application (used when there is no saved address). */
+export interface CheckoutDefaults {
+  recipientName: string;
+  /** free-text delivery address from the wholesale application */
+  deliveryAddress: string;
+  /** ISO country code chosen at signup */
+  country: string;
+}
 
-export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
+export function CheckoutPanel({ addresses, defaults }: { addresses: Address[]; defaults: CheckoutDefaults }) {
+  const locale = useLocale();
   const tCart = useTranslations("cart");
   const t = useTranslations("checkout");
   const tProduct = useTranslations("product");
   const router = useRouter();
   const { items, clear } = useCart();
   const { currency } = useCurrency();
+  const tCommercial = useTranslations("commercial");
+  const { status: commercial } = useCartCommercial();
+  const shortfallText = useShortfallText();
+  const minimumBlocked = commercial.shortfalls.length > 0;
+  const volumeDiscount = commercial.volume.enabled ? commercial.volume.discountTotal : 0;
 
   // Orders are DDP (duties prepaid). Freight and import duties are NOT
   // calculated here: the TDP informs them after confirming stock with the
   // supplier, before releasing the Confirmed Order for payment.
   const isDdp = true;
 
-  const [selectedAddressId, setSelectedAddressId] = useState(addresses[0]?.id ?? "new");
+  const first = addresses[0];
+  const [selectedAddressId, setSelectedAddressId] = useState(first?.id ?? "new");
+  const [saveAddress, setSaveAddress] = useState(!first);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Custom address fields
-  const [recipientName, setRecipientName] = useState("");
-  const [addressLine, setAddressLine] = useState(addresses[0]?.line1 ?? "");
-  const [city, setCity] = useState(addresses[0]?.city ?? "");
-  const [state, setState] = useState("");
+  // Prefill: newest saved address → wholesale application delivery address → empty.
+  const [recipientName, setRecipientName] = useState(defaults.recipientName);
+  const [addressLine, setAddressLine] = useState(first?.line1 ?? defaults.deliveryAddress);
+  const [city, setCity] = useState(first?.city ?? "");
+  const [state, setState] = useState(first?.state ?? "");
   const pieceCount = items.reduce((sum, i) => sum + i.qty, 0);
-  const [postalCode, setPostalCode] = useState(addresses[0]?.postal_code ?? "");
-  const [countryCode, setCountryCode] = useState(addresses[0]?.country ?? "US");
+  const [postalCode, setPostalCode] = useState(first?.postal_code ?? "");
+  const [countryCode, setCountryCode] = useState(toCountryCode(first?.country) ?? defaults.country ?? "");
 
   const subtotal = items.reduce((sum, item) => {
     const picked = pickPrice(item.pricing, currency);
@@ -67,13 +87,24 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
       setPlacingOrder(true);
       setErrorMsg(null);
 
+      if (!recipientName.trim() || !addressLine.trim() || !city.trim()) {
+        setErrorMsg(t("errors.address"));
+        setPlacingOrder(false);
+        return;
+      }
+      if (!countryCode) {
+        setErrorMsg(t("errors.country"));
+        setPlacingOrder(false);
+        return;
+      }
+
       const customAddress: ShipSmartAddress = {
-        name: recipientName || "Cliente",
-        address: addressLine || "Rua Exemplo",
-        city: city || "Cidade",
-        state: state || "UF",
-        postalCode: postalCode || "00000",
-        countryCode: countryCode || "US",
+        name: recipientName.trim(),
+        address: addressLine.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        postalCode: postalCode.trim(),
+        countryCode,
       };
 
       const cartItems = items.map((item) => {
@@ -95,18 +126,25 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
         currency,
         items: cartItems,
         isDdp,
+        locale,
+        // a saved address is reused as is; a typed one can be saved
+        saveAddress: selectedAddressId === "new" ? saveAddress : false,
       });
 
+      if (res.minimumShortfalls?.length) {
+        setErrorMsg(res.minimumShortfalls.map(shortfallText).join(" "));
+        setPlacingOrder(false);
+        return;
+      }
       if (res.success && res.orderId) {
         clear();
         router.push(`/pedidos/${res.orderId}`);
       } else {
-        setErrorMsg(res.error || t("orderFailedGeneric"));
+        setErrorMsg(res.errorCode ? t(`errors.${res.errorCode}`) : t("orderFailedGeneric"));
         setPlacingOrder(false);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t("unexpectedError");
-      setErrorMsg(msg);
+      setErrorMsg(t("unexpectedError"));
       setPlacingOrder(false);
     }
   }
@@ -140,17 +178,39 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
                       setSelectedAddressId(a.id);
                       setAddressLine(a.line1);
                       setCity(a.city ?? "");
+                      setState(a.state ?? "");
                       setPostalCode(a.postal_code ?? "");
-                      setCountryCode(a.country ?? "US");
+                      setCountryCode(toCountryCode(a.country) ?? "");
                     }}
                     className="mt-0.5 accent-accent"
                   />
                   <div>
                     <p className="font-semibold text-foreground">{a.line1}</p>
-                    <p className="text-muted text-[11px]">{a.city}, {a.postal_code} • {a.country}</p>
+                    <p className="text-muted text-[11px]">{a.city}, {a.postal_code} • {toCountryCode(a.country) ?? a.country}</p>
                   </div>
                 </label>
               ))}
+              <label
+                className={`flex items-center gap-3 text-xs p-3.5 rounded border cursor-pointer transition-all ${
+                  selectedAddressId === "new" ? "border-accent bg-accent/5 ring-1 ring-accent/30 font-medium" : "border-border/80 hover:border-gray-400"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="address"
+                  checked={selectedAddressId === "new"}
+                  onChange={() => {
+                    setSelectedAddressId("new");
+                    setAddressLine("");
+                    setCity("");
+                    setState("");
+                    setPostalCode("");
+                    setSaveAddress(true);
+                  }}
+                  className="accent-accent"
+                />
+                <span>{t("useNewAddress")}</span>
+              </label>
             </div>
           )}
 
@@ -228,19 +288,20 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
                 <label className="block text-[11px] uppercase tracking-wider text-muted font-medium mb-1">
                   {t("country")}
                 </label>
-                <select
+                <CountrySelect
                   value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-border rounded focus:outline-none focus:border-accent bg-background cursor-pointer"
-                >
-                  {COUNTRY_CODES.map((code) => (
-                    <option key={code} value={code}>
-                      {t(`countries.${code}`)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCountryCode}
+                  className="w-full px-3 py-2 text-xs border border-border rounded focus:outline-none focus:border-accent bg-background"
+                />
               </div>
             </div>
+
+            {selectedAddressId === "new" && (
+              <label className="flex items-center gap-2 text-xs pt-1">
+                <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="accent-accent" />
+                {t("saveAddress")}
+              </label>
+            )}
           </div>
         </div>
 
@@ -308,6 +369,13 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
             <span className="font-medium text-foreground">{formatCurrency(subtotal, currency)}</span>
           </div>
 
+          {volumeDiscount > 0 && (
+            <div className="flex justify-between text-muted">
+              <span>{tCommercial("volume.applied")}</span>
+              <span className="font-medium text-foreground">− {formatCurrency(volumeDiscount, currency)}</span>
+            </div>
+          )}
+
           <div className="flex justify-between text-muted">
             <span>{t("shippingDhl")}</span>
             <span className="font-medium text-foreground text-right">{t("toBeInformed")}</span>
@@ -320,9 +388,10 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
 
           <div className="flex justify-between pt-3 border-t border-border font-serif text-lg font-bold text-foreground">
             <span>{t("totalProducts")}</span>
-            <span className="text-accent">{formatCurrency(subtotal, currency)}</span>
+            <span className="text-accent">{formatCurrency(Math.max(0, subtotal - volumeDiscount), currency)}</span>
           </div>
           <p className="text-[11px] text-muted leading-relaxed">{t("chargesAfterStockConfirmation")}</p>
+          <p className="text-[11px] text-muted leading-relaxed">{tCart("quantityNote")}</p>
         </div>
 
         {errorMsg && (
@@ -331,10 +400,12 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
           </div>
         )}
 
+        <MinimumNotice shortfalls={commercial.shortfalls} />
+
         {/* Place Order Button */}
         <button
           onClick={handlePlaceOrder}
-          disabled={placingOrder}
+          disabled={placingOrder || minimumBlocked}
           className="btn-primary w-full py-4 text-xs uppercase tracking-[0.2em] font-semibold flex items-center justify-center gap-2"
         >
           {placingOrder ? (

@@ -125,6 +125,38 @@ export async function calculateShipmentPackages(
   }
 
   const [types, rules] = await Promise.all([getPackagingTypes(), getCapacityRules()]);
+  const unitWeight = items.find((i) => i.unitWeightKg)?.unitWeightKg || DEFAULT_SHIPPING_WEIGHT_KG;
+  return planShipmentPackages(types, rules, totalItems, unitWeight, categoryName);
+}
+
+/** Pieces of `unitWeightKg` a box can really take: min(quantity rule, weight limit). */
+export function effectiveCapacity(rule: CapacityRule, type: PackagingType, unitWeightKg: number): number {
+  const byWeight =
+    type.maxWeightKg > 0 && unitWeightKg > 0
+      ? Math.floor((type.maxWeightKg - type.emptyWeightKg + 1e-9) / unitWeightKg)
+      : Number.POSITIVE_INFINITY;
+  return Math.max(0, Math.min(rule.maxQuantity, byWeight));
+}
+
+function volumeOf(t: PackagingType) {
+  const v = t.lengthCm * t.widthCm * t.heightCm;
+  return v > 0 ? v : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * Pure planner (unit-testable): picks, for the pieces still to ship, the
+ * smallest box that fits BOTH the quantity and the weight capacity
+ * (pieces x unit weight + empty box <= max weight). When nothing fits all
+ * the remaining pieces, fills the box with the largest effective capacity
+ * and repeats.
+ */
+export function planShipmentPackages(
+  types: PackagingType[],
+  rules: CapacityRule[],
+  totalItems: number,
+  unitWeight: number,
+  categoryName = "Dresses"
+): ShipmentCalculationResult {
   const activeTypes = new Map<string, PackagingType>();
   for (const t of types) {
     if (t.active) activeTypes.set(t.id, t);
@@ -147,26 +179,37 @@ export async function calculateShipmentPackages(
 
   while (remainingQty > 0) {
     let chosenRule: CapacityRule | undefined;
+    let allocatedQty = remainingQty;
 
-    // STEP 1: Check if a single package can fit ALL remainingQty pieces
-    const exactFittingRules = matchedRules.filter(
-      (r) => remainingQty >= r.minQuantity && remainingQty <= r.maxQuantity
-    );
+    const cap = (r: CapacityRule) => effectiveCapacity(r, activeTypes.get(r.packagingTypeId)!, unitWeight);
 
-    if (exactFittingRules.length > 0) {
-      // Sort ascending by maxQuantity to choose the SMALLEST adequate package
-      exactFittingRules.sort((a, b) => a.maxQuantity - b.maxQuantity);
-      chosenRule = exactFittingRules[0];
+    // STEP 1: boxes whose quantity AND weight capacity take ALL remaining pieces;
+    // pick the smallest (volume, then capacity). Rules whose min quantity is met come first.
+    const fitting = matchedRules.filter((r) => cap(r) >= remainingQty);
+    if (fitting.length > 0) {
+      const rank = (r: CapacityRule) => [
+        remainingQty >= r.minQuantity ? 0 : 1,
+        volumeOf(activeTypes.get(r.packagingTypeId)!),
+        r.maxQuantity,
+      ];
+      fitting.sort((a, b) => {
+        const ra = rank(a);
+        const rb = rank(b);
+        for (let i = 0; i < ra.length; i++) {
+          if (ra[i] !== rb[i]) return ra[i] < rb[i] ? -1 : 1;
+        }
+        return 0;
+      });
+      chosenRule = fitting[0];
     } else {
-      // STEP 2: remainingQty exceeds max capacity of any single box (e.g. 25 pcs or 32 pcs).
-      // Pick the LARGEST available box to allocate maximum pieces in this volume.
-      const largestRules = [...matchedRules].sort((a, b) => b.maxQuantity - a.maxQuantity);
-      chosenRule = largestRules[0];
+      // STEP 2: nothing takes everything — fill the box with the largest effective capacity.
+      const largest = [...matchedRules].sort((a, b) => cap(b) - cap(a));
+      chosenRule = largest[0];
+      if (chosenRule) allocatedQty = Math.min(remainingQty, Math.max(1, cap(chosenRule)));
     }
 
     if (!chosenRule) {
       // No rules defined in DB
-      const unitWeight = items[0]?.unitWeightKg || DEFAULT_SHIPPING_WEIGHT_KG;
       const productsWeight = Number((remainingQty * unitWeight).toFixed(2));
       packagesResult.push({
         package_number: packageNumber,
@@ -186,8 +229,6 @@ export async function calculateShipmentPackages(
     }
 
     const packagingType = activeTypes.get(chosenRule.packagingTypeId)!;
-    const allocatedQty = Math.min(remainingQty, chosenRule.maxQuantity);
-    const unitWeight = items[0]?.unitWeightKg || DEFAULT_SHIPPING_WEIGHT_KG;
     const productsWeight = Number((allocatedQty * unitWeight).toFixed(2));
     const emptyWeight = Number(packagingType.emptyWeightKg.toFixed(2));
     const finalWeight = Number((productsWeight + emptyWeight).toFixed(2));

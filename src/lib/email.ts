@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { findTemplate, loadTemplateIndex, renderTemplateRow } from "@/lib/notification-templates";
 
 /**
  * Transactional e-mail. Rows queue in email_outbox (status queued) and are
@@ -78,6 +79,98 @@ function render(template: string, locale: Locale, payload: Payload): Rendered | 
           }[locale],
         ],
       };
+    // --- homologation stream 1: Order Request / contact -----------------
+    case "order_request_received": {
+      const currency = (payload.currency as string) || "";
+      const link = (payload.account_url as string) || "";
+      return {
+        subject: {
+          en: `Order Request received${order ? ` — ${order}` : ""}`,
+          es: `Solicitud de pedido recibida${order ? ` — ${order}` : ""}`,
+          pt: `Order Request recebido${order ? ` — ${order}` : ""}`,
+        }[locale],
+        lines: [
+          hi,
+          {
+            en: `We received your Order Request ${order}${currency ? ` (currency: ${currency})` : ""}. We are now confirming the availability of each item. No payment is required at this stage.`,
+            es: `Recibimos tu solicitud de pedido ${order}${currency ? ` (moneda: ${currency})` : ""}. Ahora estamos confirmando la disponibilidad de cada artículo. No se requiere pago en esta etapa.`,
+            pt: `Recebemos o seu pedido ${order}${currency ? ` (moeda: ${currency})` : ""}. Estamos confirmando a disponibilidade de cada item. Nenhum pagamento é necessário nesta etapa.`,
+          }[locale],
+          {
+            en: "Freight and import duties are informed after stock confirmation, before you pay. You will be notified as soon as your confirmed order is ready for review.",
+            es: "El flete y los aranceles se informan después de confirmar el stock, antes de que pagues. Te avisaremos en cuanto tu pedido confirmado esté listo para revisión.",
+            pt: "Frete e impostos de importação são informados após a confirmação de estoque, antes do pagamento. Avisaremos assim que o seu pedido confirmado estiver pronto para revisão.",
+          }[locale],
+          link ? { en: `Follow your order in My account: ${link}`, es: `Sigue tu pedido en Mi cuenta: ${link}`, pt: `Acompanhe o pedido em Minha conta: ${link}` }[locale] : "",
+        ],
+      };
+    }
+    case "contact_received":
+      return {
+        subject: { en: "We received your message", es: "Recibimos tu mensaje", pt: "Recebemos sua mensagem" }[locale],
+        lines: [
+          hi,
+          {
+            en: "Thank you for contacting The Dressing Project. We received your message and our team will reply as soon as possible.",
+            es: "Gracias por contactar a The Dressing Project. Recibimos tu mensaje y nuestro equipo responderá lo antes posible.",
+            pt: "Obrigado por entrar em contato com a The Dressing Project. Recebemos sua mensagem e nossa equipe responderá o quanto antes.",
+          }[locale],
+          payload.message ? `“${String(payload.message).slice(0, 600)}”` : "",
+        ],
+      };
+    case "contact_reply":
+      return {
+        subject: {
+          en: `Re: ${(payload.subject as string) || "your message"}${order ? ` — ${order}` : ""}`,
+          es: `Re: ${(payload.subject as string) || "tu mensaje"}${order ? ` — ${order}` : ""}`,
+          pt: `Re: ${(payload.subject as string) || "sua mensagem"}${order ? ` — ${order}` : ""}`,
+        }[locale],
+        lines: [
+          hi,
+          String(payload.reply ?? ""),
+          payload.original
+            ? { en: `Your message:\n${String(payload.original).slice(0, 800)}`, es: `Tu mensaje:\n${String(payload.original).slice(0, 800)}`, pt: `Sua mensagem:\n${String(payload.original).slice(0, 800)}` }[locale]
+            : "",
+        ],
+      };
+    case "internal_new_contact":
+      return {
+        subject: `[TDP] Novo contato: ${(payload.subject as string) || ""} — ${(payload.sender as string) || ""}`,
+        lines: [
+          `Novo contato recebido de ${(payload.sender as string) || "?"} <${(payload.email as string) || "?"}>.`,
+          `Assunto: ${(payload.subject as string) || ""}${order ? ` · Pedido: ${order}` : ""}`,
+          String(payload.message ?? "").slice(0, 1500),
+          payload.admin_url ? `Abrir no Admin: ${payload.admin_url}` : "",
+        ],
+      };
+    case "internal_new_order":
+      return {
+        subject: `[TDP] Novo Order Request ${order}${payload.buyer ? ` — ${payload.buyer}` : ""}`,
+        lines: [
+          `Novo Order Request ${order} de ${(payload.buyer as string) || "?"}${payload.currency ? ` (${payload.currency})` : ""}.`,
+          payload.total ? `Total de produtos: ${payload.total}` : "",
+          payload.above_stock ? "ATENÇÃO: há itens acima do estoque disponível (veja o Action Center)." : "",
+          payload.admin_url ? `Abrir no Admin: ${payload.admin_url}` : "",
+        ],
+      };
+    case "notify_back_in_stock": {
+      const title = (payload.product_title as string) || "";
+      const variant = [payload.color as string, payload.size as string].filter(Boolean).join(" / ");
+      const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+      const link = payload.product_slug && base ? `${base}/${locale}/produtos/${payload.product_slug as string}` : "";
+      return {
+        subject: { en: `Back in stock — ${title}`, es: `De nuevo disponible — ${title}`, pt: `De volta ao estoque — ${title}` }[locale],
+        lines: [
+          hi,
+          {
+            en: `${title}${variant ? ` (${variant})` : ""} is available again. Availability moves quickly and is confirmed before payment.`,
+            es: `${title}${variant ? ` (${variant})` : ""} vuelve a estar disponible. La disponibilidad cambia rápido y se confirma antes del pago.`,
+            pt: `${title}${variant ? ` (${variant})` : ""} está disponível novamente. A disponibilidade muda rápido e é confirmada antes do pagamento.`,
+          }[locale],
+          link,
+        ],
+      };
+    }
     default:
       return null;
   }
@@ -96,54 +189,161 @@ export interface FlushResult {
   configured: boolean;
   sent: number;
   failed: number;
+  held?: number;
   firstError?: string;
 }
 
-/** Sends queued rows (oldest first). Failed rows are marked and retried on later flushes (up to 5 attempts). */
+/** One e-mail through Resend. Returns an error message instead of throwing. Never pretends success. */
+export async function sendEmailNow(input: { to: string; subject: string; lines: string[]; locale: string }): Promise<{ error?: string }> {
+  if (!emailConfigured()) return { error: "Provedor de e-mail não configurado (RESEND_API_KEY e EMAIL_FROM)." };
+  const l = loc(input.locale);
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM,
+        to: [input.to],
+        reply_to: process.env.EMAIL_REPLY_TO || undefined,
+        subject: input.subject,
+        html: toHtml(input.lines, l),
+        text: input.lines.filter(Boolean).join("\n\n"),
+      }),
+    });
+    if (!res.ok) return { error: `Resend ${res.status}: ${(await res.text()).slice(0, 300)}` };
+    return {};
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "send failed" };
+  }
+}
+
+/**
+ * Sends queued rows (oldest first). Failed rows are marked and retried on later flushes (up to 5 attempts).
+ * Template lookup: approved database template (Admin → Notificações) → template in code → database draft
+ * (only when approval is not required). A row whose only template is an unapproved draft stays queued.
+ */
 export async function flushEmailOutbox(limit = 25): Promise<FlushResult> {
-  const result: FlushResult = { configured: emailConfigured(), sent: 0, failed: 0 };
+  const result: FlushResult = { configured: emailConfigured(), sent: 0, failed: 0, held: 0 };
   if (!result.configured) return result;
 
   const supabase = createServiceRoleClient();
-  const { data: rows } = await supabase
-    .from("email_outbox")
-    .select("id, to_email, template, locale, payload, status, error")
-    .in("status", ["queued", "failed"])
-    .order("created_at")
-    .limit(limit);
+  const [{ data: rows }, templates] = await Promise.all([
+    supabase
+      .from("email_outbox")
+      .select("id, to_email, template, locale, payload, status, error")
+      .in("status", ["queued", "failed"])
+      .order("created_at")
+      .limit(limit * 4),
+    loadTemplateIndex(supabase),
+  ]);
+
+  async function logOutcome(outboxId: string, row: { to_email: string; template: string; locale: string; payload: unknown }, status: "sent" | "failed" | "queued", error: string | null, rendered?: Rendered) {
+    const patch = {
+      status,
+      error,
+      provider: "resend",
+      subject: rendered?.subject ?? null,
+      body: rendered ? rendered.lines.filter(Boolean).join("\n\n") : null,
+      sent_at: status === "sent" ? new Date().toISOString() : null,
+    };
+    const { data } = await supabase.from("notification_log").update(patch).eq("email_outbox_id", outboxId).select("id");
+    if (!data || data.length === 0) {
+      // queued by code that predates the notifications engine: record it now
+      const p = (row.payload ?? {}) as Payload;
+      await supabase.from("notification_log").insert({
+        event: row.template,
+        channel: "email",
+        locale: loc(row.locale),
+        to_address: row.to_email,
+        order_id: typeof p.order_id === "string" ? p.order_id : null,
+        payload: p,
+        email_outbox_id: outboxId,
+        ...patch,
+      });
+    }
+  }
 
   for (const row of rows ?? []) {
+    if (result.sent + result.failed >= limit) break;
     const attempts = Number((row.payload as Payload)?._attempts ?? 0);
     if (row.status === "failed" && attempts >= 5) continue;
     const l = loc(row.locale);
-    const rendered = render(row.template, l, (row.payload ?? {}) as Payload);
+    const payload = (row.payload ?? {}) as Payload;
+
+    let rendered: Rendered | null = null;
+    const approved = findTemplate(templates, row.template, "email", l, true);
+    if (approved) {
+      const r = renderTemplateRow(approved, payload, l);
+      rendered = { subject: r.subject, lines: r.lines };
+    } else {
+      rendered = render(row.template, l, payload);
+      if (!rendered) {
+        const draft = findTemplate(templates, row.template, "email", l, false);
+        if (draft && !templates.requireApproval) {
+          const r = renderTemplateRow(draft, payload, l);
+          rendered = { subject: r.subject, lines: r.lines };
+        } else if (draft) {
+          // only an unapproved draft exists: hold (stays queued) until the TDP approves it
+          result.held = (result.held ?? 0) + 1;
+          await logOutcome(row.id, row, "queued", "Aguardando aprovação do template (Admin → Notificações)");
+          continue;
+        }
+      }
+    }
     if (!rendered) {
-      await supabase.from("email_outbox").update({ status: "failed", error: `Unknown template ${row.template}`, payload: { ...(row.payload as Payload), _attempts: 5 } }).eq("id", row.id);
+      await supabase.from("email_outbox").update({ status: "failed", error: `Unknown template ${row.template}`, payload: { ...payload, _attempts: 5 } }).eq("id", row.id);
+      await logOutcome(row.id, row, "failed", `Template inexistente: ${row.template}`);
       result.failed++;
       continue;
     }
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
-          to: [row.to_email],
-          reply_to: process.env.EMAIL_REPLY_TO || undefined,
-          subject: rendered.subject,
-          html: toHtml(rendered.lines, l),
-          text: rendered.lines.filter(Boolean).join("\n\n"),
-        }),
-      });
-      if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
+
+    const sent = await sendEmailNow({ to: row.to_email, subject: rendered.subject, lines: rendered.lines, locale: l });
+    if (!sent.error) {
       await supabase.from("email_outbox").update({ status: "sent", sent_at: new Date().toISOString(), error: null }).eq("id", row.id);
+      await logOutcome(row.id, row, "sent", null, rendered);
       result.sent++;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "send failed";
-      await supabase.from("email_outbox").update({ status: "failed", error: message, payload: { ...(row.payload as Payload), _attempts: attempts + 1 } }).eq("id", row.id);
+    } else {
+      await supabase.from("email_outbox").update({ status: "failed", error: sent.error, payload: { ...payload, _attempts: attempts + 1 } }).eq("id", row.id);
+      await logOutcome(row.id, row, "failed", sent.error, rendered);
       result.failed++;
-      result.firstError ??= message;
+      result.firstError ??= sent.error;
     }
   }
   return result;
+}
+
+/** Team addresses that receive internal notices (env TEAM_NOTIFY_EMAILS, comma/semicolon separated). */
+export function teamNotifyEmails(): string[] {
+  return (process.env.TEAM_NOTIFY_EMAILS ?? "")
+    .split(/[,;\s]+/)
+    .map((e) => e.trim())
+    .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+}
+
+/** Public site origin used for links inside e-mails. */
+export function siteOrigin(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+}
+
+/** Queues one internal notice per team address (pt-BR). Never throws. */
+export async function queueTeamNotice(template: "internal_new_order" | "internal_new_contact", payload: Payload): Promise<void> {
+  try {
+    const to = teamNotifyEmails();
+    if (to.length === 0) return;
+    const supabase = createServiceRoleClient();
+    await supabase.from("email_outbox").insert(to.map((email) => ({ to_email: email, template, locale: "pt", payload })));
+  } catch {
+    /* a notice must never break the user's action */
+  }
+}
+
+/** Queues a buyer-facing e-mail. Never throws; returns false when it could not be queued. */
+export async function queueEmail(toEmail: string, template: string, locale: string | null | undefined, payload: Payload): Promise<boolean> {
+  try {
+    const supabase = createServiceRoleClient();
+    const { error } = await supabase.from("email_outbox").insert({ to_email: toEmail, template, locale: loc(locale), payload });
+    return !error;
+  } catch {
+    return false;
+  }
 }

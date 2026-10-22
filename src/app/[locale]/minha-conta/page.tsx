@@ -4,7 +4,8 @@ import { Link } from "@/i18n/navigation";
 import { getCurrentCustomer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/currency";
-import { BUYER_STATUS_KEYS } from "@/lib/order-status";
+import { BUYER_CANCELABLE_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
+import { CancelOrderButton } from "@/components/order-buyer-actions";
 import type { Currency } from "@/lib/types";
 
 /** My account: order history (Original Request → Confirmed Order → paid → shipped). */
@@ -15,6 +16,8 @@ export default async function MyAccountPage() {
   const locale = await getLocale();
   const t = await getTranslations("account");
   const tOrder = await getTranslations("order");
+  const tAction = await getTranslations("orderActions");
+  const tFav = await getTranslations("c2.favorites");
   const supabase = await createClient();
   const { data: application } = await supabase
     .from("customers")
@@ -51,6 +54,12 @@ export default async function MyAccountPage() {
         </section>
       )}
 
+      <p className="mt-8">
+        <Link href="/minha-conta/favoritos" className="text-[11px] font-semibold uppercase tracking-[0.2em] underline underline-offset-4">
+          {tFav("title")}
+        </Link>
+      </p>
+
       <section className="mt-12">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted mb-4">{t("orders")}</h2>
         {(orders ?? []).length === 0 ? (
@@ -63,7 +72,7 @@ export default async function MyAccountPage() {
         ) : (
           <ul className="divide-y divide-border border-y border-border">
             {(orders ?? []).map((o) => (
-              <li key={o.id}>
+              <li key={o.id} className="pb-2">
                 <Link href={`/pedidos/${o.id}`} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 py-4 hover:bg-surface px-2 transition-colors">
                   <span className="font-medium text-sm">#{o.order_number ?? o.id.slice(0, 8)}</span>
                   <span className="text-xs text-muted">{new Date(o.created_at).toLocaleDateString(dateLocale)}</span>
@@ -72,6 +81,18 @@ export default async function MyAccountPage() {
                   </span>
                   <span className="text-sm">{formatCurrency(Number(o.total), o.currency as Currency)}</span>
                 </Link>
+                {BUYER_CANCELABLE_STATUSES.includes(o.status) && (
+                  <div className="px-2 pt-1">
+                    <CancelOrderButton orderId={o.id} compact />
+                  </div>
+                )}
+                {!BUYER_CANCELABLE_STATUSES.includes(o.status) && o.status !== "canceled" && (
+                  <div className="px-2 pt-1">
+                    <Link href={`/pedidos/${o.id}#return`} className="text-[11px] underline text-muted hover:text-accent">
+                      {tAction("returnLink")}
+                    </Link>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

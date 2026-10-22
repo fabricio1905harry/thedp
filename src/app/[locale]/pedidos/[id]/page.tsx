@@ -6,10 +6,15 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/currency";
 import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp-button";
 import { OrderPayPanel } from "@/components/order-pay-panel";
+import { OrderPostPayBuyer } from "@/components/order-postpay-buyer";
 import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
-import { BUYER_STATUS_KEYS } from "@/lib/order-status";
+import { BUYER_CANCELABLE_STATUSES, BUYER_RELEASED_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
+import { CancelOrderButton, ReturnRequestForm } from "@/components/order-buyer-actions";
+import { getColorResolver } from "@/lib/colors";
 import type { Currency } from "@/lib/types";
+import { OriginalVsConfirmed } from "@/components/original-vs-confirmed";
+import { PaymentCanceledLogger } from "@/components/payment-canceled-logger";
 
 function currentTime() {
   return Date.now();
@@ -20,17 +25,20 @@ export default async function OrderConfirmationPage({
   searchParams,
 }: {
   params: Promise<{ id: string; locale: string }>;
-  searchParams: Promise<{ paid?: string }>;
+  searchParams: Promise<{ paid?: string; payment?: string }>;
 }) {
   const { id, locale } = await params;
-  const { paid: paidFlag } = await searchParams;
+  const { paid: paidFlag, payment: paymentFlag } = await searchParams;
   const requestedAt = currentTime();
   const customer = await getCurrentCustomer();
   if (!customer) redirect("/login");
 
   const supabase = createServiceRoleClient();
   const t = await getTranslations();
+  const tc = await getTranslations("commercial");
   const dateLocale = { pt: "pt-BR", en: "en-US", es: "es-ES" }[locale] ?? locale;
+  // supplier color text is internal: show the TDP color name in the buyer's language
+  const colorNames = await getColorResolver(locale);
 
   // The service-role client bypasses RLS, so the order is scoped to the
   // signed-in buyer first; lines/shipment are only read once it matches.
@@ -53,7 +61,7 @@ export default async function OrderConfirmationPage({
         supabase.from("shipments").select("*").eq("order_id", id).maybeSingle(),
         supabase
           .from("payments")
-          .select(`status, kind, merchandise_amount, ${ORDER_CHARGE_COLUMNS.join(", ")}`)
+          .select(`status, kind, method_code, merchandise_amount, ${ORDER_CHARGE_COLUMNS.join(", ")}`)
           .eq("order_id", id),
         supabase.rpc("available_payment_methods", { p_order_id: id }),
         getSetting<string>("bank_transfer_instructions"),
@@ -71,7 +79,12 @@ export default async function OrderConfirmationPage({
     );
   }
 
-  const chargesInformed = Boolean(order.charges_informed_at);
+  // Freight/duties are drafts until the TDP informed them AND released the order (Confirmed Order).
+  const chargesInformed = Boolean(order.charges_informed_at) && BUYER_RELEASED_STATUSES.includes(order.status);
+  const isCanceled = order.status === "canceled";
+  const canCancel = BUYER_CANCELABLE_STATUSES.includes(order.status);
+  const canRequestReturn = !isCanceled && !canCancel;
+  const activeItemCount = (items ?? []).filter((i) => i.item_status === "available" || i.item_status === "requested").length;
   const isRequestStage = ["created", "order_request", "stock_confirmation", "awaiting_buyer_decision"].includes(order.status);
   const statusLabel = BUYER_STATUS_KEYS[order.status] ? t(`order.${BUYER_STATUS_KEYS[order.status]}`) : order.status;
   const holdUntil =
@@ -102,7 +115,7 @@ export default async function OrderConfirmationPage({
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2 h-2 rounded-full bg-foreground animate-ping" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-foreground">
-              {isRequestStage ? t("order.requestBadge") : t("order.confirmedBadge")}
+              {isCanceled ? t("order.canceledBadge") : isRequestStage ? t("order.requestBadge") : t("order.confirmedBadge")}
             </span>
           </div>
           <h1 className="font-serif text-3xl sm:text-4xl font-normal text-foreground">
@@ -139,6 +152,8 @@ export default async function OrderConfirmationPage({
         <div className="border border-border p-4 text-sm bg-surface">{t("order.paymentProcessing")}</div>
       )}
 
+      {paymentFlag === "canceled" && <PaymentCanceledLogger orderId={order.id} />}
+
       {due && (enabledMethods.has("stripe_card") || enabledMethods.has("bank_transfer")) && (
         <OrderPayPanel
           orderId={order.id}
@@ -151,7 +166,19 @@ export default async function OrderConfirmationPage({
           stripeEnabled={enabledMethods.has("stripe_card")}
           bankEnabled={enabledMethods.has("bank_transfer")}
           bankInstructions={typeof bankInstructions === "string" ? bankInstructions : ""}
+          paymentFailed={paymentFlag === "canceled" || paymentFlag === "failed"}
+          proofPending={((payments ?? []) as unknown as { status: string; method_code: string }[]).some(
+            (p) => p.status === "pending_verification" && p.method_code === "bank_transfer"
+          )}
         />
+      )}
+
+      {isCanceled && (
+        <div className="border border-border bg-surface p-5 space-y-1 text-sm">
+          <p className="font-semibold">{t("order.canceledTitle")}</p>
+          <p className="text-muted">{t("order.canceledText")}</p>
+          {order.cancel_reason && <p className="text-xs text-muted">{order.cancel_reason}</p>}
+        </div>
       )}
 
       {isRequestStage && (
@@ -164,11 +191,16 @@ export default async function OrderConfirmationPage({
           <Link href="/minha-conta" className="inline-block mt-2 bg-foreground text-background px-6 py-3 text-[11px] uppercase tracking-[0.2em] font-semibold">
             {t("order.viewMyOrders")}
           </Link>
+          {canCancel && (
+            <div className="pt-3">
+              <CancelOrderButton orderId={order.id} />
+            </div>
+          )}
         </div>
       )}
 
       {/* DHL Express Shipping Card (only once there is a shipment to show) */}
-      {!isRequestStage && (
+      {!isRequestStage && !isCanceled && (
         <div className="bg-surface border border-gold/40 rounded-sm p-6 space-y-5 shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gold/20 pb-4">
             <div className="flex items-center gap-3">
@@ -185,7 +217,7 @@ export default async function OrderConfirmationPage({
               </div>
             </div>
 
-            {shipment?.dhl_tracking && (
+            {shipment?.dhl_tracking && !shipment.is_mock && (
               <div className="bg-white border border-gold/50 px-4 py-2 rounded-sm shadow-2xs text-right">
                 <span className="text-[10px] uppercase tracking-widest text-muted block font-semibold">
                   {t("order.awbCode")}
@@ -245,6 +277,38 @@ export default async function OrderConfirmationPage({
         </div>
       )}
 
+      {!isRequestStage && (
+        <OriginalVsConfirmed
+          items={(items ?? []).map((item) => {
+            const variant = Array.isArray(item.variants) ? item.variants[0] : item.variants;
+            const product = Array.isArray(variant?.products) ? variant?.products[0] : variant?.products;
+            return {
+              id: item.id,
+              title: product?.title || t("order.defaultProductTitle"),
+              color: variant?.color ?? null,
+              size: variant?.size ?? null,
+              qty: item.qty,
+              unit_price: Number(item.unit_price),
+              item_status: item.item_status,
+              original_qty: item.original_qty,
+              original_unit_price: item.original_unit_price === null ? null : Number(item.original_unit_price),
+              added_by_tdp: Boolean(item.added_by_tdp),
+            };
+          })}
+          totals={{
+            currency: order.currency,
+            originalSubtotal: order.original_subtotal === null ? null : Number(order.original_subtotal),
+            subtotal: Number(order.subtotal),
+            chargesInformed,
+            shipping: Number(order.shipping_cost ?? 0),
+            duties: Number(order.duties_estimate ?? 0),
+            other: Number(order.other_charges_amount ?? 0),
+            total: Number(order.total),
+          }}
+        />
+      )}
+      <OrderPostPayBuyer order={order} locale={locale} />
+
       {/* Grid: Delivery Address & Order Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Delivery Address */}
@@ -282,6 +346,11 @@ export default async function OrderConfirmationPage({
                 {chargesInformed ? formatCurrency(Number(order.duties_estimate), order.currency) : t("checkout.toBeInformed")}
               </span>
             </div>
+            {chargesInformed && order.duties_mode && (
+              <p className="text-[11px] text-muted">
+                {tc("duties.label")} <strong className="text-foreground">{tc(`duties.mode.${order.duties_mode}`)}</strong>
+              </p>
+            )}
             {chargesInformed && Number(order.other_charges_amount) > 0 && (
               <div className="flex justify-between gap-4">
                 <span className="text-muted">+</span>
@@ -296,7 +365,9 @@ export default async function OrderConfirmationPage({
                     ? t("order.totalPaid")
                     : t("order.orderTotal")}
               </span>
-              <span className="text-accent">{formatCurrency(Number(order.total), order.currency)}</span>
+              <span className="text-accent">
+                {formatCurrency(Number(chargesInformed ? order.total : order.subtotal), order.currency)}
+              </span>
             </div>
             {!chargesInformed && (
               <p className="text-[11px] text-muted leading-relaxed">{t("checkout.chargesAfterStockConfirmation")}</p>
@@ -308,7 +379,9 @@ export default async function OrderConfirmationPage({
       {/* Ordered Items Table */}
       <div className="bg-white border border-border/80 p-6 rounded-sm space-y-4">
         <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-accent border-b border-border/60 pb-3">
-          {t("order.itemsConfirmedTitle", { count: items?.length ?? 0 })}
+          {isRequestStage || isCanceled
+            ? t("order.itemsRequestedTitle", { count: items?.length ?? 0 })
+            : t("order.itemsConfirmedTitle", { count: activeItemCount })}
         </h3>
         <div className="divide-y divide-border/60">
           {(items ?? []).map((item) => {
@@ -324,7 +397,7 @@ export default async function OrderConfirmationPage({
                     {product?.title || t("order.defaultProductTitle")}
                   </h4>
                   <p className="text-[11px] text-muted">
-                    {t("checkout.colorLabel")} {variant?.color} • {t("order.sizeFullLabel")} {variant?.size} • {t("checkout.qtyLabel")} {item.qty}
+                    {t("checkout.colorLabel")} {colorNames.label(variant?.color)} • {t("order.sizeFullLabel")} {variant?.size} • {t("checkout.qtyLabel")} {item.qty}
                     {item.original_qty !== null && item.original_qty !== item.qty ? ` (${t("order.itemWas")} ${item.original_qty})` : ""}
                   </p>
                   {inactive && (
@@ -351,6 +424,8 @@ export default async function OrderConfirmationPage({
           })}
         </div>
       </div>
+
+      {canRequestReturn && <ReturnRequestForm orderId={order.id} />}
 
       {/* Actions Footer */}
       <div className="text-center pt-4">

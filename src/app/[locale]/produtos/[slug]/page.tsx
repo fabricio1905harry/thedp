@@ -3,6 +3,9 @@ import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 import { Link } from "@/i18n/navigation";
 import { getProductDetail } from "@/lib/catalog";
+import { getNotifyVariantIds, getProductBrand, getSizeChart } from "@/lib/catalog-extra";
+import { SizeGuideButton } from "@/components/size-guide";
+import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGallery } from "@/components/product-gallery";
 import { getCurrentCustomer, isApproved } from "@/lib/auth";
 import { SITE_MODE_HEADER, type SiteMode } from "@/lib/site-mode";
@@ -36,8 +39,11 @@ export default async function ProductPage({
   const customer = await getCurrentCustomer();
   const approved = isApproved(customer);
 
-  const product = await getProductDetail(slug, approved);
+  const sizeChart = await getSizeChart(locale);
+  const product = await getProductDetail(slug, approved, locale, sizeChart);
   if (!product) notFound();
+  const brand = await getProductBrand(product.id);
+  const notifyRequested = customer && approved ? await getNotifyVariantIds(customer.id, product.id) : [];
 
   const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "";
   const proto = headerList.get("x-forwarded-proto") ?? "https";
@@ -60,15 +66,26 @@ export default async function ProductPage({
       <ProductGallery images={product.images} crops={product.imageCrops} slug={product.slug} title={product.title} />
 
       <div>
-        <p className="text-[11px] uppercase tracking-[0.25em] text-muted">{product.category}</p>
-        <h1 className="font-serif text-3xl sm:text-4xl mt-2">{product.title}</h1>
+        <p className="text-[11px] uppercase tracking-[0.25em] text-muted">
+          {brand && (
+            <>
+              <Link href={`/marcas/${brand.slug}`} className="underline underline-offset-2 text-foreground">{brand.name}</Link>
+              {product.category ? " · " : ""}
+            </>
+          )}
+          {product.category}
+        </p>
+        <div className="mt-2 flex items-start justify-between gap-4">
+          <h1 className="font-serif text-3xl sm:text-4xl">{product.title}</h1>
+          <FavoriteButton productId={product.id} variant="icon" className="shrink-0 mt-1" />
+        </div>
         {product.reference && <p className="mt-2 text-xs uppercase tracking-[0.2em] text-muted">{product.reference}</p>}
 
         <div className="mt-8">
           {siteMode === "nacional" ? (
             <p className="text-sm text-muted">{t("internationalOnly")}</p>
           ) : approved ? (
-            <ProductPurchasePanel product={product} />
+            <ProductPurchasePanel product={product} sizeChart={sizeChart} notifyRequested={notifyRequested} />
           ) : underReview ? (
             <p className="text-sm font-medium border border-border bg-surface p-4">{t("accountUnderReview")}</p>
           ) : (
@@ -96,17 +113,32 @@ export default async function ProductPage({
               <p className="mt-1 text-xs text-muted">{t("availabilityMoves")}</p>
             </div>
             <p className="text-xs text-muted leading-relaxed">
-              <span className="font-medium text-foreground">{t("colorHelpTitle")}</span> {t("colorHelp")}{" "}
-              {waHref && (
-                <a href={waHref} target="_blank" rel="noopener noreferrer" className="underline text-foreground">
-                  WhatsApp
-                </a>
-              )}
-              {waHref && email && " / "}
-              {email && (
-                <a href={`mailto:${email}`} className="underline text-foreground">
-                  {email}
-                </a>
+              <span className="font-medium text-foreground">{t("colorHelpTitle")}</span> {t("colorHelpBase")}
+              {waHref || email ? (
+                <>
+                  {" "}
+                  {t("colorHelpVia")}{" "}
+                  {waHref && (
+                    <a href={waHref} target="_blank" rel="noopener noreferrer" className="underline text-foreground">
+                      WhatsApp
+                    </a>
+                  )}
+                  {waHref && email && ` ${t("colorHelpOr")} `}
+                  {email && (
+                    <a href={`mailto:${email}`} className="underline text-foreground">
+                      {email}
+                    </a>
+                  )}
+                  .
+                </>
+              ) : (
+                <>
+                  {" "}
+                  <Link href="/contato" className="underline text-foreground">
+                    {t("colorHelpContactPage")}
+                  </Link>
+                  .
+                </>
               )}
             </p>
           </div>
@@ -121,6 +153,7 @@ export default async function ProductPage({
           </Accordion>
           <Accordion title={t("accSizeFit")}>
             <p>{t("sizeFitText")}</p>
+            <SizeGuideButton chart={sizeChart} />
           </Accordion>
           {siteMode === "internacional" && (
             <>

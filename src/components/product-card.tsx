@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
 import { useCurrency } from "@/components/currency-provider";
 import { useCart } from "@/components/cart-provider";
+import { FavoriteButton } from "@/components/favorite-button";
 import { formatPicked } from "@/lib/currency";
 import type { CatalogProduct } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
@@ -61,6 +62,10 @@ export function ProductCard({
           crop={product.imageCrop}
           priority={priority}
         />
+
+        <div className="absolute top-2.5 right-2.5 z-20" style={{ top: inOrder > 0 ? "2.75rem" : undefined }}>
+          <FavoriteButton productId={product.id} />
+        </div>
 
         {/* Hover Glassmorphism Quick Action CTA */}
         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pointer-events-none">
