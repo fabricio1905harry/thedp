@@ -7,6 +7,7 @@ import { useCurrency } from "@/components/currency-provider";
 import { formatCurrency, pickPrice } from "@/lib/currency";
 import { getCartCommercialStatus } from "@/app/[locale]/carrinho/actions";
 import type { CartCommercialStatus } from "@/lib/commercial-server";
+import type { Currency } from "@/lib/types";
 import type { Shortfall } from "@/lib/order-minimums";
 
 const NONE: CartCommercialStatus = {
@@ -60,7 +61,7 @@ export function useShortfallText() {
   const locale = useLocale() as "en" | "es" | "pt";
   return (s: Shortfall): string => {
     const custom = s.message?.[locale] ?? s.message?.en;
-    const missing = s.minType === "amount" ? formatCurrency(s.missing, s.currency) : String(s.missing);
+    const missing = s.minType === "amount" ? formatCurrency(s.missing, s.currency as Currency) : String(s.missing);
     if (custom) return custom.replaceAll("{missing}", missing);
     const label = s.labels?.[locale] ?? s.labels?.en ?? s.label;
     if (s.minType === "units") {
@@ -69,8 +70,8 @@ export function useShortfallText() {
         : t("minimum.addUnits", { missing: s.missing });
     }
     return label
-      ? t("minimum.addAmountOf", { missing, label, minimum: formatCurrency(s.minimum, s.currency) })
-      : t("minimum.addAmount", { missing, minimum: formatCurrency(s.minimum, s.currency) });
+      ? t("minimum.addAmountOf", { missing, label, minimum: formatCurrency(s.minimum, s.currency as Currency) })
+      : t("minimum.addAmount", { missing, minimum: formatCurrency(s.minimum, s.currency as Currency) });
   };
 }
 

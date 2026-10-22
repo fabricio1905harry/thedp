@@ -10,6 +10,8 @@ import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { BUYER_STATUS_KEYS } from "@/lib/order-status";
 import type { Currency } from "@/lib/types";
+import { OriginalVsConfirmed } from "@/components/original-vs-confirmed";
+import { PaymentCanceledLogger } from "@/components/payment-canceled-logger";
 
 function currentTime() {
   return Date.now();
@@ -20,16 +22,17 @@ export default async function OrderConfirmationPage({
   searchParams,
 }: {
   params: Promise<{ id: string; locale: string }>;
-  searchParams: Promise<{ paid?: string }>;
+  searchParams: Promise<{ paid?: string; payment?: string }>;
 }) {
   const { id, locale } = await params;
-  const { paid: paidFlag } = await searchParams;
+  const { paid: paidFlag, payment: paymentFlag } = await searchParams;
   const requestedAt = currentTime();
   const customer = await getCurrentCustomer();
   if (!customer) redirect("/login");
 
   const supabase = createServiceRoleClient();
   const t = await getTranslations();
+  const tc = await getTranslations("commercial");
   const dateLocale = { pt: "pt-BR", en: "en-US", es: "es-ES" }[locale] ?? locale;
 
   // The service-role client bypasses RLS, so the order is scoped to the
@@ -53,7 +56,7 @@ export default async function OrderConfirmationPage({
         supabase.from("shipments").select("*").eq("order_id", id).maybeSingle(),
         supabase
           .from("payments")
-          .select(`status, kind, merchandise_amount, ${ORDER_CHARGE_COLUMNS.join(", ")}`)
+          .select(`status, kind, method_code, merchandise_amount, ${ORDER_CHARGE_COLUMNS.join(", ")}`)
           .eq("order_id", id),
         supabase.rpc("available_payment_methods", { p_order_id: id }),
         getSetting<string>("bank_transfer_instructions"),
@@ -139,6 +142,8 @@ export default async function OrderConfirmationPage({
         <div className="border border-border p-4 text-sm bg-surface">{t("order.paymentProcessing")}</div>
       )}
 
+      {paymentFlag === "canceled" && <PaymentCanceledLogger orderId={order.id} />}
+
       {due && (enabledMethods.has("stripe_card") || enabledMethods.has("bank_transfer")) && (
         <OrderPayPanel
           orderId={order.id}
@@ -151,6 +156,10 @@ export default async function OrderConfirmationPage({
           stripeEnabled={enabledMethods.has("stripe_card")}
           bankEnabled={enabledMethods.has("bank_transfer")}
           bankInstructions={typeof bankInstructions === "string" ? bankInstructions : ""}
+          paymentFailed={paymentFlag === "canceled" || paymentFlag === "failed"}
+          proofPending={((payments ?? []) as unknown as { status: string; method_code: string }[]).some(
+            (p) => p.status === "pending_verification" && p.method_code === "bank_transfer"
+          )}
         />
       )}
 
@@ -245,6 +254,37 @@ export default async function OrderConfirmationPage({
         </div>
       )}
 
+      {!isRequestStage && (
+        <OriginalVsConfirmed
+          items={(items ?? []).map((item) => {
+            const variant = Array.isArray(item.variants) ? item.variants[0] : item.variants;
+            const product = Array.isArray(variant?.products) ? variant?.products[0] : variant?.products;
+            return {
+              id: item.id,
+              title: product?.title || t("order.defaultProductTitle"),
+              color: variant?.color ?? null,
+              size: variant?.size ?? null,
+              qty: item.qty,
+              unit_price: Number(item.unit_price),
+              item_status: item.item_status,
+              original_qty: item.original_qty,
+              original_unit_price: item.original_unit_price === null ? null : Number(item.original_unit_price),
+              added_by_tdp: Boolean(item.added_by_tdp),
+            };
+          })}
+          totals={{
+            currency: order.currency,
+            originalSubtotal: order.original_subtotal === null ? null : Number(order.original_subtotal),
+            subtotal: Number(order.subtotal),
+            chargesInformed,
+            shipping: Number(order.shipping_cost ?? 0),
+            duties: Number(order.duties_estimate ?? 0),
+            other: Number(order.other_charges_amount ?? 0),
+            total: Number(order.total),
+          }}
+        />
+      )}
+
       {/* Grid: Delivery Address & Order Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Delivery Address */}
@@ -282,6 +322,11 @@ export default async function OrderConfirmationPage({
                 {chargesInformed ? formatCurrency(Number(order.duties_estimate), order.currency) : t("checkout.toBeInformed")}
               </span>
             </div>
+            {chargesInformed && order.duties_mode && (
+              <p className="text-[11px] text-muted">
+                {tc("duties.label")} <strong className="text-foreground">{tc(`duties.mode.${order.duties_mode}`)}</strong>
+              </p>
+            )}
             {chargesInformed && Number(order.other_charges_amount) > 0 && (
               <div className="flex justify-between gap-4">
                 <span className="text-muted">+</span>

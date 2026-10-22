@@ -6,6 +6,7 @@ import { DhlShipmentReviewPanel } from "@/components/dhl-shipment-review-panel";
 import { StatusBadge } from "@/components/status-badge";
 import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 import { CHANNEL_LABELS } from "@/lib/payments";
+import { resolveDutiesRule, orderCountryCode, type DutiesRule } from "@/lib/duties";
 import {
   OrderManagementPanel,
   type MethodAvailability,
@@ -25,7 +26,7 @@ export default async function AdminOrderDetailPage({
   const supabase = await createClient();
 
   const ORDER_COLUMNS =
-    "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customer_id";
+    "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customer_id, duties_mode, shipping_address";
 
   // Everything is requested at once (one round trip instead of several in a row).
   const [orderRes, itemsRes, paymentsRes, methodsRes, rulesRes, feeRes, eventsRes] = await Promise.all([
@@ -113,6 +114,14 @@ export default async function AdminOrderDetailPage({
     .order("created_at", { ascending: false })
     .limit(20);
 
+  const { data: dutiesRules } = await supabase
+    .from("duties_taxes_rules")
+    .select("id, market_type, market, mode, default_pct, note, active");
+  const resolvedDuties = resolveDutiesRule(
+    (dutiesRules ?? []).map((r) => ({ ...r, default_pct: r.default_pct === null ? null : Number(r.default_pct) })) as DutiesRule[],
+    orderCountryCode((order as { shipping_address?: unknown }).shipping_address)
+  );
+
   const paidMerchandise = (payments ?? [])
     .filter((p) => p.status === "confirmed")
     .reduce((sum, p) => sum + Number(p.merchandise_amount), 0);
@@ -170,6 +179,7 @@ export default async function AdminOrderDetailPage({
         events={(events ?? []) as unknown as OrderEventRow[]}
         outstandingMerchandise={outstandingMerchandise}
         attempts={(attempts ?? []) as PaymentAttemptRow[]}
+        dutiesRule={resolvedDuties ? { mode: resolvedDuties.rule.mode, pct: resolvedDuties.rule.default_pct, note: resolvedDuties.rule.note, source: resolvedDuties.source } : null}
       />
 
       {showDhl && initialCalculation ? (

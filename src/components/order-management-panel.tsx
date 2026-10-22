@@ -25,6 +25,7 @@ import {
 } from "@/app/admin/pedidos/actions";
 import { EDITABLE_ORDER_STATUSES, ITEM_STATUS_LABELS, STOCK_HOLD_LABELS } from "@/lib/order-status";
 import { PASS_THROUGH_COMPONENTS, PAYMENT_METHOD_LABELS } from "@/lib/payments";
+import { DUTIES_MODES, DUTIES_MODE_LABELS_PT, dutiesDefaultAmount, type DutiesMode } from "@/lib/duties";
 import { PaymentProofLink } from "@/components/payment-proof-link";
 
 export interface OrderItemRow {
@@ -93,7 +94,15 @@ export interface MethodAvailability {
   decided_by: string;
 }
 
+export interface DutiesRuleInfo {
+  mode: DutiesMode;
+  pct: number | null;
+  note: string | null;
+  source: "country" | "region" | "default";
+}
+
 export interface OrderSummary {
+  duties_mode?: string | null;
   id: string;
   status: string;
   currency: string;
@@ -135,8 +144,10 @@ export function OrderManagementPanel({
   events,
   outstandingMerchandise,
   attempts = [],
+  dutiesRule = null,
 }: {
   attempts?: PaymentAttemptRow[];
+  dutiesRule?: DutiesRuleInfo | null;
   order: OrderSummary;
   items: OrderItemRow[];
   payments: PaymentRow[];
@@ -198,7 +209,7 @@ export function OrderManagementPanel({
         <ItemsTable order={order} items={items} editable={editable} pending={pending} run={run} />
       </section>
 
-      <ChargesPanel key={order.charges_informed_at ?? "none"} order={order} editable={editable} pending={pending} run={run} />
+      <ChargesPanel key={order.charges_informed_at ?? "none"} dutiesRule={dutiesRule} order={order} editable={editable} pending={pending} run={run} />
 
       <ReleasePanel order={order} editable={editable} pending={pending} run={run} />
 
@@ -580,10 +591,19 @@ const CHARGE_FIELDS: { key: keyof OrderChargesInput; column: keyof OrderSummary;
  * Freight & import duties, informed by the TDP after confirming stock.
  * The buyer sees "to be informed after stock confirmation" until saved.
  */
-function ChargesPanel({ order, editable, pending, run }: { order: OrderSummary; editable: boolean; pending: boolean; run: Run }) {
+function ChargesPanel({ order, editable, pending, run, dutiesRule }: { order: OrderSummary; editable: boolean; pending: boolean; run: Run; dutiesRule: DutiesRuleInfo | null }) {
+  const suggestedDuties = dutiesDefaultAmount(dutiesRule ? { default_pct: dutiesRule.pct } : null, Number(order.subtotal));
+  const [dutiesMode, setDutiesMode] = useState<DutiesMode>((order.duties_mode as DutiesMode | null) ?? dutiesRule?.mode ?? "prepaid");
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      CHARGE_FIELDS.map((f) => [f.key, order.charges_informed_at ? String(Number(order[f.column] ?? 0)) : ""])
+      CHARGE_FIELDS.map((f) => [
+        f.key,
+        order.charges_informed_at
+          ? String(Number(order[f.column] ?? 0))
+          : f.key === "dutiesTaxesAmount" && suggestedDuties !== null
+            ? String(suggestedDuties)
+            : "",
+      ])
     )
   );
   const [deliveryDays, setDeliveryDays] = useState(order.delivery_days ? String(order.delivery_days) : "");
@@ -615,6 +635,7 @@ function ChargesPanel({ order, editable, pending, run }: { order: OrderSummary; 
           const input = Object.fromEntries(CHARGE_FIELDS.map((f) => [f.key, Number(values[f.key] || 0)])) as unknown as OrderChargesInput;
           input.deliveryDays = deliveryDays ? Number(deliveryDays) : null;
           input.note = note;
+          input.dutiesMode = dutiesMode;
           run(() => setOrderCharges(order.id, input));
         }}
       >
@@ -633,6 +654,23 @@ function ChargesPanel({ order, editable, pending, run }: { order: OrderSummary; 
             />
           </label>
         ))}
+        <label className="flex flex-col col-span-2">
+          Impostos e taxas — modo{dutiesRule ? ` (regra: ${DUTIES_MODE_LABELS_PT[dutiesRule.mode].split(" (")[0]}${dutiesRule.pct ? `, ${dutiesRule.pct}%` : ""})` : ""}
+          <select disabled={!editable || pending} value={dutiesMode} onChange={(e) => setDutiesMode(e.target.value as DutiesMode)} className="border border-border px-2 py-1">
+            {DUTIES_MODES.map((m) => (
+              <option key={m} value={m}>{DUTIES_MODE_LABELS_PT[m]}</option>
+            ))}
+          </select>
+        </label>
+        {suggestedDuties !== null && editable && (
+          <button
+            type="button"
+            className="underline self-end text-left"
+            onClick={() => setValues((v) => ({ ...v, dutiesTaxesAmount: String(suggestedDuties) }))}
+          >
+            Aplicar {dutiesRule?.pct}% do subtotal ({money(suggestedDuties, order.currency)})
+          </button>
+        )}
         <label className="flex flex-col">
           Entrega DHL (dias úteis)
           <input type="number" min="1" disabled={!editable || pending} value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} className="border border-border px-2 py-1" />

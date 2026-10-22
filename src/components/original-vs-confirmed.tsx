@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import type { Currency } from "@/lib/types";
 import { formatCurrency } from "@/lib/currency";
 
 export interface CompareItem {
@@ -34,7 +35,7 @@ const ACTIVE = new Set(["available", "requested"]);
  */
 export function OriginalVsConfirmed({ items, totals }: { items: CompareItem[]; totals: CompareTotals }) {
   const t = useTranslations("commercial");
-  const money = (v: number) => formatCurrency(v, totals.currency);
+  const money = (v: number) => formatCurrency(v, totals.currency as Currency);
 
   const rows = items.map((item) => {
     const hadOriginal = item.original_qty !== null && !item.added_by_tdp;
