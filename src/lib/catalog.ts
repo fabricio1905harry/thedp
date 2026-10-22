@@ -1,6 +1,8 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import type { ProductPricing, Variant } from "@/lib/types";
 import { parseCrop, type ImageCrop } from "@/lib/image-crop";
+import { getColorResolver } from "@/lib/colors";
+import { matchSize, toSizeInfo, type SizeChartRow, type SizeInfo } from "@/lib/size-format";
 
 export interface CatalogProduct {
   id: string;
@@ -143,7 +145,12 @@ export interface ProductDetail {
   /** Buyer-facing reference: TDP + supplier reference (never the supplier name). */
   reference: string | null;
   sizes: string[];
+  /** Buyer-facing color names (TDP name in the buyer's language). */
   colors: string[];
+  /** Swatch hex by buyer-facing color name (normalized colors only). */
+  colorHex: Record<string, string>;
+  /** Size chart match (BR/US/EU/letter) by size as listed in `sizes`. */
+  sizeInfo: Record<string, SizeInfo>;
   variants: Variant[];
 }
 
@@ -154,7 +161,9 @@ export interface ProductDetail {
  */
 export async function getProductDetail(
   slug: string,
-  approved: boolean
+  approved: boolean,
+  locale = "en",
+  sizeChart: SizeChartRow[] = []
 ): Promise<ProductDetail | null> {
   const supabase = await createClient();
 
@@ -200,6 +209,8 @@ export async function getProductDetail(
       reference: full?.source_id ? `TDP${full.source_id}` : null,
       sizes: [],
       colors: [],
+      colorHex: {},
+      sizeInfo: {},
       variants: [],
     };
   }
@@ -219,6 +230,31 @@ export async function getProductDetail(
     serviceClient.from("variants").select("id, size, size_br, size_us, size_eu, color, sku, stock").eq("product_id", pub.id),
   ]);
 
+  // Supplier color text stays internal: buyers get the TDP name in their language.
+  const resolver = await getColorResolver(locale);
+  const rawColors = [
+    ...new Set<string>([...(priced?.colors ?? []), ...(variantRows ?? []).map((v) => v.color as string).filter(Boolean)]),
+  ];
+  const labelByRaw = new Map<string, string>();
+  const taken = new Map<string, number>();
+  const colorHex: Record<string, string> = {};
+  for (const raw of rawColors) {
+    let label = resolver.label(raw);
+    const n = (taken.get(label) ?? 0) + 1;
+    taken.set(label, n);
+    // two supplier colors of one style that normalize to the same TDP color stay distinguishable
+    if (n > 1) label = `${label} (${n})`;
+    labelByRaw.set(raw, label);
+    const hex = resolver.hex(raw);
+    if (hex) colorHex[label] = hex;
+  }
+  const sizes = priced?.sizes ?? [];
+  const sizeInfo: Record<string, SizeInfo> = {};
+  for (const sz of sizes) {
+    const row = matchSize(sizeChart, sz);
+    if (row) sizeInfo[sz] = toSizeInfo(row);
+  }
+
   return {
     id: pub.id,
     slug: pub.slug,
@@ -232,15 +268,17 @@ export async function getProductDetail(
     images,
     imageCrops,
     reference: full?.source_id ? `TDP${full.source_id}` : null,
-    sizes: priced?.sizes ?? [],
-    colors: priced?.colors ?? [],
+    sizes,
+    colors: (priced?.colors ?? []).map((c) => labelByRaw.get(c) ?? c),
+    colorHex,
+    sizeInfo,
     variants: (variantRows ?? []).map((v) => ({
       id: v.id,
       size: v.size,
       sizeBr: v.size_br,
       sizeUs: v.size_us,
       sizeEu: v.size_eu,
-      color: v.color,
+      color: labelByRaw.get(v.color as string) ?? v.color,
       sku: v.sku,
       // availability flag only (1 = can be requested) — real quantities never reach the buyer
       stock: Number(v.stock) > 0 ? 1 : 0,
@@ -273,6 +311,7 @@ export async function getShopCatalog(approved: boolean): Promise<ShopProduct[]> 
   const [publicProducts, pricingMap] = await Promise.all([getPublicProducts(500), getPricingMap(approved)]);
   const base = publicProducts.map((row) => toCatalogProduct(row, pricingMap));
   if (base.length === 0) return [];
+  const colorResolver = await getColorResolver("en");
 
   const ids = base.map((p) => p.id);
   const sizes = new Map<string, Set<string>>();
@@ -295,7 +334,9 @@ export async function getShopCatalog(approved: boolean): Promise<ShopProduct[]> 
       if (Number(v.stock) <= 0) continue;
       inStock.add(v.product_id);
       if (v.size) (sizes.get(v.product_id) ?? sizes.set(v.product_id, new Set()).get(v.product_id)!).add(v.size);
-      if (v.color) (colors.get(v.product_id) ?? colors.set(v.product_id, new Set()).get(v.product_id)!).add(v.color);
+      // filter facet = normalized TDP color id; unmapped supplier colors stay out until reviewed
+      const colorId = colorResolver.id(v.color);
+      if (colorId) (colors.get(v.product_id) ?? colors.set(v.product_id, new Set()).get(v.product_id)!).add(colorId);
     }
     for (const row of sold ?? []) {
       if (row.product_id) sales.set(row.product_id, (sales.get(row.product_id) ?? 0) + Number(row.qty));

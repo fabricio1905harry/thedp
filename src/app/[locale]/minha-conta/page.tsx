@@ -17,6 +17,7 @@ export default async function MyAccountPage() {
   const t = await getTranslations("account");
   const tOrder = await getTranslations("order");
   const tAction = await getTranslations("orderActions");
+  const tFav = await getTranslations("c2.favorites");
   const supabase = await createClient();
   const { data: application } = await supabase
     .from("customers")
@@ -52,6 +53,12 @@ export default async function MyAccountPage() {
           )}
         </section>
       )}
+
+      <p className="mt-8">
+        <Link href="/minha-conta/favoritos" className="text-[11px] font-semibold uppercase tracking-[0.2em] underline underline-offset-4">
+          {tFav("title")}
+        </Link>
+      </p>
 
       <section className="mt-12">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted mb-4">{t("orders")}</h2>

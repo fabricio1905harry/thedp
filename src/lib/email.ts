@@ -153,6 +153,24 @@ function render(template: string, locale: Locale, payload: Payload): Rendered | 
           payload.admin_url ? `Abrir no Admin: ${payload.admin_url}` : "",
         ],
       };
+    case "notify_back_in_stock": {
+      const title = (payload.product_title as string) || "";
+      const variant = [payload.color as string, payload.size as string].filter(Boolean).join(" / ");
+      const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+      const link = payload.product_slug && base ? `${base}/${locale}/produtos/${payload.product_slug as string}` : "";
+      return {
+        subject: { en: `Back in stock — ${title}`, es: `De nuevo disponible — ${title}`, pt: `De volta ao estoque — ${title}` }[locale],
+        lines: [
+          hi,
+          {
+            en: `${title}${variant ? ` (${variant})` : ""} is available again. Availability moves quickly and is confirmed before payment.`,
+            es: `${title}${variant ? ` (${variant})` : ""} vuelve a estar disponible. La disponibilidad cambia rápido y se confirma antes del pago.`,
+            pt: `${title}${variant ? ` (${variant})` : ""} está disponível novamente. A disponibilidade muda rápido e é confirmada antes do pagamento.`,
+          }[locale],
+          link,
+        ],
+      };
+    }
     default:
       return null;
   }

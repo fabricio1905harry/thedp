@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { getColorResolver } from "@/lib/colors";
 import { Link } from "@/i18n/navigation";
 import { getShopCatalog, type ShopProduct } from "@/lib/catalog";
 import { getCurrentCustomer, isApproved } from "@/lib/auth";
@@ -29,6 +30,7 @@ function priceOf(p: ShopProduct) {
 export default async function ShopPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const t = await getTranslations("shop");
+  const locale = await getLocale();
   const headerList = await headers();
   const siteMode = (headerList.get(SITE_MODE_HEADER) as SiteMode) ?? "internacional";
   const customer = await getCurrentCustomer();
@@ -37,7 +39,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   const categories = [...new Set(catalog.map((p) => p.category).filter(Boolean) as string[])].sort();
   const sizes = [...new Set(catalog.flatMap((p) => p.sizes))].sort((a, b) => sizeRank(a) - sizeRank(b));
-  const colors = [...new Set(catalog.flatMap((p) => p.colors))].sort();
+  // Filter uses the normalized TDP colors (named in the buyer's language); unmapped supplier colors are not listed.
+  const colorResolver = await getColorResolver(locale);
+  const presentColors = new Set(catalog.flatMap((p) => p.colors));
+  const colors = colorResolver.options.filter((c) => presentColors.has(c.id));
 
   const min = sp.min ? Number(sp.min) : null;
   const max = sp.max ? Number(sp.max) : null;
@@ -126,8 +131,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
               {colors.length > 0 && (
                 <Facet title={t("color")}>
                   {colors.map((c) => (
-                    <Link key={c} href={link({ color: sp.color === c ? undefined : c })} className={chip(sp.color === c)}>
-                      {c}
+                    <Link key={c.id} href={link({ color: sp.color === c.id ? undefined : c.id })} className={chip(sp.color === c.id)}>
+                      {c.name}
                     </Link>
                   ))}
                 </Facet>

@@ -11,6 +11,7 @@ import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { BUYER_CANCELABLE_STATUSES, BUYER_RELEASED_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
 import { CancelOrderButton, ReturnRequestForm } from "@/components/order-buyer-actions";
+import { getColorResolver } from "@/lib/colors";
 import type { Currency } from "@/lib/types";
 import { OriginalVsConfirmed } from "@/components/original-vs-confirmed";
 import { PaymentCanceledLogger } from "@/components/payment-canceled-logger";
@@ -36,6 +37,8 @@ export default async function OrderConfirmationPage({
   const t = await getTranslations();
   const tc = await getTranslations("commercial");
   const dateLocale = { pt: "pt-BR", en: "en-US", es: "es-ES" }[locale] ?? locale;
+  // supplier color text is internal: show the TDP color name in the buyer's language
+  const colorNames = await getColorResolver(locale);
 
   // The service-role client bypasses RLS, so the order is scoped to the
   // signed-in buyer first; lines/shipment are only read once it matches.
@@ -394,7 +397,7 @@ export default async function OrderConfirmationPage({
                     {product?.title || t("order.defaultProductTitle")}
                   </h4>
                   <p className="text-[11px] text-muted">
-                    {t("checkout.colorLabel")} {variant?.color} • {t("order.sizeFullLabel")} {variant?.size} • {t("checkout.qtyLabel")} {item.qty}
+                    {t("checkout.colorLabel")} {colorNames.label(variant?.color)} • {t("order.sizeFullLabel")} {variant?.size} • {t("checkout.qtyLabel")} {item.qty}
                     {item.original_qty !== null && item.original_qty !== item.qty ? ` (${t("order.itemWas")} ${item.original_qty})` : ""}
                   </p>
                   {inactive && (

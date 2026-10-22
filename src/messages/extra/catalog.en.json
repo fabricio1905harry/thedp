@@ -1,1 +1,69 @@
-{}
+{
+  "c2": {
+    "favorites": {
+      "title": "My favorites",
+      "add": "Add to favorites",
+      "remove": "Remove from favorites",
+      "failed": "Could not update favorites",
+      "empty": "You have no favorites yet.",
+      "browse": "Browse the shop",
+      "backToAccount": "My account"
+    },
+    "notify": {
+      "notifyMe": "Notify me when available",
+      "waiting": "We will notify you — tap to cancel",
+      "hint": "Tap the bell on an unavailable combination to be notified when it is back.",
+      "requested": "Done — we will e-mail you when it is available again.",
+      "cancelled": "Notification cancelled.",
+      "approval": "Notifications are available for approved wholesale accounts.",
+      "login": "Please sign in to be notified.",
+      "available": "This item is already available.",
+      "failed": "Could not save your request. Please try again."
+    },
+    "sizes": {
+      "guide": "Size guide",
+      "title": "Size guide",
+      "close": "Close",
+      "letter": "Size",
+      "bust": "Bust",
+      "waist": "Waist",
+      "hip": "Hip",
+      "note": "Notes",
+      "cm": "Measurements in centimeters.",
+      "disclaimer": "BR = Brazilian size, US and EU are international equivalents. Fit may vary by style."
+    },
+    "common": {
+      "partner": "Partner"
+    },
+    "brands": {
+      "title": "Brands",
+      "intro": "Brazilian brands curated by The Dressing Project.",
+      "empty": "Brands will appear here soon.",
+      "productsTitle": "Styles",
+      "noProducts": "No styles available for this brand right now."
+    },
+    "collections": {
+      "title": "Collections",
+      "intro": "Curated collections, ready to ship.",
+      "empty": "Collections will appear here soon.",
+      "productsTitle": "Styles in this collection",
+      "noProducts": "No styles in this collection yet."
+    },
+    "lookbooks": {
+      "title": "Lookbooks",
+      "intro": "Get inspired and shop the look.",
+      "empty": "Lookbooks will appear here soon.",
+      "shopTheLook": "Shop the look",
+      "noImages": "This lookbook has no images yet.",
+      "productsTitle": "Styles",
+      "noProducts": "No styles linked."
+    },
+    "edits": {
+      "title": "TDP Edits",
+      "intro": "Editorial selections by The Dressing Project.",
+      "empty": "Edits will appear here soon.",
+      "productsTitle": "The edit",
+      "noProducts": "No styles in this edit yet."
+    }
+  }
+}
