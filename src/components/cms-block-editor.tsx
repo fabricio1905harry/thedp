@@ -49,7 +49,11 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
     setMessage(null);
     startTransition(async () => {
       try {
-        await fn();
+        const res = await fn();
+        if (res && typeof res === "object" && "error" in res && (res as { error?: string }).error) {
+          setMessage((res as { error: string }).error);
+          return;
+        }
         if (ok) setMessage(ok);
         router.refresh();
       } catch (err) {
@@ -68,6 +72,7 @@ export function CmsBlockEditor({ block }: { block: EditorBlock }) {
         <div className="flex-1 min-w-[12rem]">
           <p className="text-sm font-medium">{block.label}</p>
           <p className="text-[11px] text-muted">
+            {message && !open && <span className="text-red-700 font-medium mr-2">{message}</span>}
             {block.customised ? "Personalizado" : "Conteúdo padrão"} · {block.operations.length === OPERATIONS.length ? "todas as operações" : block.operations.join(", ") || "nenhuma operação"}
           </p>
         </div>
