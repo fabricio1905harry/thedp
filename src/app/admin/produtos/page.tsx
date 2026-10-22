@@ -61,6 +61,14 @@ async function getProducts({
       return null;
     }
 
+    // favorites per product (My Favorites hearts)
+    const favCount = new Map<string, number>();
+    const pageIds = (data ?? []).map((p) => p.id as string);
+    if (pageIds.length > 0) {
+      const { data: favs } = await supabase.from("favorites").select("product_id").in("product_id", pageIds);
+      for (const f of favs ?? []) favCount.set(f.product_id as string, (favCount.get(f.product_id as string) ?? 0) + 1);
+    }
+
     const products = (data ?? []).map((p) => {
       const supplierNames: string[] = [];
       if (p.connectors && typeof p.connectors === "object" && "supplier_name" in p.connectors) {
@@ -86,6 +94,7 @@ async function getProducts({
         status: p.status,
         price_brl: p.price_brl,
         suppliers: supplierNames,
+        favorites: favCount.get(p.id as string) ?? 0,
         imageUrl: sortedImages[0]?.storage_path ?? null,
       };
     });
