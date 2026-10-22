@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { isApiBlocked } from "@/lib/app-target";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { flushEmailOutbox } from "@/lib/email";
+import { processAbandonedCarts } from "@/lib/abandoned-carts";
+import { processMessagingQueue } from "@/lib/notifications";
 
 /**
  * Hourly job: closes expired Temporary Stock Hold windows (status PAYMENT
@@ -19,7 +21,21 @@ export async function GET(request: Request) {
   const supabase = createServiceRoleClient();
   const { data, error } = await supabase.rpc("expire_unpaid_orders");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Post-payment operations (stream 4): reminders are queued first, then e-mail/WhatsApp/SMS go out.
+  const postPay: Record<string, unknown> = {};
+  const attempt = async (name: string, fn: () => PromiseLike<unknown>) => {
+    try {
+      postPay[name] = await fn();
+    } catch (err) {
+      postPay[name] = { error: err instanceof Error ? err.message : "failed" };
+    }
+  };
+  await attempt("paymentWindowReminders", async () => (await supabase.rpc("queue_payment_window_reminders")).data);
+  await attempt("reserveStages", async () => (await supabase.rpc("refresh_reserve_stages")).data);
+  await attempt("reserveReminders", async () => (await supabase.rpc("queue_reserve_reminders")).data);
+  await attempt("abandonedCarts", () => processAbandonedCarts());
   const email = await flushEmailOutbox(50);
+  await attempt("messaging", () => processMessagingQueue(50));
   const { data: escalated } = await supabase.rpc("escalate_stale_actions");
-  return NextResponse.json({ expiredOrders: data, email, escalated });
+  return NextResponse.json({ expiredOrders: data, email, escalated, postPay });
 }

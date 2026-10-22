@@ -10,6 +10,7 @@ import { SITE_MODE_HEADER, type SiteMode } from "@/lib/site-mode";
 import { SiteChrome } from "@/components/site-chrome";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { CartProvider } from "@/components/cart-provider";
+import { CartSync } from "@/components/cart-sync";
 import { WhatsAppFloatingButton, WhatsAppProvider } from "@/components/whatsapp-button";
 import { getWhatsAppSettings } from "@/lib/settings";
 import "../globals.css";
@@ -57,6 +58,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
           <CurrencyProvider defaultCurrency={siteMode === "nacional" ? "BRL" : "USD"} locked={siteMode === "nacional"}>
             <CartProvider>
+              <CartSync />
               <WhatsAppProvider settings={whatsapp}>
                 <SiteChrome siteMode={siteMode}>{children}</SiteChrome>
                 <WhatsAppFloatingButton />

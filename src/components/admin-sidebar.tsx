@@ -112,6 +112,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/embalagens", label: "Embalagens DHL", icon: PackagingIcon },
       { href: "/admin/pedido-minimo", label: "Regras de pedido mínimo", icon: OrdersIcon },
       { href: "/admin/volume-pricing", label: "Volume Pricing", icon: OverviewIcon },
+      { href: "/admin/envios-futuros", label: "Envios futuros", icon: PackagingIcon },
+      { href: "/admin/carrinhos", label: "Carrinhos abandonados", icon: OrdersIcon },
     ],
   },
   {
@@ -120,6 +122,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/pagamentos", label: "Pagamentos", icon: ExchangeIcon },
       { href: "/admin/cambio", label: "Câmbio", icon: ExchangeIcon },
       { href: "/admin/impostos", label: "Impostos e taxas", icon: ExchangeIcon },
+      { href: "/admin/invoice", label: "Configurações da invoice", icon: ExchangeIcon },
     ],
   },
   {
@@ -127,6 +130,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/clientes", label: "Clientes", icon: CustomersIcon },
       { href: "/admin/whatsapp", label: "WhatsApp", icon: CustomersIcon },
+      { href: "/admin/notificacoes", label: "Notificações", icon: AutomationIcon },
       { href: "/admin/automacao", label: "Automação", icon: AutomationIcon },
     ],
   },

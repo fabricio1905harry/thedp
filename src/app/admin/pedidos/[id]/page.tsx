@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { calculateShipmentPackages } from "@/lib/dhl-packaging";
+import { PostPaymentSections } from "@/components/post-payment-sections";
 import { DhlShipmentReviewPanel } from "@/components/dhl-shipment-review-panel";
 import { StatusBadge } from "@/components/status-badge";
 import { ORDER_STATUS_LABELS } from "@/lib/order-status";
@@ -203,6 +204,15 @@ export default async function AdminOrderDetailPage({
           O envio DHL só é gerado depois do pagamento integral do pedido. Status atual: {ORDER_STATUS_LABELS[order.status] ?? order.status}.
         </section>
       )}
+
+      <PostPaymentSections
+        orderId={order.id}
+        status={order.status}
+        paymentMode={(order as unknown as { payment_mode: string }).payment_mode}
+        currency={order.currency}
+        total={Number(order.total)}
+        suggestedPackages={(initialCalculation?.packages ?? []) as unknown as { length_cm: number; width_cm: number; height_cm: number; final_weight_kg: number }[]}
+      />
     </div>
   );
 }

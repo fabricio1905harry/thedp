@@ -1,1 +1,36 @@
-{}
+{
+  "postpay": {
+    "recoverRestoring": "Restoring your cart…",
+    "recoverUnavailableTitle": "This cart link is no longer available",
+    "recoverUnavailableText": "The cart was already submitted or changed. You can start a new selection from the shop.",
+    "recoverGoCart": "Go to my cart",
+    "reserveTitle": "Reserve for Later Delivery",
+    "reserveStage_reserved": "Reserved",
+    "reserveStage_balance_due": "Balance due",
+    "reserveStage_ready_to_ship": "Ready to ship",
+    "reserveStage_overdue": "Overdue",
+    "reserveStage_expired": "Expired",
+    "reserveStage_completed": "Completed",
+    "reserveDeposit": "Deposit paid",
+    "reserveBalance": "Balance",
+    "reservePaid": "Paid in full",
+    "reserveDesiredDelivery": "Desired delivery date",
+    "reserveBalanceDue": "Balance due date",
+    "reserveNotSet": "To be confirmed",
+    "reserveOverdueNote": "The balance is overdue. Please contact us to arrange payment.",
+    "reserveExpiredNote": "The maximum reserve period has ended. Please contact us to decide the next steps.",
+    "reserveWindowUntil": "Your reservation can be held until {date}.",
+    "reserveShipNote": "Your order ships only after the balance is paid in full.",
+    "trackingTitle": "Shipment tracking",
+    "trackingNumber": "Tracking number",
+    "trackParcel": "Track your parcel",
+    "noEvents": "No tracking events yet.",
+    "shipStatus_CREATED": "Shipment created",
+    "shipStatus_PICKUP_REQUESTED": "Pickup requested",
+    "shipStatus_IN_TRANSIT": "In transit",
+    "shipStatus_DELIVERED": "Delivered",
+    "shipStatus_EXCEPTION": "Delivery exception",
+    "invoiceTitle": "Commercial invoice",
+    "invoiceDownload": "Download PDF"
+  }
+}

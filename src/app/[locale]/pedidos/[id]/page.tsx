@@ -6,6 +6,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/currency";
 import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp-button";
 import { OrderPayPanel } from "@/components/order-pay-panel";
+import { OrderPostPayBuyer } from "@/components/order-postpay-buyer";
 import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { BUYER_CANCELABLE_STATUSES, BUYER_RELEASED_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
@@ -213,7 +214,7 @@ export default async function OrderConfirmationPage({
               </div>
             </div>
 
-            {shipment?.dhl_tracking && (
+            {shipment?.dhl_tracking && !shipment.is_mock && (
               <div className="bg-white border border-gold/50 px-4 py-2 rounded-sm shadow-2xs text-right">
                 <span className="text-[10px] uppercase tracking-widest text-muted block font-semibold">
                   {t("order.awbCode")}
@@ -303,6 +304,7 @@ export default async function OrderConfirmationPage({
           }}
         />
       )}
+      <OrderPostPayBuyer order={order} locale={locale} />
 
       {/* Grid: Delivery Address & Order Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
