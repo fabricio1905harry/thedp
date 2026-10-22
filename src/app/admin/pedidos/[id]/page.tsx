@@ -12,6 +12,7 @@ import {
   type OrderItemRow,
   type OrderSummary,
   type PaymentRow,
+  type PaymentAttemptRow,
 } from "@/components/order-management-panel";
 
 export default async function AdminOrderDetailPage({
@@ -59,7 +60,7 @@ export default async function AdminOrderDetailPage({
         .order("id"),
       supabase
         .from("payments")
-        .select("id, method_code, kind, status, currency, amount, merchandise_amount, bank_fee_amount, received_amount, cogs_recognized_brl, confirmed_at, created_at, external_ref")
+        .select("id, method_code, kind, status, currency, amount, merchandise_amount, bank_fee_amount, received_amount, cogs_recognized_brl, confirmed_at, created_at, external_ref, proof_path, proof_name, proof_uploaded_at")
         .eq("order_id", id)
         .order("created_at"),
       supabase.rpc("available_payment_methods", { p_order_id: id }),
@@ -72,6 +73,13 @@ export default async function AdminOrderDetailPage({
         .order("created_at", { ascending: false })
         .limit(200),
     ]);
+
+  const { data: attempts } = await supabase
+    .from("payment_attempts")
+    .select("id, status, source, message, amount, currency, created_at")
+    .eq("order_id", id)
+    .order("created_at", { ascending: false })
+    .limit(20);
 
   const paidMerchandise = (payments ?? [])
     .filter((p) => p.status === "confirmed")
@@ -114,6 +122,7 @@ export default async function AdminOrderDetailPage({
         bankFeeBrl={Number(feeSetting?.value ?? 0)}
         events={(events ?? []) as unknown as OrderEventRow[]}
         outstandingMerchandise={outstandingMerchandise}
+        attempts={(attempts ?? []) as PaymentAttemptRow[]}
       />
 
       {["paid", "processing", "shipped", "delivered"].includes(order.status) ? (

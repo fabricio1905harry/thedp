@@ -9,6 +9,7 @@ import { useCurrency } from "@/components/currency-provider";
 import { formatCurrency, pickPrice } from "@/lib/currency";
 import { placeOrderServerAction } from "@/app/[locale]/checkout/actions";
 import { ShipSmartAddress } from "@/lib/shipsmart";
+import { MinimumNotice, useCartCommercial, useShortfallText } from "@/components/cart-commercial";
 
 interface Address {
   id: string;
@@ -27,6 +28,11 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
   const router = useRouter();
   const { items, clear } = useCart();
   const { currency } = useCurrency();
+  const tCommercial = useTranslations("commercial");
+  const { status: commercial } = useCartCommercial();
+  const shortfallText = useShortfallText();
+  const minimumBlocked = commercial.shortfalls.length > 0;
+  const volumeDiscount = commercial.volume.enabled ? commercial.volume.discountTotal : 0;
 
   // Orders are DDP (duties prepaid). Freight and import duties are NOT
   // calculated here: the TDP informs them after confirming stock with the
@@ -97,6 +103,11 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
         isDdp,
       });
 
+      if (res.minimumShortfalls?.length) {
+        setErrorMsg(res.minimumShortfalls.map(shortfallText).join(" "));
+        setPlacingOrder(false);
+        return;
+      }
       if (res.success && res.orderId) {
         clear();
         router.push(`/pedidos/${res.orderId}`);
@@ -308,6 +319,13 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
             <span className="font-medium text-foreground">{formatCurrency(subtotal, currency)}</span>
           </div>
 
+          {volumeDiscount > 0 && (
+            <div className="flex justify-between text-muted">
+              <span>{tCommercial("volume.applied")}</span>
+              <span className="font-medium text-foreground">− {formatCurrency(volumeDiscount, currency)}</span>
+            </div>
+          )}
+
           <div className="flex justify-between text-muted">
             <span>{t("shippingDhl")}</span>
             <span className="font-medium text-foreground text-right">{t("toBeInformed")}</span>
@@ -320,7 +338,7 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
 
           <div className="flex justify-between pt-3 border-t border-border font-serif text-lg font-bold text-foreground">
             <span>{t("totalProducts")}</span>
-            <span className="text-accent">{formatCurrency(subtotal, currency)}</span>
+            <span className="text-accent">{formatCurrency(Math.max(0, subtotal - volumeDiscount), currency)}</span>
           </div>
           <p className="text-[11px] text-muted leading-relaxed">{t("chargesAfterStockConfirmation")}</p>
         </div>
@@ -331,10 +349,12 @@ export function CheckoutPanel({ addresses }: { addresses: Address[] }) {
           </div>
         )}
 
+        <MinimumNotice shortfalls={commercial.shortfalls} />
+
         {/* Place Order Button */}
         <button
           onClick={handlePlaceOrder}
-          disabled={placingOrder}
+          disabled={placingOrder || minimumBlocked}
           className="btn-primary w-full py-4 text-xs uppercase tracking-[0.2em] font-semibold flex items-center justify-center gap-2"
         >
           {placingOrder ? (

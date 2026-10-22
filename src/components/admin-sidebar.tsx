@@ -110,6 +110,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/pedidos", label: "Pedidos", icon: OrdersIcon },
       { href: "/admin/vendas-perdidas", label: "Vendas perdidas", icon: OrdersIcon },
       { href: "/admin/embalagens", label: "Embalagens DHL", icon: PackagingIcon },
+      { href: "/admin/pedido-minimo", label: "Regras de pedido mínimo", icon: OrdersIcon },
+      { href: "/admin/volume-pricing", label: "Volume Pricing", icon: OverviewIcon },
     ],
   },
   {
@@ -117,6 +119,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/pagamentos", label: "Pagamentos", icon: ExchangeIcon },
       { href: "/admin/cambio", label: "Câmbio", icon: ExchangeIcon },
+      { href: "/admin/impostos", label: "Impostos e taxas", icon: ExchangeIcon },
     ],
   },
   {

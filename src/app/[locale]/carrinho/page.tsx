@@ -5,11 +5,15 @@ import { Link } from "@/i18n/navigation";
 import { useCart } from "@/components/cart-provider";
 import { useCurrency } from "@/components/currency-provider";
 import { formatCurrency, pickPrice } from "@/lib/currency";
+import { MinimumNotice, useCartCommercial } from "@/components/cart-commercial";
 
 export default function CartPage() {
   const t = useTranslations("cart");
+  const tc = useTranslations("commercial");
   const { items, setQty, removeItem } = useCart();
   const { currency } = useCurrency();
+  const { status } = useCartCommercial();
+  const blocked = status.shortfalls.length > 0;
 
   if (items.length === 0) {
     return (
@@ -64,22 +68,43 @@ export default function CartPage() {
         })}
       </div>
 
+      {status.volume.enabled && status.volume.discountTotal > 0 && (
+        <div className="flex justify-between items-center mt-4 text-sm">
+          <p className="text-muted">{tc("volume.applied")}</p>
+          <p className="font-medium">− {formatCurrency(status.volume.discountTotal, currency)}</p>
+        </div>
+      )}
       <div className="flex justify-between items-center mt-6">
         <p className="text-sm text-muted">{t("subtotalNotice")}</p>
-        <p className="text-lg font-semibold">{formatCurrency(subtotal, currency)}</p>
+        <p className="text-lg font-semibold">
+          {formatCurrency(Math.max(0, subtotal - (status.volume.enabled ? status.volume.discountTotal : 0)), currency)}
+        </p>
       </div>
+
+      <MinimumNotice shortfalls={status.shortfalls} />
 
       <div className="mt-6 border border-border bg-surface p-4 space-y-2 text-xs leading-relaxed">
         <p className="font-semibold uppercase tracking-[0.15em]">{t("availabilityNote")}</p>
         <p className="text-muted">{t("chargesNote")}</p>
       </div>
 
-      <Link
-        href="/checkout"
-        className="btn-primary block text-center mt-8 py-3 text-sm uppercase tracking-wide font-medium"
-      >
-        {t("proceedToCheckout")}
-      </Link>
+      {blocked ? (
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          className="btn-primary block w-full text-center mt-8 py-3 text-sm uppercase tracking-wide font-medium opacity-50 cursor-not-allowed"
+        >
+          {t("proceedToCheckout")}
+        </button>
+      ) : (
+        <Link
+          href="/checkout"
+          className="btn-primary block text-center mt-8 py-3 text-sm uppercase tracking-wide font-medium"
+        >
+          {t("proceedToCheckout")}
+        </Link>
+      )}
       <p className="mt-4 text-center text-[11px] text-muted leading-relaxed">
         {t("reserveHint")}{" "}
         <Link href="/reserve-for-later-delivery" className="underline">

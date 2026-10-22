@@ -4,6 +4,8 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentCustomer } from "@/lib/auth";
 import { calculateShipmentPackages } from "@/lib/dhl-packaging";
 import type { ShipSmartAddress } from "@/lib/shipsmart";
+import { evaluateCart } from "@/lib/commercial-server";
+import type { Shortfall } from "@/lib/order-minimums";
 
 export interface PlaceOrderInput {
   addressId?: string;
@@ -29,6 +31,8 @@ export interface PlaceOrderResult {
   labelUrl?: string;
   invoiceUrl?: string;
   error?: string;
+  /** active minimum-order rules the cart does not meet (the buyer UI formats them) */
+  minimumShortfalls?: Shortfall[];
 }
 
 /**
@@ -51,8 +55,23 @@ export async function placeOrderServerAction(
     }
 
     const supabase = createServiceRoleClient();
-    const totalQty = input.items.reduce((sum, item) => sum + item.qty, 0);
-    const subtotal = input.items.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+    // Commercial rules, enforced here regardless of what the browser showed:
+    // active minimum-order rules block the request; Volume Pricing (when ON)
+    // lowers the unit prices before the order is created.
+    const commercial = await evaluateCart(
+      customer.id,
+      input.items.map((i) => ({ variantId: i.variantId, qty: i.qty, price: i.price })),
+      input.currency || "BRL"
+    );
+    if (commercial.shortfalls.length > 0) {
+      return { success: false, error: "Minimum order not met.", minimumShortfalls: commercial.shortfalls };
+    }
+    const volumePrice = new Map(commercial.volume.lines.map((l) => [l.variantId, l]));
+    const pricedItems = input.items.map((item) => ({ ...item, price: volumePrice.get(item.variantId)?.unitPrice ?? item.price }));
+
+    const totalQty = pricedItems.reduce((sum, item) => sum + item.qty, 0);
+    const subtotal = Math.round(pricedItems.reduce((sum, item) => sum + item.price * item.qty, 0) * 100) / 100;
 
     // 1. Calculate DHL Packaging & Weight
     const packaging = await calculateShipmentPackages({
@@ -89,7 +108,12 @@ export async function placeOrderServerAction(
         incoterm: input.isDdp ? "DDP" : "DDU",
         shipping_address: address,
         // suggested packaging only, to help the TDP quote DHL
-        quote_snapshot: { packaging },
+        quote_snapshot: {
+          packaging,
+          ...(commercial.volume.lines.length > 0
+            ? { volume_pricing: { discount_total: commercial.volume.discountTotal, lines: commercial.volume.lines } }
+            : {}),
+        },
       })
       .select("id")
       .single();
@@ -99,7 +123,7 @@ export async function placeOrderServerAction(
     }
 
     // 4. Insert Order Items into order_items table
-    const itemRecords = input.items.map((item) => ({
+    const itemRecords = pricedItems.map((item) => ({
       order_id: order.id,
       variant_id: item.variantId,
       qty: item.qty,

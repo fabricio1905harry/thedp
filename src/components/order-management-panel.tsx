@@ -25,6 +25,7 @@ import {
 } from "@/app/admin/pedidos/actions";
 import { EDITABLE_ORDER_STATUSES, ITEM_STATUS_LABELS, STOCK_HOLD_LABELS } from "@/lib/order-status";
 import { PASS_THROUGH_COMPONENTS, PAYMENT_METHOD_LABELS } from "@/lib/payments";
+import { PaymentProofLink } from "@/components/payment-proof-link";
 
 export interface OrderItemRow {
   id: string;
@@ -64,7 +65,26 @@ export interface PaymentRow {
   confirmed_at: string | null;
   created_at: string;
   external_ref: string | null;
+  proof_path?: string | null;
+  proof_name?: string | null;
+  proof_uploaded_at?: string | null;
 }
+
+export interface PaymentAttemptRow {
+  id: string;
+  status: string;
+  source: string;
+  message: string | null;
+  amount: number | null;
+  currency: string | null;
+  created_at: string;
+}
+
+const ATTEMPT_STATUS_LABELS: Record<string, string> = {
+  failed: "Cartão recusado / falhou",
+  canceled: "Cancelado pelo comprador",
+  expired: "Link de pagamento expirou",
+};
 
 export interface MethodAvailability {
   method_code: string;
@@ -114,7 +134,9 @@ export function OrderManagementPanel({
   bankFeeBrl,
   events,
   outstandingMerchandise,
+  attempts = [],
 }: {
+  attempts?: PaymentAttemptRow[];
   order: OrderSummary;
   items: OrderItemRow[];
   payments: PaymentRow[];
@@ -189,6 +211,7 @@ export function OrderManagementPanel({
         methods={methods}
         bankFeeBrl={bankFeeBrl}
         outstandingMerchandise={outstandingMerchandise}
+        attempts={attempts}
         pending={pending}
         run={run}
       />
@@ -775,9 +798,11 @@ function PaymentsPanel({
   methods,
   bankFeeBrl,
   outstandingMerchandise,
+  attempts,
   pending,
   run,
 }: {
+  attempts: PaymentAttemptRow[];
   order: OrderSummary;
   payments: PaymentRow[];
   methods: MethodAvailability[];
@@ -827,6 +852,18 @@ function PaymentsPanel({
   return (
     <section id="payments">
       <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Pagamentos (uma linha por transação)</h2>
+      {attempts.length > 0 && (
+        <div className="mb-3 border border-red-200 bg-red-50/40 p-3 text-xs space-y-1">
+          <h3 className="font-semibold uppercase tracking-wide text-red-700">Tentativas de pagamento que falharam</h3>
+          {attempts.map((a) => (
+            <p key={a.id}>
+              {new Date(a.created_at).toLocaleString("pt-BR")} · {ATTEMPT_STATUS_LABELS[a.status] ?? a.status}
+              {a.amount !== null && a.currency ? ` · ${money(a.amount, a.currency)}` : ""}
+              {a.message ? ` — ${a.message}` : ""}
+            </p>
+          ))}
+        </div>
+      )}
       {payments.length === 0 ? (
         <p className="text-xs text-muted mb-3">Nenhum pagamento ainda.</p>
       ) : (
@@ -846,6 +883,7 @@ function PaymentsPanel({
               <tr key={p.id} className="border-b border-border">
                 <td className="py-1 pr-2">
                   {PAYMENT_METHOD_LABELS[p.method_code] ?? p.method_code} · {PAYMENT_KIND_LABELS[p.kind] ?? p.kind}
+                  {p.proof_path && <PaymentProofLink orderId={order.id} paymentId={p.id} name={p.proof_name ?? null} />}
                 </td>
                 <td className="py-1 pr-2">{money(p.merchandise_amount, p.currency)}</td>
                 <td className="py-1 pr-2">{money(p.bank_fee_amount, p.currency)}</td>
