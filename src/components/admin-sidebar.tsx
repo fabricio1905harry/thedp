@@ -113,6 +113,20 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "Curadoria & Dados",
+    items: [
+      { href: "/admin/marcas", label: "Marcas", icon: ProductsIcon },
+      { href: "/admin/colecoes", label: "Coleções", icon: ProductsIcon },
+      { href: "/admin/lookbooks", label: "Lookbooks", icon: ProductsIcon },
+      { href: "/admin/edits", label: "TDP Edits", icon: ProductsIcon },
+      { href: "/admin/placements", label: "Placements pagos", icon: OverviewIcon },
+      { href: "/admin/avise-me", label: "Avise-me (reposição)", icon: AutomationIcon },
+      { href: "/admin/cores", label: "Cores", icon: OverviewIcon },
+      { href: "/admin/tamanhos", label: "Tamanhos", icon: OverviewIcon },
+      { href: "/admin/ncm", label: "NCM / HS", icon: OverviewIcon },
+    ],
+  },
+  {
     label: "Financeiro",
     items: [
       { href: "/admin/pagamentos", label: "Pagamentos", icon: ExchangeIcon },
