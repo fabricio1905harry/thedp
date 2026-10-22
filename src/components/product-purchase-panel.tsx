@@ -8,50 +8,7 @@ import { useCart } from "@/components/cart-provider";
 import { formatCurrency, pickPrice } from "@/lib/currency";
 import type { ProductDetail } from "@/lib/catalog";
 import type { Variant } from "@/lib/types";
-
-/** Best-effort swatch color for common PT/EN/ES color names; unmapped names
- * just get a neutral ring so the label still reads without a wrong hint. */
-const SWATCH_HEX: Record<string, string> = {
-  preto: "#141312",
-  black: "#141312",
-  branco: "#ffffff",
-  white: "#ffffff",
-  blanco: "#ffffff",
-  royal: "#1f3fbf",
-  azul: "#2451c4",
-  azulroyal: "#1f3fbf",
-  marinho: "#0f1f3d",
-  navy: "#0f1f3d",
-  coral: "#ff6f59",
-  amarelo: "#f2d24b",
-  yellow: "#f2d24b",
-  amarillo: "#f2d24b",
-  verde: "#2f6b4f",
-  green: "#2f6b4f",
-  vermelho: "#a3271f",
-  red: "#a3271f",
-  rojo: "#a3271f",
-  rosa: "#e8a5c0",
-  pink: "#e8a5c0",
-  nude: "#d9b99b",
-  bege: "#d8cbb0",
-  beige: "#d8cbb0",
-  cinza: "#9a9691",
-  gray: "#9a9691",
-  grey: "#9a9691",
-  gris: "#9a9691",
-  vinho: "#5c1a24",
-  bordô: "#5c1a24",
-  dourado: "#c5a059",
-  gold: "#c5a059",
-  prata: "#c7c7c7",
-  silver: "#c7c7c7",
-};
-
-function swatchHex(color: string): string {
-  const key = color.trim().toLowerCase().replace(/\s+/g, "");
-  return SWATCH_HEX[key] ?? "#cfc9c0";
-}
+import { swatchHex } from "@/lib/color-swatch";
 
 /**
  * Grid selector: rows = colors, columns = sizes. Each cell maps 1:1 to a row

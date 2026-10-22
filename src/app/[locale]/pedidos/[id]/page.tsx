@@ -8,7 +8,8 @@ import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp
 import { OrderPayPanel } from "@/components/order-pay-panel";
 import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
-import { BUYER_STATUS_KEYS } from "@/lib/order-status";
+import { BUYER_CANCELABLE_STATUSES, BUYER_RELEASED_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
+import { CancelOrderButton, ReturnRequestForm } from "@/components/order-buyer-actions";
 import type { Currency } from "@/lib/types";
 
 function currentTime() {
@@ -71,7 +72,12 @@ export default async function OrderConfirmationPage({
     );
   }
 
-  const chargesInformed = Boolean(order.charges_informed_at);
+  // Freight/duties are drafts until the TDP informed them AND released the order (Confirmed Order).
+  const chargesInformed = Boolean(order.charges_informed_at) && BUYER_RELEASED_STATUSES.includes(order.status);
+  const isCanceled = order.status === "canceled";
+  const canCancel = BUYER_CANCELABLE_STATUSES.includes(order.status);
+  const canRequestReturn = !isCanceled && !canCancel;
+  const activeItemCount = (items ?? []).filter((i) => i.item_status === "available" || i.item_status === "requested").length;
   const isRequestStage = ["created", "order_request", "stock_confirmation", "awaiting_buyer_decision"].includes(order.status);
   const statusLabel = BUYER_STATUS_KEYS[order.status] ? t(`order.${BUYER_STATUS_KEYS[order.status]}`) : order.status;
   const holdUntil =
@@ -102,7 +108,7 @@ export default async function OrderConfirmationPage({
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2 h-2 rounded-full bg-foreground animate-ping" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-foreground">
-              {isRequestStage ? t("order.requestBadge") : t("order.confirmedBadge")}
+              {isCanceled ? t("order.canceledBadge") : isRequestStage ? t("order.requestBadge") : t("order.confirmedBadge")}
             </span>
           </div>
           <h1 className="font-serif text-3xl sm:text-4xl font-normal text-foreground">
@@ -154,6 +160,14 @@ export default async function OrderConfirmationPage({
         />
       )}
 
+      {isCanceled && (
+        <div className="border border-border bg-surface p-5 space-y-1 text-sm">
+          <p className="font-semibold">{t("order.canceledTitle")}</p>
+          <p className="text-muted">{t("order.canceledText")}</p>
+          {order.cancel_reason && <p className="text-xs text-muted">{order.cancel_reason}</p>}
+        </div>
+      )}
+
       {isRequestStage && (
         <div className="border border-foreground p-6 space-y-3">
           <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em]">{t("order.requestReceivedTitle")}</h2>
@@ -164,11 +178,16 @@ export default async function OrderConfirmationPage({
           <Link href="/minha-conta" className="inline-block mt-2 bg-foreground text-background px-6 py-3 text-[11px] uppercase tracking-[0.2em] font-semibold">
             {t("order.viewMyOrders")}
           </Link>
+          {canCancel && (
+            <div className="pt-3">
+              <CancelOrderButton orderId={order.id} />
+            </div>
+          )}
         </div>
       )}
 
       {/* DHL Express Shipping Card (only once there is a shipment to show) */}
-      {!isRequestStage && (
+      {!isRequestStage && !isCanceled && (
         <div className="bg-surface border border-gold/40 rounded-sm p-6 space-y-5 shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gold/20 pb-4">
             <div className="flex items-center gap-3">
@@ -296,7 +315,9 @@ export default async function OrderConfirmationPage({
                     ? t("order.totalPaid")
                     : t("order.orderTotal")}
               </span>
-              <span className="text-accent">{formatCurrency(Number(order.total), order.currency)}</span>
+              <span className="text-accent">
+                {formatCurrency(Number(chargesInformed ? order.total : order.subtotal), order.currency)}
+              </span>
             </div>
             {!chargesInformed && (
               <p className="text-[11px] text-muted leading-relaxed">{t("checkout.chargesAfterStockConfirmation")}</p>
@@ -308,7 +329,9 @@ export default async function OrderConfirmationPage({
       {/* Ordered Items Table */}
       <div className="bg-white border border-border/80 p-6 rounded-sm space-y-4">
         <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-accent border-b border-border/60 pb-3">
-          {t("order.itemsConfirmedTitle", { count: items?.length ?? 0 })}
+          {isRequestStage || isCanceled
+            ? t("order.itemsRequestedTitle", { count: items?.length ?? 0 })
+            : t("order.itemsConfirmedTitle", { count: activeItemCount })}
         </h3>
         <div className="divide-y divide-border/60">
           {(items ?? []).map((item) => {
@@ -351,6 +374,8 @@ export default async function OrderConfirmationPage({
           })}
         </div>
       </div>
+
+      {canRequestReturn && <ReturnRequestForm orderId={order.id} />}
 
       {/* Actions Footer */}
       <div className="text-center pt-4">

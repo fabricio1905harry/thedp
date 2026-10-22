@@ -51,4 +51,22 @@ export const BUYER_STATUS_KEYS: Record<string, string> = {
   reserved: "statusReserved",
   paid: "statusPaid",
   processing: "statusProcessing",
+  shipped: "statusShipped",
+  delivered: "statusDelivered",
+  canceled: "statusCanceled",
 };
+
+/** Statuses in which the buyer may still cancel the Order Request (before any payment). */
+export const BUYER_CANCELABLE_STATUSES = ["created", "order_request", "stock_confirmation", "awaiting_buyer_decision"];
+
+/** Statuses where the order has been released (Confirmed Order) and freight/duties may be shown to the buyer. */
+export const BUYER_RELEASED_STATUSES = [
+  "confirmed_awaiting_payment",
+  "payment_coordination_required",
+  "payment_window_expired",
+  "reserved",
+  "paid",
+  "processing",
+  "shipped",
+  "delivered",
+];

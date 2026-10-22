@@ -4,6 +4,8 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentCustomer } from "@/lib/auth";
 import { calculateShipmentPackages } from "@/lib/dhl-packaging";
 import type { ShipSmartAddress } from "@/lib/shipsmart";
+import { COUNTRY_CODES } from "@/lib/countries";
+import { queueEmail, queueTeamNotice, flushEmailOutbox, siteOrigin } from "@/lib/email";
 
 export interface PlaceOrderInput {
   addressId?: string;
@@ -19,6 +21,10 @@ export interface PlaceOrderInput {
     price: number;
   }>;
   isDdp?: boolean;
+  /** buyer's UI language (for the confirmation e-mail) */
+  locale?: string;
+  /** store the typed address in My Account → Addresses */
+  saveAddress?: boolean;
 }
 
 export interface PlaceOrderResult {
@@ -29,6 +35,8 @@ export interface PlaceOrderResult {
   labelUrl?: string;
   invoiceUrl?: string;
   error?: string;
+  /** translated by the client (checkout.errors.*) */
+  errorCode?: "auth" | "empty" | "address" | "country" | "generic";
 }
 
 /**
@@ -36,6 +44,13 @@ export interface PlaceOrderResult {
  * here — the TDP informs them in the Admin after confirming stock (orders
  * table charge columns, migration 0029), so the order starts with only the
  * merchandise subtotal.
+ *
+ * Over-stock approach (A11): the browser only ever receives a 0/1
+ * availability flag (see catalog.ts). On submit, THIS server action compares
+ * every requested quantity with variants.stock and, when something is above
+ * what is available, raises the Action Center item "Order above available
+ * stock" (high, order_above_stock) with the numbers for the admin. The order
+ * is accepted anyway — availability is confirmed before payment.
  */
 export async function placeOrderServerAction(
   input: PlaceOrderInput
@@ -43,11 +58,21 @@ export async function placeOrderServerAction(
   try {
     const customer = await getCurrentCustomer();
     if (!customer) {
-      return { success: false, error: "Usuário não autenticado. Por favor, faça login." };
+      return { success: false, errorCode: "auth", error: "Please sign in again." };
     }
 
     if (!input.items || input.items.length === 0) {
-      return { success: false, error: "Carrinho de compras está vazio." };
+      return { success: false, errorCode: "empty", error: "Your cart is empty." };
+    }
+
+    // The delivery address must be real: no placeholder fallbacks.
+    const typed = input.customAddress;
+    const countryCode = String(typed?.countryCode ?? "").toUpperCase();
+    if (!typed || !typed.name?.trim() || !typed.address?.trim() || !typed.city?.trim()) {
+      return { success: false, errorCode: "address", error: "Please complete the delivery address." };
+    }
+    if (!COUNTRY_CODES.includes(countryCode)) {
+      return { success: false, errorCode: "country", error: "Please choose the delivery country." };
     }
 
     const supabase = createServiceRoleClient();
@@ -61,15 +86,16 @@ export async function placeOrderServerAction(
       unitWeightKg: 1.6,
     });
 
-    // 2. Prepare Destination Address
-    const address: ShipSmartAddress = input.customAddress || {
-      name: customer.email ? customer.email.split("@")[0] : "Cliente The Dress",
+    // 2. Destination address (the ISO country code is stored: it drives channel/currency/freight later)
+    const address: ShipSmartAddress = {
+      ...typed,
+      name: typed.name.trim().slice(0, 200),
+      address: typed.address.trim().slice(0, 300),
+      city: typed.city.trim().slice(0, 120),
+      state: (typed.state ?? "").trim().slice(0, 120),
+      postalCode: (typed.postalCode ?? "").trim().slice(0, 40),
+      countryCode,
       email: customer.email,
-      address: "Avenida Principal, 500",
-      city: "Nova York",
-      state: "NY",
-      postalCode: "10001",
-      countryCode: "US",
     };
 
     const orderNum = `TD-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -95,7 +121,7 @@ export async function placeOrderServerAction(
       .single();
 
     if (orderErr || !order) {
-      return { success: false, error: orderErr?.message || "Erro ao criar pedido no banco" };
+      return { success: false, errorCode: "generic", error: orderErr?.message || "Could not create the order." };
     }
 
     // 4. Insert Order Items into order_items table
@@ -106,7 +132,57 @@ export async function placeOrderServerAction(
       unit_price: item.price,
     }));
 
-    await supabase.from("order_items").insert(itemRecords);
+    const { error: itemsErr } = await supabase.from("order_items").insert(itemRecords);
+    if (itemsErr) {
+      // never leave an empty order behind
+      await supabase.from("orders").delete().eq("id", order.id);
+      return { success: false, errorCode: "generic", error: itemsErr.message };
+    }
+
+    // 5. Over-stock check (server side, numbers never reach the browser)
+    const aboveStock = await checkAboveStock(order.id, orderNum, input, subtotal);
+
+    // 6. Save the typed address in My Account → Addresses (once, no duplicates)
+    if (input.saveAddress) {
+      const { data: dup } = await supabase
+        .from("addresses")
+        .select("id")
+        .eq("customer_id", customer.id)
+        .eq("country", countryCode)
+        .eq("line1", address.address)
+        .eq("postal_code", address.postalCode || "")
+        .limit(1);
+      if (!dup || dup.length === 0) {
+        await supabase.from("addresses").insert({
+          customer_id: customer.id,
+          country: countryCode,
+          state: address.state || null,
+          city: address.city,
+          line1: address.address,
+          postal_code: address.postalCode || "",
+          phone: null,
+        });
+      }
+    }
+
+    // 7. E-mails: buyer confirmation + internal notice (queued; sent right away when configured)
+    const origin = siteOrigin();
+    const localeSeg = ["en", "es", "pt"].includes(input.locale ?? "") ? input.locale : "en";
+    await queueEmail(customer.email, "order_request_received", input.locale, {
+      buyer_name: address.name,
+      order_number: orderNum,
+      currency: input.currency,
+      account_url: origin ? `${origin}/${localeSeg}/minha-conta` : "",
+    });
+    await queueTeamNotice("internal_new_order", {
+      order_number: orderNum,
+      buyer: address.name,
+      currency: input.currency,
+      total: `${input.currency} ${subtotal.toFixed(2)}`,
+      above_stock: aboveStock,
+      admin_url: origin ? `${origin}/admin/pedidos/${order.id}` : "",
+    });
+    await flushEmailOutbox(5).catch(() => undefined);
 
     // DHL/ShipSmart shipment (AWB + label) is NOT created here — the order
     // is placed as an Order Request and only the shipping/duties estimate
@@ -118,7 +194,62 @@ export async function placeOrderServerAction(
       orderNumber: orderNum,
     };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Erro ao finalizar pedido";
-    return { success: false, error: msg };
+    const msg = err instanceof Error ? err.message : "Could not place the order.";
+    return { success: false, errorCode: "generic", error: msg };
+  }
+}
+
+/**
+ * Compares each requested quantity with the variant stock on the server and
+ * raises the Action Center item "Order above available stock" (high) with the
+ * details for the admin. Returns true when something is above stock.
+ * Never throws — an Order Request is accepted regardless.
+ */
+async function checkAboveStock(orderId: string, orderNumber: string, input: PlaceOrderInput, subtotal: number): Promise<boolean> {
+  try {
+    const supabase = createServiceRoleClient();
+    const wanted = new Map<string, number>();
+    for (const it of input.items) wanted.set(it.variantId, (wanted.get(it.variantId) ?? 0) + it.qty);
+
+    const { data: variants } = await supabase
+      .from("variants")
+      .select("id, sku, color, size, stock, products ( title )")
+      .in("id", [...wanted.keys()]);
+
+    const over: { sku: string; label: string; ordered: number; stock: number }[] = [];
+    for (const v of variants ?? []) {
+      const ordered = wanted.get(v.id) ?? 0;
+      const stock = Math.max(0, Number(v.stock ?? 0));
+      if (ordered > stock) {
+        const product = Array.isArray(v.products) ? v.products[0] : v.products;
+        over.push({
+          sku: v.sku,
+          label: `${product?.title ?? v.sku} ${v.color ?? ""} ${v.size ?? ""}`.replace(/\s+/g, " ").trim(),
+          ordered,
+          stock,
+        });
+      }
+    }
+    if (over.length === 0) return false;
+
+    const details = over.map((o) => `${o.label}: pedido ${o.ordered} / estoque ${o.stock}`).join("; ").slice(0, 400);
+    await supabase.rpc("raise_action", {
+      p_type: "order_above_stock",
+      p_dedupe: `order_above_stock:${orderId}`,
+      p_title: "Order above available stock",
+      p_reference_type: "order",
+      p_reference_id: orderId,
+      p_reference_label: orderNumber,
+      p_subject: details,
+      p_value: subtotal,
+      p_currency: input.currency,
+      p_count: over.length,
+      p_href: `/admin/pedidos/${orderId}`,
+      p_severity: "high",
+      p_metadata: { lines: over },
+    });
+    return true;
+  } catch {
+    return false;
   }
 }

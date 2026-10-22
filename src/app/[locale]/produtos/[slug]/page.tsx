@@ -96,17 +96,32 @@ export default async function ProductPage({
               <p className="mt-1 text-xs text-muted">{t("availabilityMoves")}</p>
             </div>
             <p className="text-xs text-muted leading-relaxed">
-              <span className="font-medium text-foreground">{t("colorHelpTitle")}</span> {t("colorHelp")}{" "}
-              {waHref && (
-                <a href={waHref} target="_blank" rel="noopener noreferrer" className="underline text-foreground">
-                  WhatsApp
-                </a>
-              )}
-              {waHref && email && " / "}
-              {email && (
-                <a href={`mailto:${email}`} className="underline text-foreground">
-                  {email}
-                </a>
+              <span className="font-medium text-foreground">{t("colorHelpTitle")}</span> {t("colorHelpBase")}
+              {waHref || email ? (
+                <>
+                  {" "}
+                  {t("colorHelpVia")}{" "}
+                  {waHref && (
+                    <a href={waHref} target="_blank" rel="noopener noreferrer" className="underline text-foreground">
+                      WhatsApp
+                    </a>
+                  )}
+                  {waHref && email && ` ${t("colorHelpOr")} `}
+                  {email && (
+                    <a href={`mailto:${email}`} className="underline text-foreground">
+                      {email}
+                    </a>
+                  )}
+                  .
+                </>
+              ) : (
+                <>
+                  {" "}
+                  <Link href="/contato" className="underline text-foreground">
+                    {t("colorHelpContactPage")}
+                  </Link>
+                  .
+                </>
               )}
             </p>
           </div>

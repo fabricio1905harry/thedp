@@ -11,6 +11,11 @@ export default async function ReserveForLaterDeliveryPage() {
       <h1 className="font-serif text-4xl sm:text-5xl mt-3">{t("title")}</h1>
       <p className="mt-5 text-base text-muted leading-relaxed">{t("intro")}</p>
 
+      <div className="mt-8 border border-foreground p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em]">{t("depositNoticeTitle")}</p>
+        <p className="mt-2 text-sm leading-relaxed">{t("depositNoticeText")}</p>
+      </div>
+
       <ol className="mt-12 space-y-8">
         {steps.map((n) => (
           <li key={n} className="grid grid-cols-[3rem_1fr] gap-4">
@@ -29,7 +34,13 @@ export default async function ReserveForLaterDeliveryPage() {
           <li>{t("changesBefore")}</li>
           <li>{t("changesAfter")}</li>
         </ul>
-        <p className="mt-4 text-xs text-muted">{t("terms")}</p>
+        <p className="mt-4 text-xs text-muted">
+          {t("termsPrefix")}{" "}
+          <Link href="/politicas/termos" className="underline text-foreground">
+            {t("termsLink")}
+          </Link>
+          .
+        </p>
       </section>
 
       <div className="mt-10">

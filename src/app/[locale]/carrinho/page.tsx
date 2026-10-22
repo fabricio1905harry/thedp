@@ -18,6 +18,11 @@ export default function CartPage() {
         <Link href="/" className="text-sm text-accent underline">
           {t("browseCatalog")}
         </Link>
+        <p className="mt-4 text-sm">
+          <Link href="/minha-conta" className="underline">
+            {t("viewMyOrders")}
+          </Link>
+        </p>
       </div>
     );
   }
@@ -72,6 +77,7 @@ export default function CartPage() {
       <div className="mt-6 border border-border bg-surface p-4 space-y-2 text-xs leading-relaxed">
         <p className="font-semibold uppercase tracking-[0.15em]">{t("availabilityNote")}</p>
         <p className="text-muted">{t("chargesNote")}</p>
+        <p className="text-muted">{t("quantityNote")}</p>
       </div>
 
       <Link

@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { SiteMode } from "@/lib/site-mode";
 
-export function Footer({ siteMode }: { siteMode: SiteMode }) {
+export function Footer({ siteMode, signedIn = false }: { siteMode: SiteMode; signedIn?: boolean }) {
   const t = useTranslations("footer");
   const isNacional = siteMode === "nacional";
 
@@ -27,9 +27,9 @@ export function Footer({ siteMode }: { siteMode: SiteMode }) {
           <div>
             <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-4">{t("wholesale")}</h3>
             <ul className="space-y-2.5 text-muted">
-              <li><Link href="/cadastro" className="hover:text-foreground">{t("createAccount")}</Link></li>
-              <li><Link href="/login" className="hover:text-foreground">{t("signIn")}</Link></li>
-              <li><Link href="/minha-conta" className="hover:text-foreground">{t("myOrders")}</Link></li>
+              {!signedIn && <li><Link href="/cadastro" className="hover:text-foreground">{t("createAccount")}</Link></li>}
+              {!signedIn && <li><Link href="/login" className="hover:text-foreground">{t("signIn")}</Link></li>}
+              <li><Link href="/minha-conta" className="hover:text-foreground">{signedIn ? t("myAccount") : t("myOrders")}</Link></li>
               <li><Link href="/reserve-for-later-delivery" className="hover:text-foreground">{t("reserveLater")}</Link></li>
             </ul>
           </div>

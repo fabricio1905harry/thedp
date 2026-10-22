@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
+import { adaptCtaForSignedIn } from "@/lib/cta-signed-in";
 import { getPublicBlocks } from "@/lib/cms";
 import { operationForSiteMode } from "@/lib/cms-types";
 import { getWhatsAppSettings } from "@/lib/settings";
@@ -17,10 +18,15 @@ export default async function ContatoPage({ searchParams }: { searchParams: Prom
   const t = await getTranslations("contactPage");
   const headerList = await headers();
   const siteMode = (headerList.get(SITE_MODE_HEADER) as SiteMode) ?? "internacional";
-  const blocks = await getPublicBlocks("contact", operationForSiteMode(siteMode), locale);
+  const customer = await getCurrentCustomer();
+  const tNav = await getTranslations("nav");
+  const blocks = adaptCtaForSignedIn(await getPublicBlocks("contact", operationForSiteMode(siteMode), locale), {
+    signedIn: Boolean(customer),
+    approved: customer?.status === "approved",
+    myAccountLabel: tNav("minhaConta"),
+  });
   const byKey = new Map<string, C>(blocks.map((b) => [b.key, b.content]));
   const wa = await getWhatsAppSettings();
-  const customer = await getCurrentCustomer();
 
   const intro = byKey.get("intro");
   const form = byKey.get("form");

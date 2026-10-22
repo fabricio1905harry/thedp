@@ -1,0 +1,74 @@
+{
+  "countrySelect": {
+    "search": "Search country…",
+    "choose": "Select a country"
+  },
+  "checkout": {
+    "country": "Country",
+    "useNewAddress": "Use a new address",
+    "saveAddress": "Save this address to My account",
+    "errors": {
+      "auth": "Please sign in again.",
+      "empty": "Your cart is empty.",
+      "address": "Please complete the recipient name, address and city.",
+      "country": "Please choose the delivery country.",
+      "generic": "We could not complete your order. Please try again."
+    }
+  },
+  "cart": {
+    "quantityNote": "Some quantities may exceed what is available — availability is confirmed before payment.",
+    "myOrdersLink": "My orders",
+    "viewMyOrders": "View my orders"
+  },
+  "order": {
+    "statusStockConfirmation": "Our team is confirming availability",
+    "statusShipped": "Shipped",
+    "statusDelivered": "Delivered",
+    "statusCanceled": "Canceled",
+    "canceledBadge": "Order canceled",
+    "canceledTitle": "This order was canceled",
+    "canceledText": "No payment was taken. You can place a new order request at any time.",
+    "itemsRequestedTitle": "Requested items ({count})"
+  },
+  "orderActions": {
+    "cancelCta": "Cancel order request",
+    "cancelConfirmTitle": "Cancel this order request?",
+    "cancelConfirmText": "Nothing has been paid yet. Once canceled, the request cannot be reopened — you can place a new one.",
+    "cancelReasonPlaceholder": "Reason (optional)",
+    "cancelConfirm": "Yes, cancel",
+    "canceling": "Canceling…",
+    "keepOrder": "Keep my order",
+    "returnTitle": "Return or after-sale request",
+    "returnIntro": "Tell us what happened with this order. Our team replies by e-mail.",
+    "returnPlaceholder": "Which pieces and what is the issue?",
+    "returnSubmit": "Send request",
+    "returnSent": "Request sent. Our team will reply by e-mail.",
+    "returnLink": "Return / after-sale request",
+    "sending": "Sending…",
+    "errors": {
+      "auth": "Please sign in again.",
+      "notFound": "Order not found.",
+      "notCancelable": "This order can no longer be changed here. Please contact us.",
+      "failed": "Something went wrong. Please try again.",
+      "invalid": "Please describe your request."
+    }
+  },
+  "apply": {
+    "country": "Country"
+  },
+  "footer": {
+    "myAccount": "My account"
+  },
+  "product": {
+    "colorHelpBase": "Colors may vary slightly depending on screen settings and lighting. To confirm the exact shade before placing your order, contact our team",
+    "colorHelpVia": "via",
+    "colorHelpOr": "or",
+    "colorHelpContactPage": "through our Contact page"
+  },
+  "reserve": {
+    "depositNoticeTitle": "The deposit is non-refundable",
+    "depositNoticeText": "The reserve deposit is non-refundable. It secures your merchandise for the agreed shipping date and is deducted from the total when you pay the balance.",
+    "termsPrefix": "Full conditions are described in our",
+    "termsLink": "Terms of use"
+  }
+}

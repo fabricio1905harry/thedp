@@ -11,8 +11,14 @@ export default async function CheckoutPage() {
   const supabase = await createClient();
   const { data: addresses } = await supabase
     .from("addresses")
-    .select("id, country, city, line1, postal_code")
+    .select("id, country, state, city, line1, postal_code")
     .order("created_at", { ascending: false });
+  // wholesale application data (delivery address + signup country) as defaults
+  const { data: profile } = await supabase
+    .from("customers")
+    .select("name, company_name, delivery_address, country")
+    .eq("id", customer.id)
+    .maybeSingle();
 
   const t = await getTranslations("checkout");
 
@@ -27,7 +33,14 @@ export default async function CheckoutPage() {
         </h1>
       </div>
 
-      <CheckoutPanel addresses={addresses ?? []} />
+      <CheckoutPanel
+        addresses={addresses ?? []}
+        defaults={{
+          recipientName: profile?.name ?? profile?.company_name ?? "",
+          deliveryAddress: profile?.delivery_address ?? "",
+          country: profile?.country ?? "",
+        }}
+      />
     </div>
   );
 }

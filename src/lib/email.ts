@@ -78,6 +78,80 @@ function render(template: string, locale: Locale, payload: Payload): Rendered | 
           }[locale],
         ],
       };
+    // --- homologation stream 1: Order Request / contact -----------------
+    case "order_request_received": {
+      const currency = (payload.currency as string) || "";
+      const link = (payload.account_url as string) || "";
+      return {
+        subject: {
+          en: `Order Request received${order ? ` — ${order}` : ""}`,
+          es: `Solicitud de pedido recibida${order ? ` — ${order}` : ""}`,
+          pt: `Order Request recebido${order ? ` — ${order}` : ""}`,
+        }[locale],
+        lines: [
+          hi,
+          {
+            en: `We received your Order Request ${order}${currency ? ` (currency: ${currency})` : ""}. We are now confirming the availability of each item. No payment is required at this stage.`,
+            es: `Recibimos tu solicitud de pedido ${order}${currency ? ` (moneda: ${currency})` : ""}. Ahora estamos confirmando la disponibilidad de cada artículo. No se requiere pago en esta etapa.`,
+            pt: `Recebemos o seu pedido ${order}${currency ? ` (moeda: ${currency})` : ""}. Estamos confirmando a disponibilidade de cada item. Nenhum pagamento é necessário nesta etapa.`,
+          }[locale],
+          {
+            en: "Freight and import duties are informed after stock confirmation, before you pay. You will be notified as soon as your confirmed order is ready for review.",
+            es: "El flete y los aranceles se informan después de confirmar el stock, antes de que pagues. Te avisaremos en cuanto tu pedido confirmado esté listo para revisión.",
+            pt: "Frete e impostos de importação são informados após a confirmação de estoque, antes do pagamento. Avisaremos assim que o seu pedido confirmado estiver pronto para revisão.",
+          }[locale],
+          link ? { en: `Follow your order in My account: ${link}`, es: `Sigue tu pedido en Mi cuenta: ${link}`, pt: `Acompanhe o pedido em Minha conta: ${link}` }[locale] : "",
+        ],
+      };
+    }
+    case "contact_received":
+      return {
+        subject: { en: "We received your message", es: "Recibimos tu mensaje", pt: "Recebemos sua mensagem" }[locale],
+        lines: [
+          hi,
+          {
+            en: "Thank you for contacting The Dressing Project. We received your message and our team will reply as soon as possible.",
+            es: "Gracias por contactar a The Dressing Project. Recibimos tu mensaje y nuestro equipo responderá lo antes posible.",
+            pt: "Obrigado por entrar em contato com a The Dressing Project. Recebemos sua mensagem e nossa equipe responderá o quanto antes.",
+          }[locale],
+          payload.message ? `“${String(payload.message).slice(0, 600)}”` : "",
+        ],
+      };
+    case "contact_reply":
+      return {
+        subject: {
+          en: `Re: ${(payload.subject as string) || "your message"}${order ? ` — ${order}` : ""}`,
+          es: `Re: ${(payload.subject as string) || "tu mensaje"}${order ? ` — ${order}` : ""}`,
+          pt: `Re: ${(payload.subject as string) || "sua mensagem"}${order ? ` — ${order}` : ""}`,
+        }[locale],
+        lines: [
+          hi,
+          String(payload.reply ?? ""),
+          payload.original
+            ? { en: `Your message:\n${String(payload.original).slice(0, 800)}`, es: `Tu mensaje:\n${String(payload.original).slice(0, 800)}`, pt: `Sua mensagem:\n${String(payload.original).slice(0, 800)}` }[locale]
+            : "",
+        ],
+      };
+    case "internal_new_contact":
+      return {
+        subject: `[TDP] Novo contato: ${(payload.subject as string) || ""} — ${(payload.sender as string) || ""}`,
+        lines: [
+          `Novo contato recebido de ${(payload.sender as string) || "?"} <${(payload.email as string) || "?"}>.`,
+          `Assunto: ${(payload.subject as string) || ""}${order ? ` · Pedido: ${order}` : ""}`,
+          String(payload.message ?? "").slice(0, 1500),
+          payload.admin_url ? `Abrir no Admin: ${payload.admin_url}` : "",
+        ],
+      };
+    case "internal_new_order":
+      return {
+        subject: `[TDP] Novo Order Request ${order}${payload.buyer ? ` — ${payload.buyer}` : ""}`,
+        lines: [
+          `Novo Order Request ${order} de ${(payload.buyer as string) || "?"}${payload.currency ? ` (${payload.currency})` : ""}.`,
+          payload.total ? `Total de produtos: ${payload.total}` : "",
+          payload.above_stock ? "ATENÇÃO: há itens acima do estoque disponível (veja o Action Center)." : "",
+          payload.admin_url ? `Abrir no Admin: ${payload.admin_url}` : "",
+        ],
+      };
     default:
       return null;
   }
@@ -146,4 +220,40 @@ export async function flushEmailOutbox(limit = 25): Promise<FlushResult> {
     }
   }
   return result;
+}
+
+/** Team addresses that receive internal notices (env TEAM_NOTIFY_EMAILS, comma/semicolon separated). */
+export function teamNotifyEmails(): string[] {
+  return (process.env.TEAM_NOTIFY_EMAILS ?? "")
+    .split(/[,;\s]+/)
+    .map((e) => e.trim())
+    .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+}
+
+/** Public site origin used for links inside e-mails. */
+export function siteOrigin(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+}
+
+/** Queues one internal notice per team address (pt-BR). Never throws. */
+export async function queueTeamNotice(template: "internal_new_order" | "internal_new_contact", payload: Payload): Promise<void> {
+  try {
+    const to = teamNotifyEmails();
+    if (to.length === 0) return;
+    const supabase = createServiceRoleClient();
+    await supabase.from("email_outbox").insert(to.map((email) => ({ to_email: email, template, locale: "pt", payload })));
+  } catch {
+    /* a notice must never break the user's action */
+  }
+}
+
+/** Queues a buyer-facing e-mail. Never throws; returns false when it could not be queued. */
+export async function queueEmail(toEmail: string, template: string, locale: string | null | undefined, payload: Payload): Promise<boolean> {
+  try {
+    const supabase = createServiceRoleClient();
+    const { error } = await supabase.from("email_outbox").insert({ to_email: toEmail, template, locale: loc(locale), payload });
+    return !error;
+  } catch {
+    return false;
+  }
 }

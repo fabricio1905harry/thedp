@@ -94,7 +94,7 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
           {!isNacional && <CurrencySwitcher />}
-          {!isNacional && <CartLink />}
+          {!isNacional && <CartLink signedIn={Boolean(customer)} />}
           {!isNacional &&
             (customer ? (
               <div className="hidden md:flex items-center gap-3">

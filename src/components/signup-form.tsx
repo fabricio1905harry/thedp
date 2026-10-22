@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { signUpCustomer, type SignUpState } from "@/app/[locale]/cadastro/actions";
+import { CountrySelect } from "@/components/country-select";
 
 const initialState: SignUpState = { status: "idle" };
 const FIELD = "w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground";
@@ -16,6 +17,7 @@ export function SignupForm() {
   const [state, formAction, pending] = useActionState(signUpCustomer, initialState);
   const [sameAddress, setSameAddress] = useState(true);
   const [companyAddress, setCompanyAddress] = useState("");
+  const [country, setCountry] = useState("");
 
   if (state.status === "success") {
     return (
@@ -35,6 +37,10 @@ export function SignupForm() {
       </Field>
       <Field label={t("buyerName")} required>
         <input name="name" required className={FIELD} />
+      </Field>
+
+      <Field label={t("country")} required wide>
+        <CountrySelect name="country" value={country} onChange={setCountry} required className={FIELD} />
       </Field>
 
       <Field label={t("companyAddress")} required wide>

@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { adaptCtaForSignedIn } from "@/lib/cta-signed-in";
 import { getShopCatalog, pickBestSellers, pickBySlugs } from "@/lib/catalog";
 import { getCurrentCustomer, isApproved } from "@/lib/auth";
 import { getPublicBlocks } from "@/lib/cms";
@@ -29,7 +30,12 @@ export default async function HomePage() {
   const customer = await getCurrentCustomer();
   const approved = isApproved(customer);
 
-  const blocks = await getPublicBlocks("home", operationForSiteMode(siteMode), locale);
+  const tNav = await getTranslations("nav");
+  const blocks = adaptCtaForSignedIn(await getPublicBlocks("home", operationForSiteMode(siteMode), locale), {
+    signedIn: Boolean(customer),
+    approved,
+    myAccountLabel: tNav("minhaConta"),
+  });
   const needsCatalog = blocks.some((b) => b.key === "best_sellers" || b.key === "featured_products");
   const catalog = needsCatalog ? await getShopCatalog(approved) : [];
 
