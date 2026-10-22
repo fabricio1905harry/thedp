@@ -122,7 +122,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Clientes & Sistema",
     items: [
-      { href: "/admin/clientes", label: "Contas atacado", icon: CustomersIcon },
+      { href: "/admin/clientes", label: "Clientes", icon: CustomersIcon },
       { href: "/admin/whatsapp", label: "WhatsApp", icon: CustomersIcon },
       { href: "/admin/automacao", label: "Automação", icon: AutomationIcon },
     ],

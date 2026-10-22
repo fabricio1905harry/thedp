@@ -24,7 +24,7 @@ export default async function AdminOrderDetailPage({
   const supabase = await createClient();
 
   const ORDER_COLUMNS =
-    "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customer_id";
+    "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customer_id, canceled_at, cancel_reason, canceled_by_buyer";
 
   // Everything is requested at once (one round trip instead of several in a row).
   const [orderRes, itemsRes, paymentsRes, methodsRes, rulesRes, feeRes, eventsRes] = await Promise.all([
@@ -63,6 +63,9 @@ export default async function AdminOrderDetailPage({
     subtotal: number;
     total: number;
     customer_id: string;
+    canceled_at?: string | null;
+    cancel_reason?: string | null;
+    canceled_by_buyer?: boolean | null;
   };
   let order = orderRes.data as unknown as OrderRow | null;
   let customerRow = (orderRes.data as { customer?: unknown } | null)?.customer as
@@ -151,6 +154,17 @@ export default async function AdminOrderDetailPage({
           </div>
         </dl>
       </div>
+
+      {order.status === "canceled" && (
+        <div className="rounded-xl border border-red-200 bg-red-50 text-red-900 p-4 text-sm space-y-1">
+          <p className="font-semibold">
+            Pedido cancelado{order.canceled_by_buyer ? " pelo comprador" : ""}
+            {order.canceled_at ? ` em ${new Date(order.canceled_at).toLocaleString("pt-BR")}` : ""}
+          </p>
+          {order.cancel_reason && <p>Motivo: {order.cancel_reason}</p>}
+          <p className="text-xs">Nenhum pagamento foi recebido enquanto o pedido estava em solicitação.</p>
+        </div>
+      )}
 
       <OrderManagementPanel
         order={order as unknown as OrderSummary}

@@ -223,6 +223,16 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
   canceled: "cancelado",
 };
 
+/**
+ * Blur can fire while React is committing (the focused input is removed when
+ * the row re-renders after an add/substitute). Calling a Server Function in
+ * that moment throws React #441 ("Server Functions cannot be called during
+ * initial render"), so the call is deferred to the next task.
+ */
+function deferRun(fn: () => void) {
+  setTimeout(fn, 0);
+}
+
 function ItemsTable({
   order,
   items,
@@ -323,7 +333,7 @@ function ItemRow({
             disabled={pending}
             onBlur={(e) => {
               const next = Number(e.target.value);
-              if (next !== item.qty) run(() => setOrderItemQty(order.id, item.id, next));
+              if (next !== item.qty) deferRun(() => run(() => setOrderItemQty(order.id, item.id, next)));
             }}
             className="w-14 border border-border px-1 py-0.5"
           />
@@ -342,7 +352,7 @@ function ItemRow({
             disabled={pending}
             onBlur={(e) => {
               const next = Number(e.target.value);
-              if (Number.isFinite(next) && next !== Number(item.unit_price)) run(() => setOrderItemPrice(order.id, item.id, next));
+              if (Number.isFinite(next) && next !== Number(item.unit_price)) deferRun(() => run(() => setOrderItemPrice(order.id, item.id, next)));
             }}
             className="w-24 border border-border px-1 py-0.5"
           />
@@ -411,6 +421,7 @@ function AddItemForm({
   const [qty, setQty] = useState(1);
   const [price, setPrice] = useState("");
   const [substitutes, setSubstitutes] = useState("");
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   async function search(value: string) {
     setQuery(value);
@@ -421,8 +432,11 @@ function AddItemForm({
     }
     setSearching(true);
     try {
-      setResults(await searchVariantsForOrder(order.id, value));
+      const res = await searchVariantsForOrder(order.id, value);
+      setSearchError(res.error ?? null);
+      setResults(res.results);
     } catch {
+      setSearchError("Falha na busca. Tente novamente.");
       setResults([]);
     } finally {
       setSearching(false);
@@ -454,6 +468,7 @@ function AddItemForm({
       }}
     >
       <p className="font-medium">Adicionar peça / substituir linha</p>
+      {searchError && <p className="text-red-600">{searchError}</p>}
       <div className="relative">
         <input
           value={query}

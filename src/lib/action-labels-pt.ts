@@ -15,6 +15,7 @@ const ACTION_TYPE_LABELS_PT: Record<string, string> = {
   payment_coordination_required: "Coordenação de pagamento necessária",
   expired_unpaid_order: "Pedidos expirados não pagos / follow-up necessário",
   contact_message: "Mensagens de contato",
+  order_above_stock: "Pedido acima do estoque disponível",
   restock_opportunity: "Oportunidades de reposição",
   reserve_actions: "Ações de Reserve",
   ready_for_fulfillment: "Prontos para expedição",
@@ -40,6 +41,7 @@ export function actionTypeLabelPt(code: string, fallback: string): string {
 
 const STATIC_TITLES_PT: Record<string, string> = {
   "New Order Request": "Nova Order Request",
+  "Order above available stock": "Pedido acima do estoque disponível",
   "Confirm stock with supplier": "Confirmar estoque com o fornecedor",
   "Waiting buyer decision / substitution": "Aguardando decisão / substituição do comprador",
   "PAYMENT COORDINATION REQUIRED — stock could not be held":

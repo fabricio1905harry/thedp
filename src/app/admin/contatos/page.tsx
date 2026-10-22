@@ -14,7 +14,7 @@ export default async function AdminContactsPage({ searchParams }: { searchParams
   const supabase = await createClient();
   let query = supabase
     .from("contact_messages")
-    .select("id, created_at, name, company, email, phone, country, subject, message, locale, status, internal_note, customer_id")
+    .select("id, created_at, name, company, email, phone, country, subject, message, locale, status, internal_note, customer_id, order_id, order_number, replied_at, reply_text")
     .order("created_at", { ascending: false })
     .limit(300);
   if (status) query = query.eq("status", status);
