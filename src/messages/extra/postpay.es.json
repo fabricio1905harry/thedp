@@ -1,1 +1,36 @@
-{}
+{
+  "postpay": {
+    "recoverRestoring": "Restaurando tu carrito…",
+    "recoverUnavailableTitle": "Este enlace de carrito ya no está disponible",
+    "recoverUnavailableText": "El carrito ya fue enviado o modificado. Puedes iniciar una nueva selección desde la tienda.",
+    "recoverGoCart": "Ir a mi carrito",
+    "reserveTitle": "Reserve for Later Delivery",
+    "reserveStage_reserved": "Reservado",
+    "reserveStage_balance_due": "Saldo pendiente",
+    "reserveStage_ready_to_ship": "Listo para enviar",
+    "reserveStage_overdue": "Vencido",
+    "reserveStage_expired": "Expirado",
+    "reserveStage_completed": "Completado",
+    "reserveDeposit": "Depósito pagado",
+    "reserveBalance": "Saldo",
+    "reservePaid": "Pagado en su totalidad",
+    "reserveDesiredDelivery": "Fecha de entrega deseada",
+    "reserveBalanceDue": "Vencimiento del saldo",
+    "reserveNotSet": "Por confirmar",
+    "reserveOverdueNote": "El saldo está vencido. Contáctanos para coordinar el pago.",
+    "reserveExpiredNote": "El plazo máximo de reserva terminó. Contáctanos para decidir los próximos pasos.",
+    "reserveWindowUntil": "Tu reserva puede mantenerse hasta el {date}.",
+    "reserveShipNote": "Tu pedido se envía solo después de pagar el saldo en su totalidad.",
+    "trackingTitle": "Seguimiento del envío",
+    "trackingNumber": "Número de seguimiento",
+    "trackParcel": "Seguir tu paquete",
+    "noEvents": "Aún no hay eventos de seguimiento.",
+    "shipStatus_CREATED": "Envío creado",
+    "shipStatus_PICKUP_REQUESTED": "Recogida solicitada",
+    "shipStatus_IN_TRANSIT": "En tránsito",
+    "shipStatus_DELIVERED": "Entregado",
+    "shipStatus_EXCEPTION": "Incidencia en la entrega",
+    "invoiceTitle": "Factura comercial",
+    "invoiceDownload": "Descargar PDF"
+  }
+}

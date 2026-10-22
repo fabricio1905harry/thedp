@@ -105,6 +105,10 @@ create policy shipment_events_owner_read on shipment_events for select using (
 );
 drop policy if exists shipment_documents_staff on shipment_documents;
 create policy shipment_documents_staff on shipment_documents for all using (is_staff()) with check (is_staff());
+drop policy if exists shipment_documents_owner_read on shipment_documents;
+create policy shipment_documents_owner_read on shipment_documents for select using (
+  visible_to_buyer and exists (select 1 from orders o where o.id = shipment_documents.order_id and o.customer_id = auth.uid())
+);
 drop policy if exists order_prep_items_staff on order_prep_items;
 create policy order_prep_items_staff on order_prep_items for all using (is_staff()) with check (is_staff());
 

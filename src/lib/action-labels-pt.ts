@@ -31,6 +31,9 @@ const ACTION_TYPE_LABELS_PT: Record<string, string> = {
   shipping_data_required: "Dados de envio necessários",
   images_to_review: "Imagens para revisar",
   content_to_review: "Conteúdo para revisar",
+  abandoned_carts: "Carrinhos abandonados",
+  reserve_balance_due: "Reserve: saldo a vencer",
+  reserve_overdue: "Reserve: atrasado / expirado",
 };
 
 /** pt-BR label for an action type code; falls back to the stored label. */
@@ -79,6 +82,12 @@ const DYNAMIC_TITLES_PT: [RegExp, (...m: string[]) => string][] = [
   [/^Sync failed: (\d+) item\(s\) with errors$/, (_, n) => `Falha na sincronização: ${n} item(ns) com erro`],
   [/^New (.+) registration$/, (_, t) => `Novo cadastro ${t}`],
   [/^FX update failed: ([\s\S]*)$/, (_, msg) => `Falha na atualização do câmbio: ${msg}`],
+  [/^(\d+) abandoned cart\(s\)$/, (_, n) => `${n} carrinho(s) abandonado(s)`],
+  [/^Reserve balance due on (.+)$/, (_, d) => `Saldo do Reserve vence em ${d}`],
+  [/^RESERVE OVERDUE since (.+) — contact the buyer$/, (_, d) => `RESERVE ATRASADO desde ${d} — contatar o comprador`],
+  [/^RESERVE EXPIRED \(max (\d+) days\) — decide refund \/ extension$/, (_, n) => `RESERVE EXPIRADO (máx. ${n} dias) — decidir reembolso / prorrogação`],
+  [/^Shipment created — request DHL pickup$/, () => "Envio criado — solicitar coleta DHL"],
+  [/^DHL EXCEPTION on shipment (.*)$/, (_, rest) => `EXCEÇÃO DHL no envio ${rest}`],
 ];
 
 /** pt-BR version of an action item title; unknown titles are returned unchanged. */

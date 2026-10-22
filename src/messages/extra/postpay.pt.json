@@ -1,1 +1,36 @@
-{}
+{
+  "postpay": {
+    "recoverRestoring": "Restaurando seu carrinho…",
+    "recoverUnavailableTitle": "Este link de carrinho não está mais disponível",
+    "recoverUnavailableText": "O carrinho já foi enviado ou alterado. Você pode iniciar uma nova seleção na loja.",
+    "recoverGoCart": "Ir para o carrinho",
+    "reserveTitle": "Reserve for Later Delivery",
+    "reserveStage_reserved": "Reservado",
+    "reserveStage_balance_due": "Saldo a pagar",
+    "reserveStage_ready_to_ship": "Pronto para envio",
+    "reserveStage_overdue": "Em atraso",
+    "reserveStage_expired": "Expirado",
+    "reserveStage_completed": "Concluído",
+    "reserveDeposit": "Depósito pago",
+    "reserveBalance": "Saldo",
+    "reservePaid": "Pago integralmente",
+    "reserveDesiredDelivery": "Data de entrega desejada",
+    "reserveBalanceDue": "Vencimento do saldo",
+    "reserveNotSet": "A confirmar",
+    "reserveOverdueNote": "O saldo está em atraso. Entre em contato para combinarmos o pagamento.",
+    "reserveExpiredNote": "O prazo máximo da reserva terminou. Entre em contato para decidirmos os próximos passos.",
+    "reserveWindowUntil": "Sua reserva pode ser mantida até {date}.",
+    "reserveShipNote": "Seu pedido só é enviado depois do pagamento integral do saldo.",
+    "trackingTitle": "Rastreamento do envio",
+    "trackingNumber": "Código de rastreio",
+    "trackParcel": "Rastrear encomenda",
+    "noEvents": "Ainda não há eventos de rastreamento.",
+    "shipStatus_CREATED": "Envio criado",
+    "shipStatus_PICKUP_REQUESTED": "Coleta solicitada",
+    "shipStatus_IN_TRANSIT": "Em trânsito",
+    "shipStatus_DELIVERED": "Entregue",
+    "shipStatus_EXCEPTION": "Ocorrência na entrega",
+    "invoiceTitle": "Commercial invoice",
+    "invoiceDownload": "Baixar PDF"
+  }
+}
