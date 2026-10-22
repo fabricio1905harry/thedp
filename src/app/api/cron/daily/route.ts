@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { isApiBlocked } from "@/lib/app-target";
-import { updateFxRatesNow } from "@/lib/fx-auto";
-import { getSetting } from "@/lib/settings";
+import { fxRunIsDue, getFxSettings, updateFxRatesNow } from "@/lib/fx-auto";
 
 /**
- * Daily job (vercel.json cron): automatic FX update. Protected by
+ * Daily job (vercel.json cron): automatic FX update, respecting the
+ * frequency (daily/weekly) and source chosen in Admin → Câmbio. Protected by
  * CRON_SECRET (Vercel sends it as a Bearer token).
  */
 export async function GET(request: Request) {
@@ -15,10 +15,9 @@ export async function GET(request: Request) {
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const fxAuto = await getSetting<{ enabled?: boolean }>("fx_auto");
-  if (fxAuto && fxAuto.enabled === false) {
-    return NextResponse.json({ fx: "disabled" });
-  }
+  const settings = await getFxSettings();
+  if (!settings.enabled) return NextResponse.json({ fx: "disabled" });
+  if (!fxRunIsDue(settings)) return NextResponse.json({ fx: "not due", frequency: settings.frequency });
   const fx = await updateFxRatesNow("cron");
   return NextResponse.json({ fx });
 }
