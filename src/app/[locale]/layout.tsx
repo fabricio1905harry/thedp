@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
+import { bodyFont as body, displayFont as display } from "@/lib/fonts";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { headers } from "next/headers";
@@ -14,18 +14,6 @@ import { CartSync } from "@/components/cart-sync";
 import { WhatsAppFloatingButton, WhatsAppProvider } from "@/components/whatsapp-button";
 import { getWhatsAppSettings } from "@/lib/settings";
 import "../globals.css";
-
-const display = Cormorant_Garamond({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const body = Plus_Jakarta_Sans({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 export const metadata: Metadata = {
   title: "The Dressing Project",

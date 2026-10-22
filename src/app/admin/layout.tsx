@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Inter } from "next/font/google";
+import { adminFont as body } from "@/lib/fonts";
 import { getCurrentStaff } from "@/lib/admin-auth";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { NavProgress } from "@/components/nav-progress";
@@ -15,8 +15,6 @@ export const metadata: Metadata = {
   title: "The Dressing Project — Admin",
   robots: { index: false, follow: false },
 };
-
-const body = Inter({ variable: "--font-body", subsets: ["latin"] });
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const staff = await getCurrentStaff();
