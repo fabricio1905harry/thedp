@@ -3,6 +3,7 @@ import { hasLocale } from "next-intl";
 import { routing } from "./routing";
 import { applyOverrides } from "@/lib/ui-texts";
 import { getUiOverrides } from "@/lib/ui-texts-server";
+import { deepMerge, loadExtraMessages } from "./extra-messages";
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
@@ -10,7 +11,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     ? requested
     : routing.defaultLocale;
 
-  const base = (await import(`../messages/${locale}.json`)).default;
+  const base = deepMerge((await import(`../messages/${locale}.json`)).default, await loadExtraMessages(locale));
   const overrides = await getUiOverrides();
 
   return {

@@ -152,7 +152,7 @@ function NavLink({
     <Link
       href={item.href}
       onClick={onClick}
-      className={`group relative flex items-center gap-2 text-sm py-2 px-2 rounded-none transition-all duration-200 ${
+      className={`group relative flex items-center gap-2 text-sm py-2 px-2 transition-all duration-200 ${
         active ? "bg-surface font-medium" : "hover:bg-surface hover:translate-x-0.5"
       }`}
     >
