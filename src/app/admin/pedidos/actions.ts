@@ -85,6 +85,7 @@ export interface OrderChargesInput {
   otherChargesAmount: number;
   deliveryDays: number | null;
   note: string;
+  dutiesMode?: "prepaid" | "upon_import" | "customer_choice";
 }
 
 /**
@@ -111,6 +112,7 @@ async function setOrderChargesImpl(orderId: string, input: OrderChargesInput) {
       other_dhl_amount: n(input.otherDhlAmount),
       duties_taxes_amount: n(input.dutiesTaxesAmount),
       other_charges_amount: n(input.otherChargesAmount),
+      duties_mode: input.dutiesMode ?? null,
       delivery_days: input.deliveryDays && input.deliveryDays > 0 ? Math.round(input.deliveryDays) : null,
       charges_note: input.note.trim() || null,
       charges_informed_at: new Date().toISOString(),

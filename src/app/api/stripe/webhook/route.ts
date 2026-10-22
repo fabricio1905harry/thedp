@@ -8,6 +8,8 @@ import { ORDER_CHARGE_COLUMNS } from "@/lib/payments";
  * Stripe webhook (site deployment). Configure the endpoint
  * https://<site>/api/stripe/webhook with the events:
  *   checkout.session.completed, checkout.session.async_payment_succeeded,
+ *   checkout.session.expired, checkout.session.async_payment_failed,
+ *   payment_intent.payment_failed,
  *   charge.refunded, charge.dispute.created
  * and put its signing secret in STRIPE_WEBHOOK_SECRET.
  *
@@ -73,6 +75,46 @@ export async function POST(request: Request) {
           order_id: order.id,
           event_type: "payment_received",
           summary: `Card payment received via Stripe (${kind}): ${(Number(obj.amount_total ?? 0) / 100).toFixed(2)} ${currency}`,
+          details: { stripe_event: event.id },
+        });
+      }
+    } else if (
+      event.type === "checkout.session.expired" ||
+      event.type === "checkout.session.async_payment_failed" ||
+      event.type === "payment_intent.payment_failed"
+    ) {
+      // Failed / expired attempt: logged for the staff; the buyer retries from the order page.
+      const metadata = (obj.metadata ?? {}) as Record<string, string>;
+      const orderId = metadata.order_id ?? (obj.client_reference_id as string | undefined);
+      if (!orderId) return NextResponse.json({ received: true, skipped: "no order" });
+      const { data: order } = await supabase.from("orders").select("id, currency").eq("id", orderId).maybeSingle();
+      if (!order) return NextResponse.json({ received: true, skipped: "order not found" });
+
+      const isIntent = event.type === "payment_intent.payment_failed";
+      const status = event.type === "checkout.session.expired" ? "expired" : "failed";
+      const lastError = (obj.last_payment_error ?? {}) as { message?: string };
+      const amountMinor = Number((isIntent ? obj.amount : obj.amount_total) ?? 0);
+      const message = isIntent
+        ? lastError.message ?? "Pagamento recusado pelo emissor do cartão"
+        : status === "expired"
+          ? "O link de pagamento do Stripe expirou sem pagamento"
+          : "Pagamento assíncrono falhou";
+
+      const { error } = await supabase.from("payment_attempts").insert({
+        order_id: order.id,
+        status,
+        source: "stripe_webhook",
+        stripe_ref: isIntent ? `${obj.id}:${obj.latest_charge ?? event.id}` : String(obj.id),
+        amount: amountMinor > 0 ? amountMinor / 100 : null,
+        currency: String(obj.currency ?? order.currency).toUpperCase(),
+        message,
+      });
+      if (error && error.code !== "23505") throw new Error(error.message);
+      if (!error) {
+        await supabase.from("order_events").insert({
+          order_id: order.id,
+          event_type: "payment_failed",
+          summary: `Tentativa de pagamento com cartão ${status === "expired" ? "expirou" : "falhou"}: ${message}`,
           details: { stripe_event: event.id },
         });
       }

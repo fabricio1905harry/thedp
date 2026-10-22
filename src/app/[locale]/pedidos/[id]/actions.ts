@@ -54,6 +54,9 @@ export async function startStripeCheckout(orderId: string, locale: string): Prom
     const open =
       (order.status === "confirmed_awaiting_payment" && order.payment_released_at && holdValid) ||
       order.status === "reserved";
+    if (order.status === "confirmed_awaiting_payment" && !holdValid) {
+      return { error: "The inventory reservation for this order has expired, so payment can no longer be started. Please contact us to reconfirm availability." };
+    }
     if (!open || !order.charges_informed_at) return { error: "This order is not open for payment." };
 
     const { data: methods } = await supabase.rpc("available_payment_methods", { p_order_id: orderId });
@@ -90,7 +93,7 @@ export async function startStripeCheckout(orderId: string, locale: string): Prom
       amount: due.total,
       productName: `The Dressing Project — order ${ref}${due.kind === "reserve_deposit" ? " (reserve deposit)" : due.kind === "balance" ? " (balance)" : ""}`,
       successUrl: `${orderUrl}?paid=1`,
-      cancelUrl: orderUrl,
+      cancelUrl: `${orderUrl}?payment=canceled`,
       customerEmail: customer.email,
       clientReferenceId: order.id,
       metadata,

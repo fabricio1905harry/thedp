@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentStaff } from "@/lib/admin-auth";
 import type { FxQuote } from "@/lib/fx";
-import { updateFxRatesNow } from "@/lib/fx-auto";
+import { getFxSettings, updateFxRatesNow } from "@/lib/fx-auto";
 
 export interface SetFxRateState {
   status: "idle" | "success" | "error";
@@ -59,4 +59,36 @@ export async function updateFxNow(): Promise<SetFxRateState> {
   return result.ok
     ? { status: "success", message: `USD ${result.rates.USD} · EUR ${result.rates.EUR}` }
     : { status: "error", message: result.error };
+}
+
+/** Source (BCE / PTAX) and frequency (daily / weekly) of the automatic update. */
+export async function saveFxSettings(input: {
+  enabled: boolean;
+  source: "ecb" | "ptax";
+  frequency: "daily" | "weekly";
+}): Promise<{ error?: string }> {
+  try {
+    const staff = await getCurrentStaff();
+    if (!staff) return { error: "Não autorizado" };
+    if (!["ecb", "ptax"].includes(input.source) || !["daily", "weekly"].includes(input.frequency)) {
+      return { error: "Valores inválidos." };
+    }
+    const current = await getFxSettings();
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("app_settings")
+      .upsert({
+        key: "fx_auto",
+        value: { ...current, enabled: input.enabled, source: input.source, frequency: input.frequency },
+        updated_at: new Date().toISOString(),
+        updated_by: staff.id,
+      })
+      .select("key");
+    if (error) return { error: error.message };
+    if (!data?.length) return { error: "Configuração não salva (sem permissão?)." };
+    revalidatePath("/admin/cambio");
+    return {};
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Falha ao salvar." };
+  }
 }

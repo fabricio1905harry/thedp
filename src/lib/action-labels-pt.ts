@@ -27,6 +27,7 @@ const ACTION_TYPE_LABELS_PT: Record<string, string> = {
   margin_below_target: "Margem abaixo da meta",
   sync_issues: "Problemas de sincronização",
   fx_update_failed: "Falha na atualização do câmbio",
+  volume_price_below_margin: "VOLUME PRICE ABAIXO DA MARGEM-ALVO",
   products_to_review: "Produtos para revisar",
   category_review_required: "Revisão de categoria necessária",
   shipping_data_required: "Dados de envio necessários",
@@ -80,6 +81,10 @@ const DYNAMIC_TITLES_PT: [RegExp, (...m: string[]) => string][] = [
   ],
   [/^Sync failed: (\d+) item\(s\) with errors$/, (_, n) => `Falha na sincronização: ${n} item(ns) com erro`],
   [/^New (.+) registration$/, (_, t) => `Novo cadastro ${t}`],
+  [
+    /^Volume tier "(.+)": (\S+)% off → margin (\S+)% \(target (\S+)%\)$/,
+    (_, name, d, m, t) => `Faixa de volume "${name}": ${d}% de desconto → margem ${m}% (meta ${t}%)`,
+  ],
   [/^FX update failed: ([\s\S]*)$/, (_, msg) => `Falha na atualização do câmbio: ${msg}`],
 ];
 

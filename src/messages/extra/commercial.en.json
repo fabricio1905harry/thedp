@@ -1,1 +1,68 @@
-{}
+{
+  "commercial": {
+    "proof": {
+      "title": "Upload your transfer receipt",
+      "ourInstruction": "Important: when sending the transfer, choose the charge option \"OUR\" (not SHA or BEN), so that all bank fees are paid by the sender and we receive the full amount.",
+      "help": "PDF, JPG or PNG, up to 8 MB. Your payment is confirmed manually by our team after we verify the receipt.",
+      "choose": "Choose the receipt file",
+      "submit": "Send receipt",
+      "replace": "Send a different receipt",
+      "uploading": "Sending…",
+      "success": "Receipt received. Our team will verify it and confirm your payment — confirmation is never automatic.",
+      "awaiting": "Your receipt is awaiting verification by our team.",
+      "errSignIn": "Please sign in again.",
+      "errNoFile": "Choose a file first.",
+      "errTooBig": "The file is larger than 8 MB.",
+      "errType": "Only PDF, JPG or PNG files are accepted.",
+      "errOrder": "Order not found.",
+      "errClosed": "This order is not open for payment.",
+      "errMethod": "Bank transfer is not enabled for this order.",
+      "errUpload": "Could not send the receipt. Please try again or contact us.",
+      "errNothingDue": "Nothing is due on this order."
+    },
+    "payFailed": {
+      "title": "Payment failed — try again",
+      "body": "Your card payment was not completed and you have not been charged. You can try again now, or pay by bank transfer.",
+      "retry": "Try again"
+    },
+    "compare": {
+      "title": "Original Request × Confirmed Order",
+      "differences": "{count, plural, one {# difference} other {# differences}} between what you requested and what we confirmed.",
+      "noDifferences": "Your confirmed order matches your original request.",
+      "item": "Item",
+      "original": "Original Request",
+      "confirmed": "Confirmed Order",
+      "removed": "Removed from the order",
+      "unavailable": "Unavailable",
+      "changed": "Changed",
+      "added": "Added by our team",
+      "subtotal": "Products",
+      "freight": "Freight",
+      "duties": "Duties & taxes",
+      "notIncluded": "not included",
+      "afterConfirmation": "Informed after stock confirmation",
+      "total": "Order total",
+      "legendChanged": "Quantity or price changed",
+      "legendRemoved": "Removed / unavailable",
+      "legendAdded": "Added by our team"
+    },
+    "minimum": {
+      "title": "Minimum order",
+      "addUnits": "Add {missing} more {missing, plural, one {piece} other {pieces}} to place your order",
+      "addUnitsOf": "Add {missing} more {label} to place your order",
+      "addAmount": "Add {missing} more to reach the {minimum} minimum and place your order",
+      "addAmountOf": "Add {missing} more of {label} to place your order (minimum {minimum})"
+    },
+    "volume": {
+      "applied": "Volume pricing discount"
+    },
+    "duties": {
+      "label": "Duties & taxes:",
+      "mode": {
+        "prepaid": "prepaid with your order",
+        "upon_import": "paid upon import",
+        "customer_choice": "your choice (prepaid or paid upon import)"
+      }
+    }
+  }
+}
