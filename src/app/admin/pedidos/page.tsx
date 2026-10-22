@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { StatusBadge } from "@/components/status-badge";
+import { ClickableRow } from "@/components/clickable-row";
 import { createClient } from "@/lib/supabase/server";
 import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 
@@ -34,7 +36,7 @@ export default async function AdminPedidosPage() {
       ) : orders.length === 0 ? (
         <p className="text-sm text-muted">Nenhum pedido ainda.</p>
       ) : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-border bg-white"><table className="w-full text-sm [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3">
           <thead>
             <tr className="text-left text-xs text-muted uppercase border-b border-border">
               <th className="py-2 pr-4">Pedido</th>
@@ -47,27 +49,27 @@ export default async function AdminPedidosPage() {
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o.id} className="border-b border-border">
+              <ClickableRow key={o.id} href={`/admin/pedidos/${o.id}`}>
                 <td className="py-2 pr-4">
                   <Link href={`/admin/pedidos/${o.id}`} className="underline hover:text-accent">
                     {o.order_number ?? o.id.slice(0, 8)}
                   </Link>
                 </td>
-                <td className="py-2 pr-4">{ORDER_STATUS_LABELS[o.status] ?? o.status}</td>
+                <td className="py-2 pr-4"><StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status] ?? o.status} /></td>
                 <td className="py-2 pr-4">{o.shipping_cost}</td>
                 <td className="py-2 pr-4">{o.duties_estimate}</td>
                 <td className="py-2 pr-4">
                   {o.total} {o.currency}
                 </td>
                 <td className="py-2 text-right">
-                  <Link href={`/admin/pedidos/${o.id}`} className="inline-block border border-foreground px-3 py-1 text-[11px] uppercase tracking-wider hover:bg-foreground hover:text-background">
+                  <Link href={`/admin/pedidos/${o.id}`} className="inline-block rounded-lg bg-foreground text-background px-3.5 py-1.5 text-xs font-medium hover:opacity-85">
                     Abrir / editar
                   </Link>
                 </td>
-              </tr>
+              </ClickableRow>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );

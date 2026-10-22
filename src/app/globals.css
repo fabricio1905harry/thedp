@@ -268,12 +268,19 @@ details[open] > :not(summary) {
   animation: pulseSoft 1.4s ease-in-out infinite;
 }
 
-/* ---- Admin look & feel ---- */
+/* ---- Admin look & feel (friendly, soft) ---- */
 .admin-shell {
-  background: #f7f7f6;
+  --admin-bg: #f5f6f8;
+  --admin-card: #ffffff;
+  --admin-line: #e8eaee;
+  --admin-ink: #1f2430;
+  --admin-soft: #eef0f4;
+  background: var(--admin-bg);
+  color: var(--admin-ink);
 }
 .admin-shell > aside {
-  background: #fff;
+  background: var(--admin-card);
+  border-right: 1px solid var(--admin-line);
   position: sticky;
   top: 0;
   align-self: flex-start;
@@ -282,50 +289,153 @@ details[open] > :not(summary) {
 }
 .admin-shell main {
   min-width: 0;
+  padding: 2rem 2.25rem;
+}
+@media (max-width: 767px) {
+  .admin-shell main { padding: 1.25rem 1rem; }
 }
 .admin-shell main h1 {
-  letter-spacing: -0.01em;
-}
-.admin-shell main section.border,
-.admin-shell main div.border.p-3,
-.admin-shell main div.border.p-4 {
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  border-radius: 2px;
-}
-.admin-shell main table {
-  background: #fff;
-}
-.admin-shell main thead th {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted, #6b6b6b);
+  letter-spacing: -0.015em;
   font-weight: 600;
+}
+
+/* sections become soft cards */
+.admin-shell main section {
+  background: var(--admin-card);
+  border: 1px solid var(--admin-line);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 2px rgba(31, 36, 48, 0.04);
+}
+.admin-shell main section section {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.admin-shell main section + section { margin-top: 0; }
+
+/* headings: no shouting */
+.admin-shell main h2,
+.admin-shell main h2.uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--admin-ink);
+}
+.admin-shell main h2.font-serif { font-size: 1.25rem; }
+
+/* rounded boxes and fields */
+.admin-shell main .border,
+.admin-shell main .border-border {
+  border-color: var(--admin-line);
+}
+.admin-shell main div.border,
+.admin-shell main form.border,
+.admin-shell main aside.border,
+.admin-shell main details {
+  border-radius: 14px;
+}
+.admin-shell main div.border:not(section *):not(.overflow-x-auto) {
+  background: var(--admin-card);
 }
 .admin-shell input:not([type="checkbox"]):not([type="radio"]),
 .admin-shell select,
 .admin-shell textarea {
   background: #fff;
+  border: 1px solid #d9dce3;
+  border-radius: 10px;
+  padding: 0.45rem 0.7rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.admin-shell input:focus-visible,
-.admin-shell select:focus-visible,
-.admin-shell textarea:focus-visible,
-.admin-shell button:focus-visible,
-.admin-shell a:focus-visible {
-  outline: 2px solid #111;
-  outline-offset: 1px;
+.admin-shell input[class*="w-14"],
+.admin-shell input[class*="w-16"],
+.admin-shell input[class*="w-20"],
+.admin-shell input[class*="w-24"] {
+  padding: 0.35rem 0.5rem;
 }
-.admin-shell button:not(:disabled) {
-  cursor: pointer;
+.admin-shell input:focus,
+.admin-shell select:focus,
+.admin-shell textarea:focus {
+  outline: none;
+  border-color: #6b7280;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.18);
 }
-.admin-shell button:disabled {
-  cursor: not-allowed;
+
+/* buttons */
+.admin-shell main button {
+  border-radius: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.admin-shell main button.border,
+.admin-shell main button[class*="border-foreground"] {
+  background: #fff;
+  border: 1px solid #d3d7df;
+  color: var(--admin-ink);
+  padding: 0.4rem 0.8rem;
+}
+.admin-shell main button.border:not(:disabled):hover,
+.admin-shell main button[class*="border-foreground"]:not(:disabled):hover {
+  background: var(--admin-soft);
+  border-color: #b9bfcb;
 }
 .admin-shell .btn-primary,
-.admin-shell button.bg-foreground {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+.admin-shell main button.bg-foreground {
+  background: #1f2430;
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
 }
-.admin-shell button.bg-foreground:not(:disabled):hover {
-  opacity: 0.88;
+.admin-shell .btn-primary:not(:disabled):hover,
+.admin-shell main button.bg-foreground:not(:disabled):hover {
+  background: #3a4151;
 }
+.admin-shell main button:disabled { opacity: 0.5; cursor: not-allowed; }
+.admin-shell main button:not(:disabled) { cursor: pointer; }
+
+/* destructive / link-style actions: softer red */
+.admin-shell .text-red-700,
+.admin-shell .text-red-600 { color: #b4474b; }
+.admin-shell main button.underline,
+.admin-shell main a.underline { text-underline-offset: 3px; }
+
+/* messages */
+.admin-shell main p.text-red-600.border,
+.admin-shell main p[class*="border-red"] {
+  background: #fdf2f2;
+  border: 1px solid #f3c9c9;
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  color: #9b3a3e;
+}
+
+/* tables */
+.admin-shell main table { background: transparent; }
+.admin-shell main thead th {
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #6b7280;
+  font-weight: 500;
+}
+.admin-shell main tbody tr { transition: background-color 0.15s ease; }
+.admin-shell main tbody tr:hover { background-color: #f7f8fa; }
+.admin-shell main table tr { border-color: var(--admin-line); }
+.admin-shell main table .border-b { border-color: var(--admin-line); }
+.admin-shell main td, .admin-shell main th { vertical-align: middle; }
+
+/* focus + sidebar */
+.admin-shell a:focus-visible,
+.admin-shell button:focus-visible {
+  outline: 2px solid #6b7280;
+  outline-offset: 2px;
+}
+.admin-shell > aside a { border-radius: 10px; }
+.admin-shell > aside a.bg-surface { background: var(--admin-soft); }
+.admin-shell > aside a.hover\:bg-surface:hover { background: var(--admin-soft); }
