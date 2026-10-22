@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { findTemplate, loadTemplateIndex, renderTemplateRow } from "@/lib/notification-templates";
 
 /**
  * Transactional e-mail. Rows queue in email_outbox (status queued) and are
@@ -96,53 +97,124 @@ export interface FlushResult {
   configured: boolean;
   sent: number;
   failed: number;
+  held?: number;
   firstError?: string;
 }
 
-/** Sends queued rows (oldest first). Failed rows are marked and retried on later flushes (up to 5 attempts). */
+/** One e-mail through Resend. Returns an error message instead of throwing. Never pretends success. */
+export async function sendEmailNow(input: { to: string; subject: string; lines: string[]; locale: string }): Promise<{ error?: string }> {
+  if (!emailConfigured()) return { error: "Provedor de e-mail não configurado (RESEND_API_KEY e EMAIL_FROM)." };
+  const l = loc(input.locale);
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM,
+        to: [input.to],
+        reply_to: process.env.EMAIL_REPLY_TO || undefined,
+        subject: input.subject,
+        html: toHtml(input.lines, l),
+        text: input.lines.filter(Boolean).join("\n\n"),
+      }),
+    });
+    if (!res.ok) return { error: `Resend ${res.status}: ${(await res.text()).slice(0, 300)}` };
+    return {};
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "send failed" };
+  }
+}
+
+/**
+ * Sends queued rows (oldest first). Failed rows are marked and retried on later flushes (up to 5 attempts).
+ * Template lookup: approved database template (Admin → Notificações) → template in code → database draft
+ * (only when approval is not required). A row whose only template is an unapproved draft stays queued.
+ */
 export async function flushEmailOutbox(limit = 25): Promise<FlushResult> {
-  const result: FlushResult = { configured: emailConfigured(), sent: 0, failed: 0 };
+  const result: FlushResult = { configured: emailConfigured(), sent: 0, failed: 0, held: 0 };
   if (!result.configured) return result;
 
   const supabase = createServiceRoleClient();
-  const { data: rows } = await supabase
-    .from("email_outbox")
-    .select("id, to_email, template, locale, payload, status, error")
-    .in("status", ["queued", "failed"])
-    .order("created_at")
-    .limit(limit);
+  const [{ data: rows }, templates] = await Promise.all([
+    supabase
+      .from("email_outbox")
+      .select("id, to_email, template, locale, payload, status, error")
+      .in("status", ["queued", "failed"])
+      .order("created_at")
+      .limit(limit * 4),
+    loadTemplateIndex(supabase),
+  ]);
+
+  async function logOutcome(outboxId: string, row: { to_email: string; template: string; locale: string; payload: unknown }, status: "sent" | "failed" | "queued", error: string | null, rendered?: Rendered) {
+    const patch = {
+      status,
+      error,
+      provider: "resend",
+      subject: rendered?.subject ?? null,
+      body: rendered ? rendered.lines.filter(Boolean).join("\n\n") : null,
+      sent_at: status === "sent" ? new Date().toISOString() : null,
+    };
+    const { data } = await supabase.from("notification_log").update(patch).eq("email_outbox_id", outboxId).select("id");
+    if (!data || data.length === 0) {
+      // queued by code that predates the notifications engine: record it now
+      const p = (row.payload ?? {}) as Payload;
+      await supabase.from("notification_log").insert({
+        event: row.template,
+        channel: "email",
+        locale: loc(row.locale),
+        to_address: row.to_email,
+        order_id: typeof p.order_id === "string" ? p.order_id : null,
+        payload: p,
+        email_outbox_id: outboxId,
+        ...patch,
+      });
+    }
+  }
 
   for (const row of rows ?? []) {
+    if (result.sent + result.failed >= limit) break;
     const attempts = Number((row.payload as Payload)?._attempts ?? 0);
     if (row.status === "failed" && attempts >= 5) continue;
     const l = loc(row.locale);
-    const rendered = render(row.template, l, (row.payload ?? {}) as Payload);
+    const payload = (row.payload ?? {}) as Payload;
+
+    let rendered: Rendered | null = null;
+    const approved = findTemplate(templates, row.template, "email", l, true);
+    if (approved) {
+      const r = renderTemplateRow(approved, payload, l);
+      rendered = { subject: r.subject, lines: r.lines };
+    } else {
+      rendered = render(row.template, l, payload);
+      if (!rendered) {
+        const draft = findTemplate(templates, row.template, "email", l, false);
+        if (draft && !templates.requireApproval) {
+          const r = renderTemplateRow(draft, payload, l);
+          rendered = { subject: r.subject, lines: r.lines };
+        } else if (draft) {
+          // only an unapproved draft exists: hold (stays queued) until the TDP approves it
+          result.held = (result.held ?? 0) + 1;
+          await logOutcome(row.id, row, "queued", "Aguardando aprovação do template (Admin → Notificações)");
+          continue;
+        }
+      }
+    }
     if (!rendered) {
-      await supabase.from("email_outbox").update({ status: "failed", error: `Unknown template ${row.template}`, payload: { ...(row.payload as Payload), _attempts: 5 } }).eq("id", row.id);
+      await supabase.from("email_outbox").update({ status: "failed", error: `Unknown template ${row.template}`, payload: { ...payload, _attempts: 5 } }).eq("id", row.id);
+      await logOutcome(row.id, row, "failed", `Template inexistente: ${row.template}`);
       result.failed++;
       continue;
     }
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
-          to: [row.to_email],
-          reply_to: process.env.EMAIL_REPLY_TO || undefined,
-          subject: rendered.subject,
-          html: toHtml(rendered.lines, l),
-          text: rendered.lines.filter(Boolean).join("\n\n"),
-        }),
-      });
-      if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
+
+    const sent = await sendEmailNow({ to: row.to_email, subject: rendered.subject, lines: rendered.lines, locale: l });
+    if (!sent.error) {
       await supabase.from("email_outbox").update({ status: "sent", sent_at: new Date().toISOString(), error: null }).eq("id", row.id);
+      await logOutcome(row.id, row, "sent", null, rendered);
       result.sent++;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "send failed";
-      await supabase.from("email_outbox").update({ status: "failed", error: message, payload: { ...(row.payload as Payload), _attempts: attempts + 1 } }).eq("id", row.id);
+    } else {
+      await supabase.from("email_outbox").update({ status: "failed", error: sent.error, payload: { ...payload, _attempts: attempts + 1 } }).eq("id", row.id);
+      await logOutcome(row.id, row, "failed", sent.error, rendered);
       result.failed++;
-      result.firstError ??= message;
+      result.firstError ??= sent.error;
     }
   }
   return result;
