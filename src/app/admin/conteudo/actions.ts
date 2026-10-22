@@ -63,7 +63,7 @@ export interface SaveBlockInput {
   placementEnd?: string;
 }
 
-export async function saveCmsBlock(scope: CmsScope, key: string, input: SaveBlockInput) {
+async function saveCmsBlockImpl(scope: CmsScope, key: string, input: SaveBlockInput) {
   const staff = await requireStaff();
   const def = getBlockDef(scope, key);
   if (!def) throw new Error("Bloco desconhecido");
@@ -90,7 +90,7 @@ export async function saveCmsBlock(scope: CmsScope, key: string, input: SaveBloc
 }
 
 /** ON/OFF without opening the editor (keeps the rest of the override). */
-export async function toggleCmsBlock(scope: CmsScope, key: string, active: boolean) {
+async function toggleCmsBlockImpl(scope: CmsScope, key: string, active: boolean) {
   const staff = await requireStaff();
   if (!getBlockDef(scope, key)) throw new Error("Bloco desconhecido");
   const supabase = await createClient();
@@ -103,7 +103,7 @@ export async function toggleCmsBlock(scope: CmsScope, key: string, active: boole
 }
 
 /** Swap display order with the neighbour above/below. */
-export async function moveCmsBlock(scope: CmsScope, key: string, direction: "up" | "down") {
+async function moveCmsBlockImpl(scope: CmsScope, key: string, direction: "up" | "down") {
   const staff = await requireStaff();
   const blocks = await getEffectiveBlocks(scope);
   const idx = blocks.findIndex((b) => b.def.key === key);
@@ -128,7 +128,7 @@ export async function moveCmsBlock(scope: CmsScope, key: string, direction: "up"
 }
 
 /** Back to the default content/state of the block. */
-export async function resetCmsBlock(scope: CmsScope, key: string) {
+async function resetCmsBlockImpl(scope: CmsScope, key: string) {
   await requireStaff();
   const supabase = await createClient();
   const { error } = await supabase.from("cms_blocks").delete().eq("scope", scope).eq("block_key", key);
@@ -152,4 +152,31 @@ export async function uploadCmsAsset(formData: FormData): Promise<{ url?: string
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Falha no envio." };
   }
+}
+
+// Production Next.js hides the message of an error thrown by a Server Action,
+// so actions return { error } and the editor shows it.
+async function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error("[admin/conteudo]", err);
+    return { error: err instanceof Error ? err.message : "A ação falhou." };
+  }
+}
+
+export async function saveCmsBlock(...args: Parameters<typeof saveCmsBlockImpl>) {
+  return safe(() => saveCmsBlockImpl(...args));
+}
+
+export async function toggleCmsBlock(...args: Parameters<typeof toggleCmsBlockImpl>) {
+  return safe(() => toggleCmsBlockImpl(...args));
+}
+
+export async function moveCmsBlock(...args: Parameters<typeof moveCmsBlockImpl>) {
+  return safe(() => moveCmsBlockImpl(...args));
+}
+
+export async function resetCmsBlock(...args: Parameters<typeof resetCmsBlockImpl>) {
+  return safe(() => resetCmsBlockImpl(...args));
 }
