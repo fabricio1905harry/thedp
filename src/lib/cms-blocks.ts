@@ -56,7 +56,7 @@ export const BLOCK_DEFS: BlockDef[] = [
     key: "hero",
     label: "Hero",
     description:
-      "Banner principal. Sempre que possível, mantenha título, texto e CTA como texto (não dentro da imagem) para que idiomas, SEO e mobile se adaptem. Se a arte já traz o texto, deixe o título vazio e envie uma imagem por idioma.",
+      "Banner principal. A imagem aparece inteira, sem corte e sem distorção (desktop e mobile cada um no seu formato). O banner inteiro é clicável e leva ao destino do campo “Link do banner”. Se a arte já traz o texto, deixe título e texto vazios.",
     defaultActive: true,
     defaultSort: 10,
     defaultOperations: ALL_OPERATIONS,
@@ -66,8 +66,7 @@ export const BLOCK_DEFS: BlockDef[] = [
       text("alt", "Texto alternativo (alt)"),
       text("headline", "Título principal"),
       area("text", "Texto de apoio"),
-      text("cta_text", "Texto do CTA"),
-      url("cta_link", "Link do CTA"),
+      url("link", "Link do banner (destino ao clicar)", "Caminho interno (ex.: /shop, abre no idioma do visitante) ou endereço completo. Deixe vazio para o banner não ser clicável."),
     ],
     defaults: {
       desktop_image: "/brand/banner-horizontal-1.png",
@@ -79,8 +78,7 @@ export const BLOCK_DEFS: BlockDef[] = [
       ),
       headline: t("", "", ""),
       text: t("", "", ""),
-      cta_text: t("Create a wholesale account", "Crear una cuenta mayorista", "Criar conta de atacado"),
-      cta_link: "/cadastro",
+      link: "/shop",
     },
   },
   {

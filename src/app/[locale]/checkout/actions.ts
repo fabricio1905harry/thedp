@@ -218,6 +218,7 @@ export async function placeOrderServerAction(
       orderNumber: orderNum,
     };
   } catch (err: unknown) {
+    console.error("[checkout] placeOrderServerAction failed:", err);
     const msg = err instanceof Error ? err.message : "Could not place the order.";
     return { success: false, errorCode: "generic", error: msg };
   }
