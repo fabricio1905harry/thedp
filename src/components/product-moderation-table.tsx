@@ -47,7 +47,11 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
     if (ids.length === 0) return;
     setNotice(null);
     startTransition(async () => {
-      await setProductStatus(ids, status);
+      const res = await setProductStatus(ids, status);
+      if (res && "error" in res && res.error) {
+        setNotice(res.error);
+        return;
+      }
       setSelected(new Set());
     });
   }
@@ -69,6 +73,10 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
       const { ids } = confirmDelete;
       startTransition(async () => {
         const result = await deleteProducts(ids);
+        if ("error" in result) {
+          setNotice(result.error);
+          return;
+        }
         setSelected(new Set());
         if (result.blockedCount > 0) {
           setNotice(
@@ -82,6 +90,10 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
       const { id, title } = confirmDelete;
       startTransition(async () => {
         const result = await deleteProducts([id]);
+        if ("error" in result) {
+          setNotice(result.error);
+          return;
+        }
         if (result.blockedCount > 0) {
           setNotice(`Não é possível excluir "${title}" — já tem pedidos. Arquive-o em vez disso.`);
         }

@@ -13,7 +13,7 @@ async function requireStaff() {
 }
 
 /** ADM-02/CAT-04: individual or bulk publish/unpublish/archive. */
-export async function setProductStatus(
+async function setProductStatusImpl(
   productIds: string[],
   status: "draft" | "published" | "archived"
 ) {
@@ -40,7 +40,7 @@ export async function setProductStatus(
  * connector links). Refuses to delete a product that already has orders
  * against it — archive it instead so order history stays intact.
  */
-export async function deleteProducts(productIds: string[]) {
+async function deleteProductsImpl(productIds: string[]) {
   await requireStaff();
   const supabase = await createClient();
 
@@ -102,7 +102,7 @@ export interface UpdateProductInput {
  * NOT computed here — the products_compute_prices and
  * products_generate_variants triggers own that (see migration 0005).
  */
-export async function updateProduct(productId: string, input: UpdateProductInput) {
+async function updateProductImpl(productId: string, input: UpdateProductInput) {
   await requireStaff();
   const supabase = await createClient();
 
@@ -166,7 +166,7 @@ export async function updateProduct(productId: string, input: UpdateProductInput
  * the last value the supplier sent (products.source_snapshot). Fields the
  * supplier never sent keep their current value but sync again from now on.
  */
-export async function resetFieldsToSource(productId: string, fields: string[]) {
+async function resetFieldsToSourceImpl(productId: string, fields: string[]) {
   await requireStaff();
   const supabase = await createClient();
   const { data: product, error: readError } = await supabase
@@ -191,7 +191,7 @@ export async function resetFieldsToSource(productId: string, fields: string[]) {
   revalidatePath(`/admin/produtos/${productId}`);
 }
 
-export async function setProductFeatured(productId: string, isFeatured: boolean) {
+async function setProductFeaturedImpl(productId: string, isFeatured: boolean) {
   await requireStaff();
   const supabase = await createClient();
   const { error } = await supabase
@@ -208,7 +208,7 @@ export async function setProductFeatured(productId: string, isFeatured: boolean)
  * Manual stock/availability override per color + size. It wins over every
  * future sync until resetVariantStockToSource(); 0 = unavailable.
  */
-export async function setVariantStock(variantId: string, stock: number) {
+async function setVariantStockImpl(variantId: string, stock: number) {
   const staff = await requireStaff();
   if (!Number.isInteger(stock) || stock < 0) {
     throw new Error("O estoque deve ser um número inteiro não negativo.");
@@ -226,7 +226,7 @@ export async function setVariantStock(variantId: string, stock: number) {
 }
 
 /** "Reset to Source Stock/Availability": the supplier value applies again. */
-export async function resetVariantStockToSource(variantIds: string[]) {
+async function resetVariantStockToSourceImpl(variantIds: string[]) {
   await requireStaff();
   const supabase = await createClient();
   const { error, data } = await supabase
@@ -271,7 +271,7 @@ async function nextPosition(supabase: Awaited<ReturnType<typeof createClient>>, 
  * The cover of a PUBLISHED product can't be hidden/rejected until another
  * cover is chosen (publishing requires an approved cover).
  */
-export async function setImagesReviewStatus(imageIds: string[], status: ReviewStatus) {
+async function setImagesReviewStatusImpl(imageIds: string[], status: ReviewStatus) {
   const staff = await requireStaff();
   if (imageIds.length === 0) return { updated: 0 };
   const supabase = await createClient();
@@ -307,12 +307,28 @@ export async function setImagesReviewStatus(imageIds: string[], status: ReviewSt
     .in("id", ids);
   if (error) throw new Error(error.message);
 
+  // Approving photos on a product that has no MAIN IMAGE yet makes the first approved one
+  // (lowest position) the cover, so the product can be published right after approval.
+  if (status === "approved") {
+    for (const productId of new Set(editable.map((r) => r.product_id))) {
+      const { data: images } = await supabase
+        .from("product_images")
+        .select("id, is_cover, review_status, position")
+        .eq("product_id", productId)
+        .order("position");
+      const list = images ?? [];
+      if (list.some((i) => i.is_cover && i.review_status === "approved")) continue;
+      const first = list.find((i) => i.review_status === "approved");
+      if (first) await supabase.from("product_images").update({ is_cover: true }).eq("id", first.id);
+    }
+  }
+
   revalidateImages(new Set(editable.map((r) => r.product_id)));
   return { updated: ids.length };
 }
 
 /** MAIN IMAGE / COVER — must be an approved image. */
-export async function setCoverImage(imageId: string) {
+async function setCoverImageImpl(imageId: string) {
   await requireStaff();
   const supabase = await createClient();
   const { data: img, error } = await supabase
@@ -330,7 +346,7 @@ export async function setCoverImage(imageId: string) {
 }
 
 /** Reorder: positions follow the given id order. */
-export async function reorderProductImages(productId: string, orderedIds: string[]) {
+async function reorderProductImagesImpl(productId: string, orderedIds: string[]) {
   await requireStaff();
   const supabase = await createClient();
   await Promise.all(
@@ -342,7 +358,7 @@ export async function reorderProductImages(productId: string, orderedIds: string
 }
 
 /** Adjust/crop to the 2:3 standard (null = show full photo, no crop). */
-export async function setImageCrop(imageId: string, crop: ImageCrop | null) {
+async function setImageCropImpl(imageId: string, crop: ImageCrop | null) {
   await requireStaff();
   const parsed = crop === null ? null : parseCrop(crop);
   if (crop !== null && !parsed) throw new Error("Recorte inválido.");
@@ -411,7 +427,7 @@ async function insertTdpImage(
 }
 
 /** TDP's own image (or a treated replacement) by URL. */
-export async function addProductImage(productId: string, storagePath: string, replacesImageId?: string) {
+async function addProductImageImpl(productId: string, storagePath: string, replacesImageId?: string) {
   const staff = await requireStaff();
   const path = storagePath.trim();
   if (!path) throw new Error("A URL da imagem não pode ficar vazia.");
@@ -420,7 +436,7 @@ export async function addProductImage(productId: string, storagePath: string, re
 }
 
 /** Upload a file to the tdp-images bucket (optionally replacing a source image). */
-export async function uploadProductImage(formData: FormData) {
+async function uploadProductImageImpl(formData: FormData) {
   const staff = await requireStaff();
   const productId = String(formData.get("productId") ?? "");
   const replacesImageId = (formData.get("replacesImageId") as string | null) || null;
@@ -445,7 +461,7 @@ export async function uploadProductImage(formData: FormData) {
  * Deletes a TDP upload. Supplier images can't be deleted — REJECT them, so
  * the sync remembers not to bring them back.
  */
-export async function removeProductImage(imageId: string, productId: string) {
+async function removeProductImageImpl(imageId: string, productId: string) {
   await requireStaff();
   const supabase = await createClient();
   const { data: img } = await supabase
@@ -469,7 +485,7 @@ export async function removeProductImage(imageId: string, productId: string) {
  * Re-runs the image import from products.images for the given products.
  * Same non-destructive rules as the DB trigger (it simply re-fires it).
  */
-export async function syncProductImagesAction(productIds?: string[]) {
+async function syncProductImagesActionImpl(productIds?: string[]) {
   await requireStaff();
   const supabase = await createClient();
 
@@ -484,4 +500,75 @@ export async function syncProductImagesAction(productIds?: string[]) {
 
   revalidatePath("/admin/produtos");
   return { success: true, syncedCount: products?.length ?? 0, skippedCount: 0 };
+}
+
+// Production Next.js hides the message of an error thrown by a Server Action
+// and the page crashes; actions therefore return { error } and the UI shows it.
+async function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error("[admin/produtos]", err);
+    return { error: err instanceof Error ? err.message : "A ação falhou." };
+  }
+}
+
+export async function setProductStatus(...args: Parameters<typeof setProductStatusImpl>) {
+  return safe(() => setProductStatusImpl(...args));
+}
+
+export async function deleteProducts(...args: Parameters<typeof deleteProductsImpl>) {
+  return safe(() => deleteProductsImpl(...args));
+}
+
+export async function updateProduct(...args: Parameters<typeof updateProductImpl>) {
+  return safe(() => updateProductImpl(...args));
+}
+
+export async function resetFieldsToSource(...args: Parameters<typeof resetFieldsToSourceImpl>) {
+  return safe(() => resetFieldsToSourceImpl(...args));
+}
+
+export async function setProductFeatured(...args: Parameters<typeof setProductFeaturedImpl>) {
+  return safe(() => setProductFeaturedImpl(...args));
+}
+
+export async function setVariantStock(...args: Parameters<typeof setVariantStockImpl>) {
+  return safe(() => setVariantStockImpl(...args));
+}
+
+export async function resetVariantStockToSource(...args: Parameters<typeof resetVariantStockToSourceImpl>) {
+  return safe(() => resetVariantStockToSourceImpl(...args));
+}
+
+export async function setImagesReviewStatus(...args: Parameters<typeof setImagesReviewStatusImpl>) {
+  return safe(() => setImagesReviewStatusImpl(...args));
+}
+
+export async function setCoverImage(...args: Parameters<typeof setCoverImageImpl>) {
+  return safe(() => setCoverImageImpl(...args));
+}
+
+export async function reorderProductImages(...args: Parameters<typeof reorderProductImagesImpl>) {
+  return safe(() => reorderProductImagesImpl(...args));
+}
+
+export async function setImageCrop(...args: Parameters<typeof setImageCropImpl>) {
+  return safe(() => setImageCropImpl(...args));
+}
+
+export async function addProductImage(...args: Parameters<typeof addProductImageImpl>) {
+  return safe(() => addProductImageImpl(...args));
+}
+
+export async function uploadProductImage(...args: Parameters<typeof uploadProductImageImpl>) {
+  return safe(() => uploadProductImageImpl(...args));
+}
+
+export async function removeProductImage(...args: Parameters<typeof removeProductImageImpl>) {
+  return safe(() => removeProductImageImpl(...args));
+}
+
+export async function syncProductImagesAction(...args: Parameters<typeof syncProductImagesActionImpl>) {
+  return safe(() => syncProductImagesActionImpl(...args));
 }

@@ -83,7 +83,11 @@ export function ProductImagesManager({
     setError(null);
     startTransition(async () => {
       try {
-        await fn();
+        const res = await fn();
+        if (res && typeof res === "object" && "error" in res && (res as { error?: string }).error) {
+          setError((res as { error: string }).error);
+          return;
+        }
         setSelected(new Set());
         router.refresh();
       } catch (err) {
@@ -119,7 +123,8 @@ export function ProductImagesManager({
     e.preventDefault();
     if (!productId || !newUrl.trim()) return;
     run(async () => {
-      await addProductImage(productId, newUrl, replacing?.id);
+      const res = await addProductImage(productId, newUrl, replacing?.id);
+      if (res && "error" in res) return res;
       setNewUrl("");
       setReplacing(null);
     });
@@ -132,7 +137,8 @@ export function ProductImagesManager({
     fd.set("file", file);
     if (replacing) fd.set("replacesImageId", replacing.id);
     run(async () => {
-      await uploadProductImage(fd);
+      const res = await uploadProductImage(fd);
+      if (res && "error" in res) return res;
       setReplacing(null);
     });
   }
@@ -141,7 +147,8 @@ export function ProductImagesManager({
     if (!cropping) return;
     const id = cropping.id;
     run(async () => {
-      await setImageCrop(id, crop);
+      const res = await setImageCrop(id, crop);
+      if (res && "error" in res) return res;
       setCropping(null);
     });
   }

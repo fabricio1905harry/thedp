@@ -53,6 +53,12 @@ export function ProductEditForm({
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const failed = (res: unknown) => {
+    const msg = res && typeof res === "object" && "error" in res ? (res as { error?: string }).error : undefined;
+    if (msg) setActionError(msg);
+    return Boolean(msg);
+  };
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>(initialConnectorIds);
 
@@ -103,7 +109,8 @@ export function ProductEditForm({
       defaultStock: Number(form.defaultStock),
     };
     startTransition(async () => {
-      await updateProduct(product.id, input);
+      setActionError(null);
+      if (failed(await updateProduct(product.id, input))) return;
       setSaved(true);
       router.refresh();
     });
@@ -111,14 +118,16 @@ export function ProductEditForm({
 
   function changeStatus(status: "draft" | "published" | "archived") {
     startTransition(async () => {
-      await setProductStatus([product.id], status);
+      setActionError(null);
+      if (failed(await setProductStatus([product.id], status))) return;
       router.refresh();
     });
   }
 
   function toggleFeatured() {
     startTransition(async () => {
-      await setProductFeatured(product.id, !product.is_featured);
+      setActionError(null);
+      if (failed(await setProductFeatured(product.id, !product.is_featured))) return;
       router.refresh();
     });
   }
@@ -132,6 +141,10 @@ export function ProductEditForm({
     setDeleteError(null);
     startTransition(async () => {
       const result = await deleteProducts([product.id]);
+      if ("error" in result) {
+        setDeleteError(result.error);
+        return;
+      }
       if (result.blockedCount > 0) {
         setDeleteError("Não é possível excluir — este produto já tem pedidos. Arquive-o em vez disso.");
       } else {
@@ -171,6 +184,11 @@ export function ProductEditForm({
         </button>
       </div>
       {deleteError && <p className="text-xs text-red-600 mb-4">{deleteError}</p>}
+      {actionError && (
+        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4" role="alert">
+          {actionError}
+        </p>
+      )}
       <label className="flex items-center gap-2 text-xs text-muted mb-6">
         <input
           type="checkbox"
