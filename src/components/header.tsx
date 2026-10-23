@@ -25,8 +25,8 @@ async function barBlocks(siteMode: SiteMode) {
   const locale = await getLocale();
   const op = operationForSiteMode(siteMode);
   const [announcement, national_notice] = await Promise.all([
-    getPublicBlock("site", "announcement", op, locale).catch(() => null),
-    getPublicBlock("site", "national_notice", op, locale).catch(() => null),
+    getPublicBlock("site", "announcement", op, locale).catch(() => ({})),
+    getPublicBlock("site", "national_notice", op, locale).catch(() => ({})),
   ]);
   return { announcement, national_notice };
 }
@@ -50,13 +50,16 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-30">
-      {isNacional ? (
-        <div className="bg-surface text-center text-xs py-2 px-4 border-b border-border font-medium">{barText(bars.national_notice, tFooter("nationalNotice"))}</div>
-      ) : (
-        <div className="bg-foreground text-background text-center text-[10px] sm:text-[11px] uppercase tracking-[0.25em] py-2 px-4">
-          {barText(bars.announcement, t("announcement"))}
-        </div>
-      )}
+      {/* The bar is hidden when the block is turned OFF in Admin → Conteúdo (null = OFF / not for this operation). */}
+      {isNacional
+        ? bars.national_notice && (
+            <div className="bg-surface text-center text-xs py-2 px-4 border-b border-border font-medium">{barText(bars.national_notice, tFooter("nationalNotice"))}</div>
+          )
+        : bars.announcement && (
+            <div className="bg-foreground text-background text-center text-[10px] sm:text-[11px] uppercase tracking-[0.25em] py-2 px-4">
+              {barText(bars.announcement, t("announcement"))}
+            </div>
+          )}
 
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-6">
         <div className="flex items-center gap-3">
