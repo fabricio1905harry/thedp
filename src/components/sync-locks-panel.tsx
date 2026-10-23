@@ -26,7 +26,11 @@ export function SyncLocksPanel({
     setError(null);
     startTransition(async () => {
       try {
-        await resetFieldsToSource(productId, target);
+        const res = await resetFieldsToSource(productId, target);
+        if (res && typeof res === "object" && "error" in res) {
+          setError(String((res as { error: string }).error));
+          return;
+        }
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Falha ao restaurar.");

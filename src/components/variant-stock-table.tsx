@@ -43,7 +43,11 @@ export function VariantStockTable({ variants }: { variants: VariantRow[] }) {
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
-              await resetVariantStockToSource(overridden.map((v) => v.id));
+              const res = await resetVariantStockToSource(overridden.map((v) => v.id));
+              if (res && typeof res === "object" && "error" in res) {
+                window.alert((res as { error: string }).error);
+                return;
+              }
               router.refresh();
             })
           }
@@ -83,7 +87,10 @@ function VariantRowItem({ variant }: { variant: VariantRow }) {
   function save(next: number) {
     setStock(next);
     startTransition(async () => {
-      await setVariantStock(variant.id, next);
+      const res = await setVariantStock(variant.id, next);
+      if (res && typeof res === "object" && "error" in res) {
+        window.alert((res as { error: string }).error);
+      }
       router.refresh();
     });
   }
@@ -114,7 +121,11 @@ function VariantRowItem({ variant }: { variant: VariantRow }) {
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
-                  await resetVariantStockToSource([variant.id]);
+                  const res = await resetVariantStockToSource([variant.id]);
+                  if (res && typeof res === "object" && "error" in res) {
+                    window.alert((res as { error: string }).error);
+                    return;
+                  }
                   router.refresh();
                 })
               }
