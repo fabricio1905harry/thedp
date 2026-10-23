@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createContentReader } from "@/lib/supabase/public";
 import type { UiOverrides } from "@/lib/ui-texts";
 
 let cache: { at: number; value: UiOverrides } | null = null;
@@ -12,9 +12,9 @@ export function clearUiOverridesCache() {
 export async function getUiOverrides(): Promise<UiOverrides> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.value;
   let value: UiOverrides = {};
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
     try {
-      const supabase = createServiceRoleClient();
+      const { client: supabase } = await createContentReader();
       const { data } = await supabase
         .from("cms_blocks")
         .select("content")

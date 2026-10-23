@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createContentReader } from "@/lib/supabase/public";
 import { BLOCK_DEFS } from "@/lib/cms-blocks";
 import {
   mergeContent,
@@ -36,16 +36,31 @@ export interface EffectiveBlock {
 }
 
 async function loadRows(scope: CmsScope): Promise<CmsRow[]> {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return [];
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return [];
   try {
-    const supabase = createServiceRoleClient();
-    const { data } = await supabase
+    const { client } = await createContentReader();
+    const { data, error } = await client
       .from("cms_blocks")
       .select("scope, block_key, active, sort, operations, content, partner, placement_start, placement_end")
       .eq("scope", scope);
+    if (error) console.error("[cms] could not read cms_blocks:", error.message);
     return (data ?? []) as CmsRow[];
-  } catch {
+  } catch (err) {
+    console.error("[cms] could not read cms_blocks:", err);
     return [];
+  }
+}
+
+/** What this deployment sees in the CMS table (used by /api/cms-status and the Admin banner). */
+export async function getCmsStatus() {
+  try {
+    const { client, mode } = await createContentReader();
+    const { data, error } = await client.from("cms_blocks").select("scope, block_key, updated_at").neq("block_key", "ui_texts");
+    const rows = data ?? [];
+    const last = rows.map((r) => r.updated_at as string).sort().at(-1) ?? null;
+    return { ok: !error, error: error?.message ?? null, mode, customisedBlocks: rows.length, lastUpdated: last };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "erro", mode: "none" as const, customisedBlocks: 0, lastUpdated: null };
   }
 }
 
