@@ -140,11 +140,14 @@ export function CheckoutPanel({ addresses, defaults }: { addresses: Address[]; d
         clear();
         router.push(`/pedidos/${res.orderId}`);
       } else {
-        setErrorMsg(res.errorCode ? t(`errors.${res.errorCode}`) : t("orderFailedGeneric"));
+        const base = res.errorCode ? t(`errors.${res.errorCode}`) : t("orderFailedGeneric");
+        // for unexpected failures also show the technical reason, so support can tell what happened
+        setErrorMsg(res.errorCode === "generic" && res.error ? `${base} (${res.error})` : base);
         setPlacingOrder(false);
       }
     } catch (err: unknown) {
-      setErrorMsg(t("unexpectedError"));
+      console.error("[checkout] place order failed", err);
+      setErrorMsg(`${t("unexpectedError")}${err instanceof Error && err.message ? ` (${err.message.slice(0, 160)})` : ""}`);
       setPlacingOrder(false);
     }
   }

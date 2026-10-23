@@ -19,15 +19,17 @@ export function HeroModule({ c }: { c: C }) {
   const mobile = normalizeImageUrl(s(c.mobile_image)) ?? desktop;
   const headline = s(c.headline);
   const text = s(c.text);
-  const cta = s(c.cta_text);
-  const link = s(c.cta_link);
+  const link = s(c.link).trim();
   if (!desktop && !mobile) return null;
 
-  return (
-    <section className="relative w-full overflow-hidden bg-surface">
-      <picture>
+  // The whole art is shown (no crop, no distortion): desktop and mobile each
+  // keep their own aspect ratio. On large screens the height is capped to the
+  // visible area under the header so the bottom of the banner never needs a scroll.
+  const banner = (
+    <div className="relative w-full overflow-hidden bg-surface">
+      <picture className="block">
         {mobile && <source media="(max-width: 639px)" srcSet={optimizedSrcSet(mobile, 828) ?? mobile} sizes="100vw" />}
-        { }
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={desktop && isOptimizable(desktop) ? optimizedUrl(desktop, 1920) : desktop ?? mobile ?? ""}
           srcSet={desktop ? optimizedSrcSet(desktop) : undefined}
@@ -36,7 +38,7 @@ export function HeroModule({ c }: { c: C }) {
           alt={s(c.alt)}
           referrerPolicy="no-referrer"
           fetchPriority="high"
-          className="w-full h-auto sm:h-[56vw] sm:max-h-[720px] object-cover object-center aspect-[4/5] sm:aspect-auto"
+          className="mx-auto block h-auto w-auto max-w-full sm:max-h-[calc(100svh-7.5rem)]"
         />
       </picture>
       {(headline || text) && (
@@ -44,20 +46,20 @@ export function HeroModule({ c }: { c: C }) {
           <div className="max-w-7xl mx-auto">
             {headline && <h1 className="font-serif text-3xl sm:text-5xl leading-tight max-w-3xl">{headline}</h1>}
             {text && <p className="mt-3 text-sm sm:text-base text-white/90 max-w-xl">{text}</p>}
-            {cta && link && (
-              <CmsLink href={link} className="mt-6 inline-block bg-white text-black px-8 py-3.5 text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-white/90 transition-colors">
-                {cta}
-              </CmsLink>
-            )}
           </div>
         </div>
       )}
-      {!headline && cta && link && (
-        <div className="absolute bottom-5 right-5 sm:bottom-10 sm:right-10">
-          <CmsLink href={link} className={BUTTON}>
-            {cta}
-          </CmsLink>
-        </div>
+    </div>
+  );
+
+  return (
+    <section className="w-full bg-surface">
+      {link ? (
+        <CmsLink href={link} className="block w-full cursor-pointer">
+          {banner}
+        </CmsLink>
+      ) : (
+        banner
       )}
     </section>
   );
