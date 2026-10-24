@@ -18,7 +18,8 @@
   "cart": {
     "quantityNote": "Some quantities may exceed what is available — availability is confirmed before payment.",
     "myOrdersLink": "My orders",
-    "viewMyOrders": "View my orders"
+    "viewMyOrders": "View my orders",
+    "bagLabel": "Shopping bag"
   },
   "order": {
     "statusStockConfirmation": "Our team is confirming availability",
@@ -70,5 +71,13 @@
     "depositNoticeText": "The reserve deposit is non-refundable. It secures your merchandise for the agreed shipping date and is deducted from the total when you pay the balance.",
     "termsPrefix": "Full conditions are described in our",
     "termsLink": "Terms of use"
+  },
+  "nav": {
+    "myAccount": "My account",
+    "accountMenu": "Account menu"
+  },
+  "shop": {
+    "filtersButton": "Filters",
+    "filtersActive": "{n} active"
   }
 }

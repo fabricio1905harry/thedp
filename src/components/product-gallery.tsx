@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
-import type { ImageCrop } from "@/lib/image-crop";
+import { croppedImageStyle, type ImageCrop } from "@/lib/image-crop";
+import { isOptimizable, optimizedUrl } from "@/lib/image-opt";
+
+function thumbSrc(url: string): string {
+  const full =
+    url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")
+      ? url
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${url}`;
+  return isOptimizable(full) ? optimizedUrl(full, 320) : full;
+}
 
 export function ProductGallery({
   images,
@@ -84,22 +93,20 @@ export function ProductGallery({
                 key={`${imgUrl}-${idx}`}
                 onClick={() => setSelectedIndex(idx)}
                 aria-label={t("viewPhoto", { n: idx + 1 })}
-                className={`relative aspect-[3/4] w-20 sm:w-24 shrink-0 overflow-hidden rounded-sm border transition-all duration-300 ${
+                className={`relative aspect-[2/3] w-16 sm:w-20 shrink-0 overflow-hidden rounded-sm border bg-surface transition-all duration-300 ${
                   isSelected
                     ? "border-accent ring-2 ring-accent/40 scale-105 shadow-md opacity-100"
                     : "border-border/80 opacity-70 hover:opacity-100 hover:border-gold"
                 }`}
               >
+                {/* same framing as the main photo: the edited (cropped) version, or the whole photo — never an extra cut */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={
-                    imgUrl.startsWith("http://") ||
-                    imgUrl.startsWith("https://") ||
-                    imgUrl.startsWith("/")
-                      ? imgUrl
-                      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${imgUrl}`
-                  }
+                  src={thumbSrc(imgUrl)}
                   alt={`${title} - ${t("photo", { n: idx + 1 })}`}
-                  className="w-full h-full object-cover object-top"
+                  loading="lazy"
+                  decoding="async"
+                  style={croppedImageStyle(crops[idx] ?? null)}
                 />
               </button>
             );

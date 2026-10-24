@@ -5,6 +5,8 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import type { CurrentCustomer } from "@/lib/auth";
 import { logoutAction } from "@/app/[locale]/login/actions";
+import { LocaleSwitcher } from "@/components/locale-switcher";
+import { CurrencySwitcher } from "@/components/currency-switcher";
 
 export interface MobileNavLabels {
   menu: string;
@@ -15,7 +17,7 @@ export interface MobileNavLabels {
   cadastro: string;
   sair: string;
   myOrders: string;
-  status: string;
+  myAccount: string;
 }
 
 export function MobileNav({
@@ -24,12 +26,15 @@ export function MobileNav({
   categories,
   showAccount,
   customer,
+  showCurrency = false,
 }: {
   labels: MobileNavLabels;
   items: { key: string; label: string; href: string }[];
   categories: string[];
   showAccount: boolean;
   customer?: CurrentCustomer | null;
+  /** international site: USD/EUR selector inside the menu */
+  showCurrency?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -54,7 +59,6 @@ export function MobileNav({
               <div className="p-4 bg-surface flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold truncate max-w-[200px]">{customer.email}</p>
-                  <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-semibold border border-foreground">{labels.status}</span>
                 </div>
                 <form action={logoutAction}>
                   <button type="submit" onClick={close} className="text-xs border border-border px-3 py-1.5 font-medium">
@@ -93,9 +97,14 @@ export function MobileNav({
             )}
 
             {showAccount && customer && (
-              <MobileLink href="/minha-conta" onClick={close}>
-                {labels.myOrders}
-              </MobileLink>
+              <>
+                <MobileLink href="/minha-conta" onClick={close}>
+                  {labels.myAccount}
+                </MobileLink>
+                <MobileLink href="/minha-conta#pedidos" onClick={close}>
+                  {labels.myOrders}
+                </MobileLink>
+              </>
             )}
             {showAccount && !customer && (
               <>
@@ -108,6 +117,11 @@ export function MobileNav({
               </>
             )}
           </nav>
+          {/* language and currency stay reachable on small screens */}
+          <div className="shrink-0 border-t border-border p-4 flex items-center gap-3">
+            <LocaleSwitcher />
+            {showCurrency && <CurrencySwitcher />}
+          </div>
         </div>
       )}
     </div>

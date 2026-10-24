@@ -18,7 +18,8 @@
   "cart": {
     "quantityNote": "Algumas quantidades podem exceder o disponível — a disponibilidade é confirmada antes do pagamento.",
     "myOrdersLink": "Meus pedidos",
-    "viewMyOrders": "Ver meus pedidos"
+    "viewMyOrders": "Ver meus pedidos",
+    "bagLabel": "Sacola"
   },
   "order": {
     "statusStockConfirmation": "Nossa equipe está confirmando a disponibilidade",
@@ -70,5 +71,13 @@
     "depositNoticeText": "O depósito de reserva não é reembolsável. Ele garante sua mercadoria até a data de envio combinada e é abatido do total quando você paga o saldo.",
     "termsPrefix": "As condições completas estão descritas nos nossos",
     "termsLink": "Termos de uso"
+  },
+  "nav": {
+    "myAccount": "Minha conta",
+    "accountMenu": "Menu da conta"
+  },
+  "shop": {
+    "filtersButton": "Filtros",
+    "filtersActive": "{n} ativos"
   }
 }

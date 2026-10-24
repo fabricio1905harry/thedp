@@ -5,9 +5,10 @@ import { Link } from "@/i18n/navigation";
 import { getShopCatalog, type ShopProduct } from "@/lib/catalog";
 import { getCurrentCustomer, isApproved } from "@/lib/auth";
 import { ProductCard } from "@/components/product-card";
+import { ShopToolbar } from "@/components/shop-toolbar";
 import { SITE_MODE_HEADER, type SiteMode } from "@/lib/site-mode";
 
-type SP = { category?: string; size?: string; color?: string; sort?: string; new?: string; min?: string; max?: string };
+type SP = { category?: string; size?: string; color?: string; sort?: string; new?: string; min?: string; max?: string; f?: string };
 
 const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
 const NEW_IN_DAYS = 30;
@@ -69,7 +70,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   const link = (patch: Partial<SP>) => {
     const params = new URLSearchParams();
-    for (const [k, v] of Object.entries({ ...sp, ...patch })) if (v) params.set(k, v);
+    for (const [k, v] of Object.entries({ ...sp, ...patch, f: "1" })) if (v) params.set(k, v);
     const qs = params.toString();
     return qs ? `/shop?${qs}` : "/shop";
   };
@@ -84,23 +85,21 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <p className="mt-3 text-xs uppercase tracking-[0.2em] text-muted">{t("results", { n: products.length })}</p>
       </div>
 
-      <div className="grid lg:grid-cols-[14rem_1fr] gap-10">
-        <aside className="space-y-7 text-sm">
-          <details open className="lg:[&>summary]:hidden" >
-            <summary className="lg:hidden text-[11px] font-semibold uppercase tracking-[0.2em] cursor-pointer mb-3">{t("filters")}</summary>
-            <div className="space-y-7">
-              <Facet title={t("sortBy")}>
-                {[
-                  ["new", t("sortNew")],
-                  ["best", t("sortBest")],
-                  ...(approved ? [["price_asc", t("sortPriceAsc")], ["price_desc", t("sortPriceDesc")]] : []),
-                ].map(([value, label]) => (
-                  <Link key={value} href={link({ sort: value })} className={chip(sort === value)}>
-                    {label}
-                  </Link>
-                ))}
-              </Facet>
-
+      <ShopToolbar
+        defaultOpen={sp.f === "1"}
+        activeCount={[sp.category, sp.size, sp.color, sp.new, sp.min || sp.max].filter(Boolean).length}
+        filtersLabel={t("filtersButton")}
+        activeLabel={t("filtersActive", { n: "{n}" })}
+        sortLabel={t("sortBy")}
+        sortValue={sort}
+        sortOptions={[
+          { value: "new", label: t("sortNew") },
+          { value: "best", label: t("sortBest") },
+          ...(approved ? [{ value: "price_asc", label: t("sortPriceAsc") }, { value: "price_desc", label: t("sortPriceDesc") }] : []),
+        ]}
+        params={Object.fromEntries(Object.entries(sp).filter(([k, v]) => v && k !== "sort").map(([k, v]) => [k, String(v)]))}
+      >
+        <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3 text-sm">
               <Facet title={t("newIn")}>
                 <Link href={link({ new: sp.new === "1" ? undefined : "1" })} className={chip(sp.new === "1")}>
                   {t("newInDays", { n: NEW_IN_DAYS })}
@@ -157,11 +156,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                   {t("clear")}
                 </Link>
               )}
-            </div>
-          </details>
-        </aside>
+        </div>
+      </ShopToolbar>
 
-        <div>
+      <div>
           {products.length === 0 ? (
             <p className="text-sm text-muted py-16 text-center border border-dashed border-border">{t("noResults")}</p>
           ) : (
@@ -171,7 +169,6 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
               ))}
             </div>
           )}
-        </div>
       </div>
     </div>
   );

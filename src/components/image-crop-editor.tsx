@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cropFromControls, croppedImageStyle, type ImageCrop } from "@/lib/image-crop";
 
 /**
@@ -26,24 +26,33 @@ export function ImageCropEditor({
   const [panX, setPanX] = useState(0.5);
   const [panY, setPanY] = useState(0.5);
   const [touched, setTouched] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // single in-page screen: bring it into view smoothly instead of covering the page
+  useEffect(() => {
+    panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   // keep showing the saved crop until a control is moved
   const crop = !touched && initialCrop ? initialCrop : natural ? cropFromControls(natural.w, natural.h, zoom, panX, panY) : null;
   const lowRes = natural && crop ? natural.w * crop.width < 1200 || natural.h * crop.height < 1800 : false;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onCancel}>
-      <div
-        className="bg-background max-w-3xl w-full p-5 grid md:grid-cols-2 gap-6 max-h-[95vh] overflow-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div ref={panelRef} className="scroll-mt-6 mt-6 rounded-2xl border border-border bg-white p-5 shadow-sm animate-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base font-semibold">Recortar foto</h3>
+        <button type="button" onClick={onCancel} className="text-xs text-muted hover:text-foreground">
+          Fechar ✕
+        </button>
+      </div>
+      <div className="grid md:grid-cols-2 gap-6">
         <div>
           <p className="text-xs text-muted uppercase mb-2">Original</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={src}
             alt=""
-            className="w-full max-h-[60vh] object-contain bg-surface"
+            className="w-full max-h-[55vh] object-contain bg-surface rounded-lg"
             onLoad={(e) => setNatural({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
           />
           {natural && (
@@ -54,7 +63,7 @@ export function ImageCropEditor({
         </div>
         <div>
           <p className="text-xs text-muted uppercase mb-2">Resultado 2:3 (referência 1200×1800)</p>
-          <div className="relative overflow-hidden aspect-[2/3] bg-surface border border-border">
+          <div className="relative overflow-hidden aspect-[2/3] max-h-[55vh] mx-auto bg-surface border border-border rounded-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt="" style={croppedImageStyle(crop)} />
           </div>
