@@ -79,5 +79,33 @@
   "shop": {
     "filtersButton": "Filtros",
     "filtersActive": "{n} activos"
+  },
+  "auth": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgot": "Olvidé mi contraseña",
+    "signingIn": "Entrando…",
+    "invalidCredentials": "Correo o contraseña incorrectos.",
+    "emailNotConfirmed": "Primero confirma tu correo — revisa tu bandeja de entrada.",
+    "tooMany": "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
+    "generic": "No pudimos iniciar tu sesión. Inténtalo de nuevo.",
+    "unavailable": "El inicio de sesión no está disponible en este momento.",
+    "resetTitle": "Restablecer contraseña",
+    "resetIntro": "Ingresa el correo de tu cuenta y te enviaremos un enlace para crear una nueva contraseña.",
+    "resetSend": "Enviar enlace",
+    "resetSending": "Enviando…",
+    "resetSent": "Si existe una cuenta con este correo, el enlace está en camino. Revisa tu bandeja de entrada (y el spam).",
+    "backToLogin": "Volver a iniciar sesión",
+    "newPasswordTitle": "Crear una nueva contraseña",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "savePassword": "Guardar nueva contraseña",
+    "saving": "Guardando…",
+    "passwordsDontMatch": "Las contraseñas no coinciden.",
+    "passwordTooShort": "Usa al menos 8 caracteres.",
+    "linkExpired": "Este enlace no es válido o ha expirado. Solicita uno nuevo.",
+    "requestNewLink": "Solicitar un nuevo enlace",
+    "passwordUpdated": "Contraseña actualizada. Ya puedes iniciar sesión.",
+    "resetError": "No pudimos actualizar tu contraseña. Inténtalo de nuevo."
   }
 }

@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useCart } from "@/components/cart-provider";
 import { useCurrency } from "@/components/currency-provider";
 import { formatCurrency, pickPrice } from "@/lib/currency";
+import { CartThumb } from "@/components/cart-thumb";
 import { MinimumNotice, useCartCommercial } from "@/components/cart-commercial";
 
 export default function CartPage() {
@@ -45,7 +46,8 @@ export default function CartPage() {
           const picked = pickPrice(item.pricing, currency);
           return (
             <div key={item.variantId} className="flex items-center gap-4 py-4">
-              <div className="flex-1">
+              <CartThumb src={item.imageUrl} crop={item.imageCrop} title={item.title} className="w-14 sm:w-16" />
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{item.title}</p>
                 <p className="text-xs text-muted">
                   {item.color} · {item.size}

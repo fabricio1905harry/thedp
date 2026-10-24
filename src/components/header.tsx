@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { BrandLogo } from "@/components/brand-logo";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { MegaMenu } from "@/components/mega-menu";
@@ -85,7 +85,7 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
             showCurrency={!isNacional}
           />
           <Link href="/" className="py-3.5 shrink-0 transition-opacity hover:opacity-80">
-            <Image src="/brand/logo-horizontal.png" alt="The Dressing Project" width={1190} height={117} priority className="h-5 sm:h-6 w-auto max-w-none shrink-0" />
+            <BrandLogo priority className="h-5 sm:h-6 w-auto" />
           </Link>
         </div>
 

@@ -109,6 +109,8 @@ export function ProductPurchasePanel({
           color: variant.color,
           size: variant.size,
           pricing: product.pricing!,
+          imageUrl: product.images[0] ?? product.imageUrl ?? null,
+          imageCrop: product.imageCrops[0] ?? null,
         },
         qty
       );

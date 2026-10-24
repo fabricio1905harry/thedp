@@ -1,12 +1,13 @@
 import { getTranslations } from "next-intl/server";
 import { LoginForm } from "@/components/login-form";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
   const t = await getTranslations("nav");
+  const { reset } = await searchParams;
   return (
     <div className="max-w-3xl mx-auto px-4 py-14">
       <h1 className="font-serif text-3xl mb-8">{t("login")}</h1>
-      <LoginForm />
+      <LoginForm resetDone={reset === "ok"} />
     </div>
   );
 }
