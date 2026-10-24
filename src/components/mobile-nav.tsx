@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { BrandLogo } from "@/components/brand-logo";
 import { Link } from "@/i18n/navigation";
 import type { CurrentCustomer } from "@/lib/auth";
 import { logoutAction } from "@/app/[locale]/login/actions";
@@ -48,7 +48,7 @@ export function MobileNav({
       {open && (
         <div className="fixed inset-0 bg-background z-50 flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-            <Image src="/brand/logo-horizontal.png" alt="The Dressing Project" width={1190} height={117} className="h-6 w-auto" />
+            <BrandLogo className="h-6 w-auto" />
             <button aria-label={labels.close} onClick={close} className="w-9 h-9 flex items-center justify-center border border-border">
               ✕
             </button>

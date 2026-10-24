@@ -79,5 +79,33 @@
   "shop": {
     "filtersButton": "Filtros",
     "filtersActive": "{n} ativos"
+  },
+  "auth": {
+    "email": "E-mail",
+    "password": "Senha",
+    "forgot": "Esqueci minha senha",
+    "signingIn": "Entrando…",
+    "invalidCredentials": "E-mail ou senha incorretos.",
+    "emailNotConfirmed": "Confirme seu e-mail primeiro — veja sua caixa de entrada.",
+    "tooMany": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+    "generic": "Não foi possível entrar. Tente novamente.",
+    "unavailable": "O login não está disponível no momento.",
+    "resetTitle": "Redefinir senha",
+    "resetIntro": "Informe o e-mail da sua conta e enviaremos um link para você criar uma nova senha.",
+    "resetSend": "Enviar link de redefinição",
+    "resetSending": "Enviando…",
+    "resetSent": "Se existir uma conta com este e-mail, o link está a caminho. Confira sua caixa de entrada (e o spam).",
+    "backToLogin": "Voltar ao login",
+    "newPasswordTitle": "Criar uma nova senha",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Confirmar nova senha",
+    "savePassword": "Salvar nova senha",
+    "saving": "Salvando…",
+    "passwordsDontMatch": "As senhas não coincidem.",
+    "passwordTooShort": "Use pelo menos 8 caracteres.",
+    "linkExpired": "Este link é inválido ou expirou. Solicite um novo.",
+    "requestNewLink": "Solicitar novo link",
+    "passwordUpdated": "Senha atualizada. Você já pode entrar.",
+    "resetError": "Não foi possível atualizar a senha. Tente novamente."
   }
 }

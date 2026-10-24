@@ -79,5 +79,33 @@
   "shop": {
     "filtersButton": "Filters",
     "filtersActive": "{n} active"
+  },
+  "auth": {
+    "email": "E-mail",
+    "password": "Password",
+    "forgot": "Forgot my password",
+    "signingIn": "Signing in…",
+    "invalidCredentials": "Incorrect e-mail or password.",
+    "emailNotConfirmed": "Please confirm your e-mail first — check your inbox.",
+    "tooMany": "Too many attempts. Please wait a few minutes and try again.",
+    "generic": "We could not sign you in. Please try again.",
+    "unavailable": "Sign-in is not available right now.",
+    "resetTitle": "Reset your password",
+    "resetIntro": "Enter the e-mail of your account and we will send you a link to create a new password.",
+    "resetSend": "Send reset link",
+    "resetSending": "Sending…",
+    "resetSent": "If an account exists for this e-mail, a reset link is on its way. Check your inbox (and spam folder).",
+    "backToLogin": "Back to sign in",
+    "newPasswordTitle": "Create a new password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "savePassword": "Save new password",
+    "saving": "Saving…",
+    "passwordsDontMatch": "The passwords do not match.",
+    "passwordTooShort": "Use at least 8 characters.",
+    "linkExpired": "This link is invalid or has expired. Please request a new one.",
+    "requestNewLink": "Request a new link",
+    "passwordUpdated": "Password updated. You can sign in now.",
+    "resetError": "We could not update your password. Please try again."
   }
 }

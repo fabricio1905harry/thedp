@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { BrandLogo } from "@/components/brand-logo";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { SiteMode } from "@/lib/site-mode";
@@ -11,7 +11,7 @@ export function Footer({ siteMode, signedIn = false }: { siteMode: SiteMode; sig
     <footer className="border-t border-border mt-20 bg-background">
       <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-10 text-sm">
         <div className="col-span-2 md:col-span-1">
-          <Image src="/brand/logo-vertical.png" alt="The Dressing Project" width={1190} height={606} className="h-16 w-auto" />
+          <BrandLogo className="h-6 w-auto" />
           <p className="mt-4 text-xs text-muted leading-relaxed max-w-[16rem]">{t("tagline")}</p>
         </div>
         <div>

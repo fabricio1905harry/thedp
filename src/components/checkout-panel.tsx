@@ -9,6 +9,7 @@ import { useCurrency } from "@/components/currency-provider";
 import { formatCurrency, pickPrice } from "@/lib/currency";
 import { placeOrderServerAction } from "@/app/[locale]/checkout/actions";
 import { ShipSmartAddress } from "@/lib/shipsmart";
+import { CartThumb } from "@/components/cart-thumb";
 import { CountrySelect } from "@/components/country-select";
 import { toCountryCode } from "@/lib/countries";
 import { MinimumNotice, useCartCommercial, useShortfallText } from "@/components/cart-commercial";
@@ -350,8 +351,9 @@ export function CheckoutPanel({ addresses, defaults }: { addresses: Address[]; d
           {items.map((item) => {
             const picked = pickPrice(item.pricing, currency);
             return (
-              <div key={item.variantId} className="py-3 flex items-center justify-between text-xs">
-                <div>
+              <div key={item.variantId} className="py-3 flex items-center gap-3 text-xs">
+                <CartThumb src={item.imageUrl} crop={item.imageCrop} title={item.title} className="w-10" />
+                <div className="flex-1 min-w-0">
                   <h4 className="font-serif text-sm font-medium text-foreground">{item.title}</h4>
                   <p className="text-[11px] text-muted">
                     {t("colorLabel")} {item.color} • {t("sizeLabel")} {item.size} • {t("qtyLabel")} {item.qty}

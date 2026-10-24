@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { ProductPricing } from "@/lib/types";
+import type { ImageCrop } from "@/lib/image-crop";
 
 export interface CartItem {
   variantId: string;
@@ -17,6 +18,9 @@ export interface CartItem {
   size: string;
   pricing: ProductPricing;
   qty: number;
+  /** thumbnail shown in the cart (cover photo + its crop); absent in carts saved before this field existed */
+  imageUrl?: string | null;
+  imageCrop?: ImageCrop | null;
 }
 
 interface CartContextValue {
