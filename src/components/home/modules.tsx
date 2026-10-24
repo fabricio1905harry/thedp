@@ -38,7 +38,7 @@ export function HeroModule({ c }: { c: C }) {
           alt={s(c.alt)}
           referrerPolicy="no-referrer"
           fetchPriority="high"
-          className="mx-auto block h-auto w-auto max-w-full sm:max-h-[calc(100svh-7.5rem)]"
+          className="mx-auto block h-auto w-auto max-w-full sm:max-h-[calc(100svh-11rem)] xl:max-h-[calc(100svh-7.5rem)]"
         />
       </picture>
       {(headline || text) && (

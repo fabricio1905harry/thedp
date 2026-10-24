@@ -36,12 +36,6 @@ export function ProductCard({
       href={`/produtos/${product.slug}`}
       className="group block relative rounded-sm bg-white/90 border border-border/70 hover:border-accent/40 shadow-xs hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col h-full hover-lift"
     >
-      {/* Top badges */}
-      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-background/90 backdrop-blur-md px-2.5 py-1 border border-border/80">
-        <span className="text-[9px] uppercase tracking-[0.18em] font-semibold text-foreground/90">
-          {product.category || "Vestidos"}
-        </span>
-      </div>
       {inOrder > 0 && (
         <div className="absolute top-2.5 right-2.5 z-10 bg-foreground text-background px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] font-semibold">
           {t("inYourOrder", { n: inOrder })}
@@ -81,9 +75,6 @@ export function ProductCard({
           <h3 className="font-serif text-base sm:text-lg font-medium text-foreground group-hover:text-accent transition-colors duration-300 line-clamp-1 tracking-wide">
             {product.title}
           </h3>
-          <p className="text-[10px] uppercase tracking-[0.15em] text-muted font-normal pt-0.5">
-            {t("cardTagline")}
-          </p>
         </div>
 
         <div className="pt-2 border-t border-border/50 flex items-baseline justify-between">

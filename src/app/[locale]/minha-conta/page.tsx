@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/currency";
 import { BUYER_CANCELABLE_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
 import { CancelOrderButton } from "@/components/order-buyer-actions";
+import { statusKey } from "@/lib/nav";
 import type { Currency } from "@/lib/types";
 
 /** My account: order history (Original Request → Confirmed Order → paid → shipped). */
@@ -15,6 +16,7 @@ export default async function MyAccountPage() {
 
   const locale = await getLocale();
   const t = await getTranslations("account");
+  const tNav = await getTranslations("nav");
   const tOrder = await getTranslations("order");
   const tAction = await getTranslations("orderActions");
   const tFav = await getTranslations("c2.favorites");
@@ -34,6 +36,11 @@ export default async function MyAccountPage() {
     <div className="max-w-4xl mx-auto px-4 py-14 sm:py-20">
       <h1 className="font-serif text-4xl">{t("title")}</h1>
       <p className="mt-2 text-xs uppercase tracking-[0.2em] text-muted">{customer.email}</p>
+      {/* wholesale account status (no longer shown in the site header) */}
+      <p className="mt-3 inline-flex items-center gap-2 text-xs">
+        <span className="text-muted">{t("appStatusTitle")}:</span>
+        <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border border-foreground">{tNav(statusKey(customer.status))}</span>
+      </p>
 
       {application && application.status !== "approved" && (
         <section className="mt-10 border border-border p-5">
@@ -60,7 +67,7 @@ export default async function MyAccountPage() {
         </Link>
       </p>
 
-      <section className="mt-12">
+      <section id="pedidos" className="mt-12 scroll-mt-32">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted mb-4">{t("orders")}</h2>
         {(orders ?? []).length === 0 ? (
           <p className="text-sm text-muted border border-dashed border-border p-6">

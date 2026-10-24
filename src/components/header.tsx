@@ -6,8 +6,9 @@ import { CartLink } from "@/components/cart-link";
 import { MobileNav } from "@/components/mobile-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { CurrencySwitcher } from "@/components/currency-switcher";
+import { AccountMenu } from "@/components/account-menu";
 import { getAllCategories } from "@/lib/catalog";
-import { mainNav, statusKey } from "@/lib/nav";
+import { mainNav } from "@/lib/nav";
 import { getNavAvailability } from "@/lib/catalog-extra";
 import type { SiteMode } from "@/lib/site-mode";
 import { getCurrentCustomer } from "@/lib/auth";
@@ -61,8 +62,10 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
             </div>
           )}
 
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
+      {/* Row 1: menu button + logo | controls. Row 2 (below xl): the menu links. One row from xl.
+          Nothing overlaps at any width: the logo never shrinks and the controls hide before they collide. */}
+      <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-x-4">
+        <div className="flex items-center gap-3 shrink-0">
           <MobileNav
             labels={{
               menu: t("menu"),
@@ -73,19 +76,20 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
               cadastro: t("cadastro"),
               sair: t("sair"),
               myOrders: t("myOrders"),
-              status: customer ? t(statusKey(customer.status)) : "",
+              myAccount: t("myAccount"),
             }}
             items={items}
             categories={categories}
             showAccount={!isNacional}
             customer={customer}
+            showCurrency={!isNacional}
           />
           <Link href="/" className="py-3.5 shrink-0 transition-opacity hover:opacity-80">
-            <Image src="/brand/logo-horizontal.png" alt="The Dressing Project" width={1190} height={117} priority className="h-6 w-auto" />
+            <Image src="/brand/logo-horizontal.png" alt="The Dressing Project" width={1190} height={117} priority className="h-5 sm:h-6 w-auto max-w-none shrink-0" />
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex order-3 w-full justify-center gap-6 border-t border-border/60 xl:order-none xl:w-auto xl:flex-1 xl:border-0 xl:gap-8">
           {items.map((item) =>
             item.key === "shop" ? (
               <MegaMenu key="shop" label={item.label} allLabel={t("allProducts")} categories={categories} />
@@ -97,37 +101,30 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
           )}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <LocaleSwitcher />
-          {!isNacional && <CurrencySwitcher />}
-          {!isNacional && <CartLink signedIn={Boolean(customer)} />}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 sm:gap-3">
+            <LocaleSwitcher />
+            {!isNacional && <CurrencySwitcher />}
+          </div>
           {!isNacional &&
             (customer ? (
-              <div className="hidden md:flex items-center gap-3">
-                <Link href="/minha-conta" className="flex items-center gap-2 text-xs text-muted hover:text-foreground">
-                  <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border border-foreground text-foreground">
-                    {t(statusKey(customer.status))}
-                  </span>
-                  <span className="hidden xl:inline truncate max-w-[140px]" title={customer.email}>
-                    {t("myOrders")}
-                  </span>
-                </Link>
-                <form action={logoutAction}>
-                  <button type="submit" className="text-xs text-muted hover:text-foreground border border-border px-2.5 py-1 transition-colors">
-                    {t("sair")}
-                  </button>
-                </form>
+              <div className="hidden md:block">
+                <AccountMenu
+                  labels={{ account: t("myAccount"), accountMenu: t("accountMenu"), myOrders: t("myOrders"), sair: t("sair") }}
+                  logout={logoutAction}
+                />
               </div>
             ) : (
-              <>
-                <Link href="/login" className="text-[11px] font-semibold uppercase tracking-[0.15em] hover:text-muted hidden sm:inline">
+              <div className="hidden md:flex items-center gap-3">
+                <Link href="/login" className="text-[11px] font-semibold uppercase tracking-[0.15em] hover:text-muted">
                   {t("login")}
                 </Link>
-                <Link href="/cadastro" className="btn-primary text-[11px] uppercase tracking-[0.15em] font-semibold px-4 py-2 hidden sm:inline-block">
+                <Link href="/cadastro" className="btn-primary text-[11px] uppercase tracking-[0.15em] font-semibold px-4 py-2">
                   {t("cadastro")}
                 </Link>
-              </>
+              </div>
             ))}
+          {!isNacional && <CartLink signedIn={Boolean(customer)} />}
         </div>
       </div>
     </header>

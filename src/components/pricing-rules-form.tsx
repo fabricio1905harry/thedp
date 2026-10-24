@@ -28,7 +28,8 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
   const pctSum = PCT_FIELDS.reduce((s, [k]) => s + Number(rules[k] || 0), 0);
 
   const set = <K extends keyof PricingRules>(k: K, v: PricingRules[K]) => setRules((r) => ({ ...r, [k]: v }));
-  const input = "w-full border border-border px-2 py-1.5 text-sm";
+  const input = "border border-border px-2 py-1.5 text-sm";
+  const full = `w-full ${input}`;
 
   function save() {
     setMsg(null);
@@ -56,14 +57,17 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
             {rules.fixed_costs.map((c, i) => (
               <div key={i} className="flex gap-2 items-center">
                 <input
-                  className={`${input} flex-1`}
+                  placeholder="Nome do custo (ex.: Tag)"
+                  aria-label="Nome do custo"
+                  className={`${input} min-w-0 flex-1`}
                   value={c.label}
                   onChange={(e) => set("fixed_costs", rules.fixed_costs.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
                 />
                 <input
                   type="number"
                   step="0.01"
-                  className={`${input} w-28`}
+                  aria-label="Valor em R$"
+                  className={`${input} w-28 shrink-0`}
                   value={c.amount}
                   onChange={(e) => set("fixed_costs", rules.fixed_costs.map((x, j) => (j === i ? { ...x, amount: Number(e.target.value) } : x)))}
                 />
@@ -89,7 +93,7 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
             {PCT_FIELDS.map(([k, label]) => (
               <label key={k} className="text-xs space-y-1">
                 <span>{label}</span>
-                <input type="number" step="0.01" className={input} value={rules[k] as number} onChange={(e) => set(k, Number(e.target.value) as never)} />
+                <input type="number" step="0.01" className={full} value={rules[k] as number} onChange={(e) => set(k, Number(e.target.value) as never)} />
               </label>
             ))}
           </div>
@@ -101,22 +105,22 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <label className="space-y-1">
               <span>Origem do câmbio</span>
-              <select className={input} value={rules.fx_mode} onChange={(e) => set("fx_mode", e.target.value as PricingRules["fx_mode"])}>
+              <select className={full} value={rules.fx_mode} onChange={(e) => set("fx_mode", e.target.value as PricingRules["fx_mode"])}>
                 <option value="manual">Fixo (desta tela)</option>
                 <option value="auto">Automático (Admin → Câmbio)</option>
               </select>
             </label>
             <label className="space-y-1">
               <span>USD (R$ por 1 USD)</span>
-              <input type="number" step="0.0001" className={input} value={rules.usd_rate} onChange={(e) => set("usd_rate", Number(e.target.value))} />
+              <input type="number" step="0.0001" className={full} value={rules.usd_rate} onChange={(e) => set("usd_rate", Number(e.target.value))} />
             </label>
             <label className="space-y-1">
               <span>EUR (R$ por 1 EUR)</span>
-              <input type="number" step="0.0001" className={input} value={rules.eur_rate} onChange={(e) => set("eur_rate", Number(e.target.value))} />
+              <input type="number" step="0.0001" className={full} value={rules.eur_rate} onChange={(e) => set("eur_rate", Number(e.target.value))} />
             </label>
             <label className="space-y-1">
               <span>Arredondamento USD/EUR</span>
-              <select className={input} value={rules.rounding} onChange={(e) => set("rounding", e.target.value as PricingRules["rounding"])}>
+              <select className={full} value={rules.rounding} onChange={(e) => set("rounding", e.target.value as PricingRules["rounding"])}>
                 <option value="up_to_9">Para cima, terminando em 9 (219, 229…)</option>
                 <option value="up_to_integer">Para cima, inteiro</option>
                 <option value="none">Sem arredondar (centavos)</option>
@@ -135,15 +139,15 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
           <div className="grid grid-cols-3 gap-3 text-xs">
             <label className="space-y-1">
               <span>Frete internacional %</span>
-              <input type="number" step="0.01" className={input} value={rules.intl_freight_pct} onChange={(e) => set("intl_freight_pct", Number(e.target.value))} />
+              <input type="number" step="0.01" className={full} value={rules.intl_freight_pct} onChange={(e) => set("intl_freight_pct", Number(e.target.value))} />
             </label>
             <label className="space-y-1">
               <span>Impostos locais %</span>
-              <input type="number" step="0.01" className={input} value={rules.local_taxes_pct} onChange={(e) => set("local_taxes_pct", Number(e.target.value))} />
+              <input type="number" step="0.01" className={full} value={rules.local_taxes_pct} onChange={(e) => set("local_taxes_pct", Number(e.target.value))} />
             </label>
             <label className="space-y-1">
               <span>Markup varejo (×)</span>
-              <input type="number" step="0.01" className={input} value={rules.retail_markup} onChange={(e) => set("retail_markup", Number(e.target.value))} />
+              <input type="number" step="0.01" className={full} value={rules.retail_markup} onChange={(e) => set("retail_markup", Number(e.target.value))} />
             </label>
           </div>
         </section>
@@ -163,7 +167,7 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
         <h2 className="text-sm font-medium uppercase tracking-wide">Simulação</h2>
         <label className="text-xs space-y-1 block">
           <span>Custo da peça (R$)</span>
-          <input type="number" step="0.01" className={input} value={sampleCost} onChange={(e) => setSampleCost(Number(e.target.value))} />
+          <input type="number" step="0.01" className={full} value={sampleCost} onChange={(e) => setSampleCost(Number(e.target.value))} />
         </label>
         {preview ? (
           <dl className="text-sm space-y-1.5">
