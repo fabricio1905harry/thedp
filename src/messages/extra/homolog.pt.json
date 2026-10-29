@@ -29,7 +29,25 @@
     "canceledBadge": "Pedido cancelado",
     "canceledTitle": "Este pedido foi cancelado",
     "canceledText": "Nenhum pagamento foi cobrado. Você pode enviar um novo pedido quando quiser.",
-    "itemsRequestedTitle": "Peças solicitadas ({count})"
+    "itemsRequestedTitle": "Peças solicitadas ({count})",
+    "deliveryMode": {
+      "title": "Como você prefere receber o pedido?",
+      "shipNow": "Enviar agora",
+      "shipNowText": "Pague o valor total agora. Enviamos assim que o pagamento for confirmado.",
+      "reserve": "Reservar para entrega futura",
+      "reserveText": "Pague agora um depósito de reserva não reembolsável para garantir as peças; o saldo é pago antes da data de envio escolhida.",
+      "desiredDate": "Data de envio desejada",
+      "confirm": "Confirmar reserva",
+      "update": "Atualizar reserva",
+      "errors": {
+        "auth": "Entre novamente.",
+        "notFound": "Pedido não encontrado.",
+        "notOpen": "Este pedido não está mais aberto para pagamento.",
+        "paid": "Um pagamento já foi feito ou enviado para verificação.",
+        "date": "Escolha uma data futura.",
+        "failed": "Não foi possível salvar sua escolha. Tente novamente."
+      }
+    }
   },
   "orderActions": {
     "cancelCta": "Cancelar pedido",

@@ -43,9 +43,12 @@ export async function saveEntity(kind: string, p: EntityPayload): Promise<Result
   if (ss && se && se < ss) return { error: "O fim da programação é anterior ao início." };
   if (p.paid_placement && !p.partner.trim()) return { error: "Placement pago: informe o nome do parceiro." };
 
+  const OPS = ["intl_b2b", "intl_b2c", "br_b2b", "br_b2c"];
   const base = {
     slug,
     cover_url: img(p.cover_url),
+    cover_mobile_url: img(p.cover_mobile_url ?? ""),
+    visible_ops: (p.visible_ops ?? OPS).filter((o) => OPS.includes(o)),
     active: p.active,
     featured: p.featured,
     sort: Number.isFinite(p.sort) ? Math.round(p.sort) : 100,
@@ -65,11 +68,19 @@ export async function saveEntity(kind: string, p: EntityPayload): Promise<Result
             story: loc(p.story),
             starts_at: ss,
             ends_at: se,
-            alert_min_styles: Math.max(0, Math.round(Number(p.alert_min_styles) || 0)),
+            alert_min_styles: 0,
+            alert_review_styles: Math.max(0, Math.round(Number(p.alert_review_styles) || 0)),
+            alert_low_styles: Math.max(0, Math.round(Number(p.alert_low_styles) || 0)),
+            alert_end_days: Math.max(0, Math.round(Number(p.alert_end_days) || 0)),
           }
         : kind === "lookbooks"
-          ? { ...base, title: loc(p.title), story: loc(p.story) }
-          : { ...base, title: loc(p.title), body: loc(p.story) };
+          ? { ...base, title: loc(p.title), story: loc(p.story), brand_id: p.brand_id || null, collection_id: p.collection_id || null }
+          : {
+              ...base,
+              title: loc(p.title),
+              body: loc(p.story),
+              gallery: (p.gallery ?? []).map((u) => img(u)).filter((u): u is string => Boolean(u)),
+            };
 
   const supabase = await createClient();
   let id = p.id;
@@ -93,6 +104,15 @@ export async function saveEntity(kind: string, p: EntityPayload): Promise<Result
       if (e2) return { error: e2.message };
     }
   } else if (kind === "collections" || kind === "edits") {
+    if (kind === "edits") {
+      const brandIds = [...new Set(p.brandIds ?? [])];
+      const { error: b1 } = await supabase.from("tdp_edit_brands").delete().eq("edit_id", id);
+      if (b1) return { error: b1.message };
+      if (brandIds.length > 0) {
+        const { error: b2 } = await supabase.from("tdp_edit_brands").insert(brandIds.map((bid, i) => ({ edit_id: id, brand_id: bid, sort: i })));
+        if (b2) return { error: b2.message };
+      }
+    }
     const table = kind === "collections" ? "collection_products" : "tdp_edit_products";
     const fk = kind === "collections" ? "collection_id" : "edit_id";
     const { error: e1 } = await supabase.from(table).delete().eq(fk, id);

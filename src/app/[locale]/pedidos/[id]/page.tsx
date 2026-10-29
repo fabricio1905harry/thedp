@@ -5,8 +5,10 @@ import { getCurrentCustomer } from "@/lib/auth";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/currency";
 import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp-button";
+import { DeliveryModeChoice } from "@/components/delivery-mode-choice";
 import { OrderPayPanel } from "@/components/order-pay-panel";
 import { OrderPostPayBuyer } from "@/components/order-postpay-buyer";
+import { calculateShipmentPackages } from "@/lib/dhl-packaging";
 import { bankFeeInCurrency, computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { BUYER_CANCELABLE_STATUSES, BUYER_RELEASED_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
@@ -121,8 +123,17 @@ export default async function OrderConfirmationPage({
     }
   }
   const shippingAddr = (order.shipping_address as Record<string, string>) || {};
-  const packagingSnapshot = (order.quote_snapshot as Record<string, unknown>)?.packaging as Record<string, unknown>;
-  const packagesList = (packagingSnapshot?.packages as Array<Record<string, unknown>>) || [];
+  // Packaging is recalculated from the CURRENT confirmed lines (the snapshot taken at checkout goes stale
+  // as soon as the TDP removes / replaces / reduces a line) — same rule the Admin uses.
+  let packagesList: Array<Record<string, unknown>> = [];
+  if (!isRequestStage && !isCanceled && activeItemCount > 0) {
+    try {
+      packagesList = (await calculateShipmentPackages({ quantity: activeItemCount, category: "Dresses" })).packages as unknown as Array<Record<string, unknown>>;
+    } catch {
+      const snapshot = (order.quote_snapshot as Record<string, unknown>)?.packaging as Record<string, unknown> | undefined;
+      packagesList = (snapshot?.packages as Array<Record<string, unknown>>) || [];
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 lg:py-16 space-y-10 animate-fade-in-up">
@@ -170,6 +181,10 @@ export default async function OrderConfirmationPage({
       )}
 
       {paymentFlag === "canceled" && <PaymentCanceledLogger orderId={order.id} />}
+
+      {due && order.status === "confirmed_awaiting_payment" && (
+        <DeliveryModeChoice orderId={order.id} current={order.payment_mode === "reserve" ? "reserve" : "standard"} minDate={new Date(requestedAt + 86_400_000).toISOString().slice(0, 10)} />
+      )}
 
       {due && (enabledMethods.has("stripe_card") || enabledMethods.has("bank_transfer")) && (
         <OrderPayPanel

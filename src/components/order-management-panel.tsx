@@ -27,6 +27,7 @@ import { EDITABLE_ORDER_STATUSES, ITEM_STATUS_LABELS, STOCK_HOLD_LABELS } from "
 import { PASS_THROUGH_COMPONENTS, PAYMENT_METHOD_LABELS } from "@/lib/payments";
 import { DUTIES_MODES, DUTIES_MODE_LABELS_PT, dutiesDefaultAmount, type DutiesMode } from "@/lib/duties";
 import { PaymentProofLink } from "@/components/payment-proof-link";
+import { OrderLanguageSelect, StaffProofUpload } from "@/components/order-staff-tools";
 
 export interface OrderItemRow {
   id: string;
@@ -42,6 +43,11 @@ export interface OrderItemRow {
   added_by_tdp: boolean;
   original_qty: number | null;
   original_unit_price: number | null;
+  /** internal references shown to the TDP only (supplier name, supplier ref, TDP ref, synced stock) */
+  supplier_name?: string | null;
+  supplier_ref?: string | null;
+  tdp_ref?: string | null;
+  synced_stock?: number | null;
 }
 
 export interface OrderEventRow {
@@ -103,6 +109,8 @@ export interface DutiesRuleInfo {
 
 export interface OrderSummary {
   duties_mode?: string | null;
+  communication_locale?: string | null;
+  buyer_locale?: string | null;
   id: string;
   status: string;
   currency: string;
@@ -186,6 +194,8 @@ export function OrderManagementPanel({
   return (
     <div className="space-y-8">
       {error && <p className="text-sm text-red-600 border border-red-300 p-2">{error}</p>}
+
+      <OrderLanguageSelect orderId={order.id} value={order.communication_locale ?? null} accountLocale={order.buyer_locale ?? null} />
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -350,6 +360,9 @@ function ItemRow({
       <td className="py-2 pr-2">
         <span className={inactive ? "line-through" : ""}>{item.product_title ?? "—"}</span>
         <span className="block text-muted font-mono">{item.sku}</span>
+        <span className="block text-[10px] text-muted">
+          Fornecedor: {item.supplier_name || "—"} · ref. fornecedor: {item.supplier_ref || "—"} · ref. TDP: {item.tdp_ref || "—"} · estoque sincronizado: {item.synced_stock ?? "—"}
+        </span>
         {item.added_by_tdp && <span className="block text-[10px] uppercase text-accent">adicionado pela TDP</span>}
         {substitutedFor && (
           <span className="block text-[10px] text-muted">substitui {substitutedFor.product_title} {substitutedFor.color}/{substitutedFor.size}</span>
@@ -937,6 +950,9 @@ function PaymentsPanel({
                 <td className="py-1 pr-2">
                   {PAYMENT_METHOD_LABELS[p.method_code] ?? p.method_code} · {PAYMENT_KIND_LABELS[p.kind] ?? p.kind}
                   {p.proof_path && <PaymentProofLink orderId={order.id} paymentId={p.id} name={p.proof_name ?? null} />}
+                  {p.method_code === "bank_transfer" && p.status === "pending_verification" && (
+                    <StaffProofUpload orderId={order.id} paymentId={p.id} hasProof={Boolean(p.proof_path)} />
+                  )}
                 </td>
                 <td className="py-1 pr-2">{money(p.merchandise_amount, p.currency)}</td>
                 <td className="py-1 pr-2">{money(p.bank_fee_amount, p.currency)}</td>

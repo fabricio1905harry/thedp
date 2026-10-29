@@ -9,6 +9,7 @@ import { formatCurrency, pickPrice } from "@/lib/currency";
 import type { ProductDetail } from "@/lib/catalog";
 import type { Variant } from "@/lib/types";
 import { swatchHex } from "@/lib/color-swatch";
+import { PRODUCT_COLOR_EVENT } from "@/components/product-gallery";
 import { formatSize, type SizeChartRow } from "@/lib/size-format";
 import { cancelNotify, requestNotify } from "@/lib/buyer-actions";
 import { SizeGuideButton } from "@/components/size-guide";
@@ -58,9 +59,9 @@ export function ProductPurchasePanel({
 
   const sizeLabel = useMemo(() => {
     const cache = new Map<string, string>();
-    for (const s of product.sizes) cache.set(s, formatSize(s, product.sizeInfo[s], locale, currency));
+    for (const s of product.sizes) cache.set(s, formatSize(s, product.sizeInfo[s], locale));
     return cache;
-  }, [product.sizes, product.sizeInfo, currency, locale]);
+  }, [product.sizes, product.sizeInfo, locale]);
 
   async function toggleNotify(variant: Variant) {
     setNotifyMsg(null);
@@ -81,7 +82,12 @@ export function ProductPurchasePanel({
 
   const picked = product.pricing ? pickPrice(product.pricing, currency) : null;
 
+  function announceColor(label: string | null) {
+    window.dispatchEvent(new CustomEvent(PRODUCT_COLOR_EVENT, { detail: label }));
+  }
+
   function setCellQty(variant: Variant, qty: number) {
+    if (qty > 0) announceColor(variant.color);
     // Supplier stock is never exposed to the buyer: the TDP confirms every item before payment.
     const clamped = Math.max(0, Math.min(qty, 999));
     setAdded(false);
@@ -155,7 +161,15 @@ export function ProductPurchasePanel({
                 {product.colors.map((c) => (
                   <tr key={c}>
                     <td className="sticky left-0 bg-background px-3 py-2 border-t border-border whitespace-nowrap">
-                      <span className="inline-flex items-center gap-2 text-xs font-medium">
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => announceColor(c)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") announceColor(c);
+                        }}
+                        className="inline-flex items-center gap-2 text-xs font-medium cursor-pointer"
+                      >
                         <span
                           className="inline-block w-4 h-4 rounded-full border border-border/70 shrink-0"
                           style={{ backgroundColor: product.colorHex[c] ?? swatchHex(c) }}

@@ -54,7 +54,7 @@ export function cmToIn(cm: string): string {
  *   en / es:  M / US 6 (BR 40)      pt:  M / BR 40 (US 6)
  * The EU size is not shown: the PDF does not use it.
  */
-export function formatSize(raw: string, info: SizeInfo | undefined, locale: string, _currency?: string): string {
+export function formatSize(raw: string, info: SizeInfo | undefined, locale: string): string {
   if (!info) return raw;
   const head = info.letter || (norm(raw) === norm(info.br) ? "" : raw);
   const join = (rest: string) => (head ? `${head} / ${rest}` : rest);

@@ -35,7 +35,7 @@ export default async function AdminProductEditPage({
 
   const { data: images } = await supabase
     .from("product_images")
-    .select("id, product_id, storage_path, position, review_status, origin, is_cover, crop, replaces_image_id")
+    .select("id, product_id, storage_path, position, review_status, origin, is_cover, crop, replaces_image_id, color_key")
     .eq("product_id", id)
     .order("position");
 
@@ -70,7 +70,11 @@ export default async function AdminProductEditPage({
 
       <h2 className="text-sm font-medium uppercase tracking-wide mb-4">Fotos</h2>
       <div className="mb-10">
-        <ProductImagesManager productId={id} images={(images ?? []) as ImageRow[]} />
+        <ProductImagesManager
+          productId={id}
+          images={(images ?? []) as ImageRow[]}
+          colors={[...new Set((variants ?? []).map((v) => v.color as string).filter(Boolean))]}
+        />
       </div>
 
       <ProductEditForm

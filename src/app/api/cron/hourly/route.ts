@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { flushEmailOutbox } from "@/lib/email";
 import { processAbandonedCarts } from "@/lib/abandoned-carts";
 import { processMessagingQueue } from "@/lib/notifications";
+import { sendPlacementReminders } from "@/lib/placement-reminders";
 
 /**
  * Hourly job: closes expired Temporary Stock Hold windows (status PAYMENT
@@ -33,6 +34,10 @@ export async function GET(request: Request) {
   await attempt("paymentWindowReminders", async () => (await supabase.rpc("queue_payment_window_reminders")).data);
   await attempt("reserveStages", async () => (await supabase.rpc("refresh_reserve_stages")).data);
   await attempt("reserveReminders", async () => (await supabase.rpc("queue_reserve_reminders")).data);
+  await attempt("placementActions", async () => (await supabase.rpc("refresh_placement_actions")).data);
+  await attempt("placementReminders", () => sendPlacementReminders(supabase));
+  await attempt("collectionAlerts", async () => (await supabase.rpc("refresh_all_collection_alerts")).data);
+  await attempt("sizeMapping", async () => (await supabase.rpc("refresh_size_mapping_action")).data);
   await attempt("abandonedCarts", () => processAbandonedCarts());
   const email = await flushEmailOutbox(50);
   await attempt("messaging", () => processMessagingQueue(50));

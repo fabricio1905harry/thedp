@@ -439,6 +439,21 @@ async function setImageCropImpl(imageId: string, crop: ImageCrop | null) {
   revalidateImages([data.product_id]);
 }
 
+/** Ties a photo to one color of the product (the supplier color text); empty = photo for every color. */
+async function setImageColorImpl(imageId: string, colorKey: string | null) {
+  await requireStaff();
+  const supabase = await createClient();
+  const value = (colorKey ?? "").trim().slice(0, 120) || null;
+  const { data, error } = await supabase
+    .from("product_images")
+    .update({ color_key: value })
+    .eq("id", imageId)
+    .select("product_id")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidateImages([data.product_id]);
+}
+
 async function insertTdpImage(
   productId: string,
   url: string,
@@ -621,6 +636,10 @@ export async function setCoverImage(...args: Parameters<typeof setCoverImageImpl
 
 export async function reorderProductImages(...args: Parameters<typeof reorderProductImagesImpl>) {
   return safe(() => reorderProductImagesImpl(...args));
+}
+
+export async function setImageColor(...args: Parameters<typeof setImageColorImpl>) {
+  return safe(() => setImageColorImpl(...args));
 }
 
 export async function setImageCrop(...args: Parameters<typeof setImageCropImpl>) {

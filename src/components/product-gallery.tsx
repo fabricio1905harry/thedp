@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
 import { croppedImageStyle, type ImageCrop } from "@/lib/image-crop";
@@ -14,19 +14,47 @@ function thumbSrc(url: string): string {
   return isOptimizable(full) ? optimizedUrl(full, 320) : full;
 }
 
+/** Event the purchase panel fires when the buyer picks a color (label = buyer-facing color name). */
+export const PRODUCT_COLOR_EVENT = "tdp:product-color";
+
 export function ProductGallery({
-  images,
-  crops = [],
+  images: allImages,
+  crops: allCrops = [],
+  imageColors = [],
   slug,
   title,
 }: {
   images: string[];
   crops?: (ImageCrop | null)[];
+  /** buyer-facing color of each photo (null = every color) */
+  imageColors?: (string | null)[];
   slug: string;
   title: string;
 }) {
   const t = useTranslations("common");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [color, setColor] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onColor = (e: Event) => {
+      setColor((e as CustomEvent<string | null>).detail ?? null);
+      setSelectedIndex(0);
+    };
+    window.addEventListener(PRODUCT_COLOR_EVENT, onColor);
+    return () => window.removeEventListener(PRODUCT_COLOR_EVENT, onColor);
+  }, []);
+
+  // photos of the chosen color first, then the shared ones; photos of other colors are left out
+  const order = useMemo(() => {
+    const idx = allImages.map((_, i) => i);
+    if (!color || !imageColors.some(Boolean)) return idx;
+    const own = idx.filter((i) => imageColors[i] === color);
+    const shared = idx.filter((i) => !imageColors[i]);
+    const list = [...own, ...shared];
+    return list.length > 0 ? list : idx;
+  }, [allImages, imageColors, color]);
+  const images = order.map((i) => allImages[i]);
+  const crops = order.map((i) => allCrops[i] ?? null);
 
   const displayImages = images.length > 0 ? images : [`/images/products/${slug}.png`];
   const activeImage = displayImages[selectedIndex] || displayImages[0];

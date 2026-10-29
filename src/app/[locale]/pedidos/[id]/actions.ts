@@ -7,6 +7,7 @@ import { queueTeamNotice, siteOrigin } from "@/lib/email";
 import { BUYER_CANCELABLE_STATUSES } from "@/lib/order-status";
 import { getCurrentCustomer } from "@/lib/auth";
 import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
+import { applyReserveMode } from "@/lib/reserve";
 import { createStripeCheckoutSession, sessionExpiry, stripeConfigured } from "@/lib/stripe";
 
 export interface StartCheckoutResult {
@@ -225,6 +226,66 @@ export async function requestOrderReturn(orderId: string, message: string, local
       admin_url: origin ? `${origin}/admin/contatos?status=new` : "",
     });
     revalidatePath("/admin/contatos");
+    return { ok: true };
+  } catch {
+    return { error: "failed" };
+  }
+}
+
+export interface DeliveryModeResult {
+  ok?: boolean;
+  error?: "auth" | "notFound" | "notOpen" | "paid" | "date" | "failed";
+}
+
+/**
+ * Confirmed Order: the buyer chooses between "Ship now" (pay in full) and
+ * "Reserve for later delivery" (pay the reserve deposit now, balance before
+ * shipping). Only while the order is waiting for payment and nothing was
+ * paid / sent for verification yet; ownership is checked first.
+ */
+export async function chooseDeliveryMode(
+  orderId: string,
+  mode: "ship_now" | "reserve",
+  desiredDate?: string
+): Promise<DeliveryModeResult> {
+  try {
+    const customer = await getCurrentCustomer();
+    if (!customer) return { error: "auth" };
+    const supabase = createServiceRoleClient();
+    const { data: order } = await supabase
+      .from("orders")
+      .select("id, status, payment_released_at, charges_informed_at, stock_hold_until, payment_mode")
+      .eq("id", orderId)
+      .eq("customer_id", customer.id)
+      .maybeSingle();
+    if (!order) return { error: "notFound" };
+    const holdOk = !order.stock_hold_until || new Date(order.stock_hold_until).getTime() > Date.now();
+    if (order.status !== "confirmed_awaiting_payment" || !order.payment_released_at || !order.charges_informed_at || !holdOk) {
+      return { error: "notOpen" };
+    }
+    const { data: paid } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("order_id", orderId)
+      .in("status", ["confirmed", "pending_verification"])
+      .limit(1);
+    if (paid && paid.length > 0) return { error: "paid" };
+
+    let date: string | null = null;
+    if (mode === "reserve" && desiredDate) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(desiredDate) || new Date(`${desiredDate}T12:00:00Z`).getTime() < Date.now()) return { error: "date" };
+      date = desiredDate;
+    }
+
+    await applyReserveMode(supabase, orderId, mode === "reserve", { desiredDeliveryDate: date });
+    await supabase.from("order_events").insert({
+      order_id: orderId,
+      actor_id: customer.id,
+      event_type: "delivery_mode_chosen",
+      summary: mode === "reserve" ? `Comprador escolheu Reserve for Later Delivery${date ? ` (envio desejado ${date})` : ""}` : "Comprador escolheu Ship now",
+    });
+    revalidatePath("/[locale]/pedidos/[id]", "page");
+    revalidatePath(`/admin/pedidos/${orderId}`);
     return { ok: true };
   } catch {
     return { error: "failed" };

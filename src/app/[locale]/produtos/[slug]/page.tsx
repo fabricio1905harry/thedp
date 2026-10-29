@@ -64,7 +64,7 @@ export default async function ProductPage({
       <WhatsAppContextSetter
         context={{ kind: "product", product: { name: product.title, code: product.reference ?? product.slug, url: productUrl } }}
       />
-      <ProductGallery images={product.images} crops={product.imageCrops} slug={product.slug} title={product.title} />
+      <ProductGallery images={product.images} crops={product.imageCrops} imageColors={product.imageColors} slug={product.slug} title={product.title} />
 
       <div>
         <p className="text-[11px] uppercase tracking-[0.25em] text-muted">

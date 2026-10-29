@@ -40,6 +40,9 @@ export const PLACEHOLDER_HELP: Record<string, string> = {
   cart_items: "Lista de itens do carrinho",
   item_count: "Quantidade de peças",
   cart_total: "Valor do carrinho (com moeda)",
+  store_name: "Nome da empresa / loja do cadastro",
+  note: "Observação da equipe (quais informações faltam, motivo)",
+  account_link: "Link de Minha conta",
 };
 
 export interface NotificationEventDef {
@@ -53,6 +56,9 @@ export interface NotificationEventDef {
 }
 
 export const NOTIFICATION_EVENTS: NotificationEventDef[] = [
+  { code: "wholesale_account_approved", group: "Conta", label: "Conta de atacado aprovada", description: "Enviada quando a TDP aprova o cadastro de atacado (PDF pág. 27: WHOLESALE ACCOUNT APPROVED).", placeholders: ["buyer_name", "store_name", "account_link"], channels: ["email"] },
+  { code: "wholesale_more_info", group: "Conta", label: "Cadastro: mais informações necessárias", description: "Enviada quando a TDP pede mais informações sobre o cadastro. {note} traz o que foi pedido.", placeholders: ["buyer_name", "store_name", "note", "account_link"], channels: ["email"] },
+  { code: "wholesale_account_rejected", group: "Conta", label: "Cadastro recusado", description: "Enviada quando o cadastro é recusado. Só é enviada se este texto estiver aprovado; sem texto aprovado nenhum e-mail sai.", placeholders: ["buyer_name", "store_name", "note"], channels: ["email"] },
   { code: "order_request_received", group: "Pedido", label: "Order Request recebida", description: "Enviada quando o comprador envia o Order Request.", placeholders: ["buyer_name", "order_number", "order_link"], channels: ["email", "whatsapp"] },
   { code: "stock_confirmed", group: "Pedido", label: "Estoque confirmado / Confirmed Order pronto", description: "Enviada quando o pedido é liberado para pagamento.", placeholders: ["buyer_name", "order_number", "order_link", "total", "hold_until"], channels: ["email", "whatsapp", "sms"] },
   { code: "payment_window_expiring", group: "Pedido", label: "Janela de pagamento expirando (lembrete)", description: "Lembrete algumas horas antes de a reserva de estoque expirar (horas configuráveis).", placeholders: ["buyer_name", "order_number", "order_link", "hold_until"], channels: ["email", "whatsapp", "sms"] },
@@ -63,7 +69,7 @@ export const NOTIFICATION_EVENTS: NotificationEventDef[] = [
   { code: "reserve_reminder_8", group: "Reserve", label: "Reserve: saldo vence em 8 dias", description: "Lembrete 8 dias antes do vencimento do saldo.", placeholders: ["buyer_name", "order_number", "order_link", "due_date", "balance", "days"], channels: ["email", "whatsapp"] },
   { code: "reserve_reminder_7", group: "Reserve", label: "Reserve: saldo vence em 7 dias", description: "Lembrete 7 dias antes do vencimento do saldo.", placeholders: ["buyer_name", "order_number", "order_link", "due_date", "balance", "days"], channels: ["email", "whatsapp", "sms"] },
   { code: "reserve_overdue", group: "Reserve", label: "Reserve: saldo em atraso", description: "Enviada quando a data de vencimento passa sem o saldo pago.", placeholders: ["buyer_name", "order_number", "order_link", "due_date"], channels: ["email", "whatsapp"] },
-  { code: "reserve_expired", group: "Reserve", label: "Reserve: prazo máximo (180 dias) expirado", description: "Enviada quando a janela máxima de reserva termina sem o pagamento do saldo.", placeholders: ["buyer_name", "order_number", "order_link"], channels: ["email"] },
+  { code: "reserve_expired", group: "Reserve", label: "Reserve: armazenagem (180 dias após o envio) expirada", description: "Enviada quando os 180 dias de armazenagem depois da data de envio terminam sem o pagamento do saldo.", placeholders: ["buyer_name", "order_number", "order_link"], channels: ["email"] },
   { code: "shipment_created", group: "Envio", label: "Envio criado", description: "Enviada quando o envio DHL é criado (nunca para envios MOCK).", placeholders: ["buyer_name", "order_number", "order_link", "tracking_number", "tracking_link", "carrier"], channels: ["email", "whatsapp"] },
   { code: "in_transit", group: "Envio", label: "Pedido em trânsito", description: "Enviada quando a DHL coleta o pedido.", placeholders: ["buyer_name", "order_number", "order_link", "tracking_number", "tracking_link", "carrier"], channels: ["email", "whatsapp", "sms"] },
   { code: "delivered", group: "Envio", label: "Pedido entregue", description: "Enviada quando a entrega é confirmada.", placeholders: ["buyer_name", "order_number", "order_link"], channels: ["email", "whatsapp"] },
@@ -94,6 +100,30 @@ function email(
 
 /** Draft e-mail texts (en master / es / pt). Never sent until approved. */
 export const EMAIL_DRAFTS: Record<string, DraftSet> = {
+  wholesale_account_approved: email(
+    ["Your wholesale account is approved", "Tu cuenta mayorista fue aprobada", "Sua conta de atacado foi aprovada"],
+    [
+      ["Your wholesale account at The Dressing Project has been approved. You can now sign in to see wholesale prices and place your order requests.", "Sign in: {account_link}"],
+      ["Tu cuenta mayorista en The Dressing Project fue aprobada. Ya puedes iniciar sesión para ver los precios mayoristas y enviar tus solicitudes de pedido.", "Iniciar sesión: {account_link}"],
+      ["Sua conta de atacado na The Dressing Project foi aprovada. Agora você já pode entrar para ver os preços de atacado e enviar seus pedidos.", "Entrar: {account_link}"],
+    ]
+  ),
+  wholesale_more_info: email(
+    ["More information needed for your wholesale application", "Necesitamos más información para tu solicitud mayorista", "Precisamos de mais informações para o seu cadastro de atacado"],
+    [
+      ["To continue reviewing your wholesale application we need a bit more information:", "{note}", "Just reply to this e-mail with the details."],
+      ["Para seguir revisando tu solicitud mayorista necesitamos un poco más de información:", "{note}", "Solo responde a este e-mail con los datos."],
+      ["Para continuar a análise do seu cadastro de atacado precisamos de mais algumas informações:", "{note}", "Basta responder a este e-mail com os dados."],
+    ]
+  ),
+  wholesale_account_rejected: email(
+    ["About your wholesale application", "Sobre tu solicitud mayorista", "Sobre o seu cadastro de atacado"],
+    [
+      ["Thank you for your interest in The Dressing Project. After reviewing your application we are not able to open a wholesale account at this time.", "{note}"],
+      ["Gracias por tu interés en The Dressing Project. Tras revisar tu solicitud, por ahora no podemos abrir una cuenta mayorista.", "{note}"],
+      ["Obrigado pelo interesse na The Dressing Project. Depois de analisar o seu cadastro, não conseguimos abrir uma conta de atacado neste momento.", "{note}"],
+    ]
+  ),
   order_request_received: email(
     ["Order Request received — {order_number}", "Solicitud de pedido recibida — {order_number}", "Order Request recebida — {order_number}"],
     [
@@ -177,9 +207,9 @@ export const EMAIL_DRAFTS: Record<string, DraftSet> = {
   reserve_expired: email(
     ["Reserve period ended — {order_number}", "Plazo de reserva finalizado — {order_number}", "Prazo da reserva encerrado — {order_number}"],
     [
-      ["The maximum reserve period for order {order_number} has ended without the balance being paid. Please contact us to decide the next steps."],
-      ["El plazo máximo de reserva del pedido {order_number} terminó sin que se pagara el saldo. Contáctanos para decidir los próximos pasos."],
-      ["O prazo máximo de reserva do pedido {order_number} terminou sem o pagamento do saldo. Entre em contato para decidirmos os próximos passos."],
+      ["The storage period (180 days after the shipping date) for order {order_number} has ended without the balance being paid. Please contact us to decide the next steps."],
+      ["El plazo de almacenamiento (180 días después de la fecha de envío) del pedido {order_number} terminó sin que se pagara el saldo. Contáctanos para decidir los próximos pasos."],
+      ["O prazo de armazenagem (180 dias após a data de envio) do pedido {order_number} terminou sem o pagamento do saldo. Entre em contato para decidirmos os próximos passos."],
     ]
   ),
   shipment_created: email(
@@ -356,6 +386,9 @@ export function buildTemplateVars(payload: Record<string, unknown>, locale: Noti
     cart_items: String(payload.cart_items_text ?? ""),
     item_count: payload.item_count !== undefined ? String(payload.item_count) : "",
     cart_total: fmtMoney(payload.cart_total, currency, locale),
+    store_name: String(payload.store_name ?? ""),
+    note: String(payload.note ?? ""),
+    account_link: `${origin}/${locale}/minha-conta`,
   };
   return vars;
 }

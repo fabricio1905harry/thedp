@@ -27,18 +27,18 @@ export default async function AdminOrderDetailPage({
   const supabase = await createClient();
 
   const ORDER_COLUMNS =
-    "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customer_id, canceled_at, cancel_reason, canceled_by_buyer, duties_mode, shipping_address";
+    "id, order_number, status, channel, currency, subtotal, shipping_cost, duties_estimate, total, incoterm, created_at, payment_mode, reserve_amount, reserve_pct_of_sale, stock_hold_type, stock_hold_until, freight_amount, insurance_amount, fuel_surcharge_amount, demand_surcharge_amount, export_declaration_amount, other_dhl_amount, duties_taxes_amount, other_charges_amount, delivery_days, charges_note, charges_informed_at, quote_snapshot, original_subtotal, customer_id, canceled_at, cancel_reason, canceled_by_buyer, duties_mode, shipping_address, communication_locale";
 
   // Everything is requested at once (one round trip instead of several in a row).
   const [orderRes, itemsRes, paymentsRes, methodsRes, rulesRes, feeRes, eventsRes] = await Promise.all([
     supabase
       .from("orders")
-      .select(`${ORDER_COLUMNS}, customer:customers!orders_customer_id_fkey ( email, name, company_name )`)
+      .select(`${ORDER_COLUMNS}, customer:customers!orders_customer_id_fkey ( email, name, company_name, locale )`)
       .eq("id", id)
       .maybeSingle(),
     supabase
       .from("order_items")
-      .select("id, qty, unit_price, item_status, unavailable_note, product_title, sku, color, size, substitutes_item_id, added_by_tdp, original_qty, original_unit_price")
+      .select("id, variant_id, product_id, qty, unit_price, item_status, unavailable_note, product_title, sku, color, size, substitutes_item_id, added_by_tdp, original_qty, original_unit_price")
       .eq("order_id", id)
       .order("id"),
     supabase
@@ -84,7 +84,7 @@ export default async function AdminOrderDetailPage({
       orderError = null;
       order = plain.data as typeof order;
       const c = order
-        ? await supabase.from("customers").select("email, name, company_name").eq("id", order.customer_id).maybeSingle()
+        ? await supabase.from("customers").select("email, name, company_name, locale").eq("id", order.customer_id).maybeSingle()
         : null;
       customerRow = c?.data ?? null;
     }
@@ -104,7 +104,36 @@ export default async function AdminOrderDetailPage({
   }
   if (!order) notFound();
 
-  const items = itemsRes.data;
+  // per line (TDP only): supplier, supplier reference, TDP reference and the synced stock
+  type RawItem = NonNullable<typeof itemsRes.data>[number] & { variant_id?: string | null; product_id?: string | null };
+  const rawItems = (itemsRes.data ?? []) as RawItem[];
+  const productIdsAll = [...new Set(rawItems.map((i) => i.product_id).filter(Boolean))] as string[];
+  const variantIdsAll = [...new Set(rawItems.map((i) => i.variant_id).filter(Boolean))] as string[];
+  const [{ data: prodInfo }, { data: varInfo }] = await Promise.all([
+    productIdsAll.length
+      ? supabase.from("products").select("id, tdp_ref, supplier_ref, connector_id").in("id", productIdsAll)
+      : Promise.resolve({ data: [] as { id: string; tdp_ref: string | null; supplier_ref: string | null; connector_id: string | null }[] }),
+    variantIdsAll.length
+      ? supabase.from("variants").select("id, stock").in("id", variantIdsAll)
+      : Promise.resolve({ data: [] as { id: string; stock: number | null }[] }),
+  ]);
+  const connectorIds = [...new Set((prodInfo ?? []).map((p) => p.connector_id).filter(Boolean))] as string[];
+  const { data: connInfo } = connectorIds.length
+    ? await supabase.from("connectors").select("id, supplier_name").in("id", connectorIds)
+    : { data: [] as { id: string; supplier_name: string }[] };
+  const prodById = new Map((prodInfo ?? []).map((p) => [p.id, p]));
+  const varById = new Map((varInfo ?? []).map((v) => [v.id, v]));
+  const connById = new Map((connInfo ?? []).map((c) => [c.id, c.supplier_name]));
+  const items = rawItems.map((i) => {
+    const p = i.product_id ? prodById.get(i.product_id) : undefined;
+    return {
+      ...i,
+      tdp_ref: p?.tdp_ref ?? null,
+      supplier_ref: p?.supplier_ref ?? null,
+      supplier_name: p?.connector_id ? (connById.get(p.connector_id) ?? null) : null,
+      synced_stock: i.variant_id ? (varById.get(i.variant_id)?.stock ?? null) : null,
+    };
+  });
   const payments = paymentsRes.data;
   const methods = methodsRes.data;
   const rules = rulesRes.data;
@@ -185,7 +214,7 @@ export default async function AdminOrderDetailPage({
       )}
 
       <OrderManagementPanel
-        order={order as unknown as OrderSummary}
+        order={{ ...(order as unknown as OrderSummary), buyer_locale: (customerRow as { locale?: string | null } | null | undefined)?.locale ?? null }}
         items={(items ?? []) as OrderItemRow[]}
         payments={(payments ?? []) as PaymentRow[]}
         methods={(methods ?? []) as MethodAvailability[]}

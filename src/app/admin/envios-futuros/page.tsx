@@ -54,7 +54,7 @@ export default async function UpcomingShipmentsPage({ searchParams }: { searchPa
     <div className="max-w-6xl space-y-5">
       <div>
         <h1 className="font-serif text-2xl mb-1">Envios futuros</h1>
-        <p className="text-sm text-muted">Pedidos Reserve for Later Delivery por vencimento do saldo (UPCOMING SHIPMENTS). Lembretes automáticos 14, 8 e 7 dias antes; janela máxima de 180 dias.</p>
+        <p className="text-sm text-muted">Pedidos Reserve for Later Delivery por vencimento do saldo (UPCOMING SHIPMENTS). Lembretes automáticos 14, 8 e 7 dias antes; os 180 dias são de armazenagem depois da data de envio desejada (não um prazo máximo de reserva).</p>
       </div>
 
       <div className="flex flex-wrap gap-2 text-xs items-center">

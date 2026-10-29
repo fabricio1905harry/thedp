@@ -14,16 +14,14 @@ const loc = (v: unknown) => {
 };
 const today = () => new Date().toISOString().slice(0, 10);
 
+/** Only the item's own schedule (collections) hides it; a paid placement ending only removes the paid highlight. */
 function visibility(r: Row): EntityRow["visibility"] {
   const t = today();
   if (!r.active) return { label: "Desligado", tone: "off" };
-  const start = (s(r.placement_start) || s(r.starts_at)) || null;
-  const ps = s(r.placement_start);
-  const pe = s(r.placement_end);
   const ss = s(r.starts_at);
   const se = s(r.ends_at);
-  if ((pe && pe < t) || (se && se < t)) return { label: "Expirado (oculto)", tone: "warn" };
-  if ((ps && ps > t) || (ss && ss > t) || (start && start > t)) return { label: "Agendado", tone: "warn" };
+  if (se && se < t) return { label: "Programação encerrada (oculto)", tone: "warn" };
+  if (ss && ss > t) return { label: "Agendado", tone: "warn" };
   return { label: "Visível no site", tone: "ok" };
 }
 
@@ -60,13 +58,15 @@ export async function EntityListPage({ kind }: { kind: EntityKind }) {
     if (kind === "collections") {
       const { data: c } = await supabase.rpc("collection_stock_counts", { p_collection: r.id }).maybeSingle<{ total_styles: number; available_styles: number }>();
       if (c) {
-        const min = Number(r.alert_min_styles) || 0;
-        note = `${c.available_styles}/${c.total_styles} estilos disponíveis${min > 0 ? ` (alerta abaixo de ${min})` : ""}`;
-        if (min > 0 && c.total_styles > 0 && c.available_styles < min) note = `⚠ ${note}`;
+        const review = Number(r.alert_review_styles) || 0;
+        const low = Number(r.alert_low_styles) || 0;
+        note = `${c.available_styles}/${c.total_styles} estilos disponíveis (revisão ≤ ${review}, crítico ≤ ${low})`;
+        if (c.total_styles > 0 && ((low > 0 && c.available_styles <= low) || (review > 0 && c.available_styles <= review))) note = `⚠ ${note}`;
       }
     }
     if (r.paid_placement) {
-      note = `${note ? `${note} · ` : ""}Placement pago: ${s(r.partner) || "—"}${r.placement_end ? ` até ${s(r.placement_end)}` : ""}`;
+      const ended = s(r.placement_end) && s(r.placement_end) < today();
+      note = `${note ? `${note} · ` : ""}Placement pago: ${s(r.partner) || "—"}${r.placement_end ? ` até ${s(r.placement_end)}` : ""}${ended ? " (destaque encerrado; o item continua no site)" : ""}`;
     }
     rows.push({
       id: s(r.id),
@@ -87,7 +87,7 @@ export async function EntityListPage({ kind }: { kind: EntityKind }) {
         <div>
           <h1 className="font-serif text-2xl">{cfg.plural}</h1>
           <p className="text-sm text-muted mt-1">
-            ON/OFF, ordem e placement pago. {cfg.plural} desligad{cfg.article === "a" ? "as" : "os"} ou com período vencido não aparecem no site.
+            ON/OFF, ordem e placement pago. {cfg.plural} desligad{cfg.article === "a" ? "as" : "os"} não aparecem no site; o fim de um placement pago só encerra o destaque pago.
           </p>
         </div>
         <Link href={`/admin/${cfg.route}/novo`} className="bg-foreground text-background px-4 py-2 text-xs uppercase tracking-wide rounded-sm">
@@ -103,6 +103,12 @@ export async function EntityEditPage({ kind, id }: { kind: EntityKind; id: strin
   const cfg = ENTITY[kind];
   const supabase = await createClient();
   const options = await productOptions();
+  const [{ data: brandRows }, { data: collectionRows }] = await Promise.all([
+    supabase.from("brands").select("id, name").order("name"),
+    supabase.from("collections").select("id, slug, title").order("slug"),
+  ]);
+  const brandOptions: PickOption[] = (brandRows ?? []).map((b) => ({ id: b.id as string, label: s(b.name) }));
+  const collectionOptions: PickOption[] = (collectionRows ?? []).map((c) => ({ id: c.id as string, label: loc(c.title).en || s(c.slug) }));
   let initial: EntityPayload = emptyEntity();
   let stockLine: string | undefined;
 
@@ -126,6 +132,14 @@ export async function EntityEditPage({ kind, id }: { kind: EntityKind; id: strin
       starts_at: s(r.starts_at),
       ends_at: s(r.ends_at),
       alert_min_styles: Number(r.alert_min_styles) || 0,
+      alert_review_styles: r.alert_review_styles === undefined ? 10 : Number(r.alert_review_styles),
+      alert_low_styles: r.alert_low_styles === undefined ? 5 : Number(r.alert_low_styles),
+      alert_end_days: r.alert_end_days === undefined ? 14 : Number(r.alert_end_days),
+      cover_mobile_url: s(r.cover_mobile_url),
+      visible_ops: Array.isArray(r.visible_ops) ? (r.visible_ops as string[]) : emptyEntity().visible_ops,
+      brand_id: s(r.brand_id),
+      collection_id: s(r.collection_id),
+      gallery: Array.isArray(r.gallery) ? (r.gallery as string[]) : [],
       partner: s(r.partner),
       paid_placement: Boolean(r.paid_placement),
       placement_start: s(r.placement_start),
@@ -139,6 +153,10 @@ export async function EntityEditPage({ kind, id }: { kind: EntityKind; id: strin
       const fk = kind === "collections" ? "collection_id" : "edit_id";
       const { data: ps } = await supabase.from(table).select("product_id").eq(fk, id).order("sort");
       initial.productIds = (ps ?? []).map((p) => p.product_id as string);
+      if (kind === "edits") {
+        const { data: bs } = await supabase.from("tdp_edit_brands").select("brand_id").eq("edit_id", id).order("sort");
+        initial.brandIds = (bs ?? []).map((b) => b.brand_id as string);
+      }
       if (kind === "collections") {
         const { data: c } = await supabase.rpc("collection_stock_counts", { p_collection: id }).maybeSingle<{ total_styles: number; available_styles: number }>();
         if (c) stockLine = `Estilos disponíveis: ${c.available_styles}/${c.total_styles} (publicados com estoque)`;
@@ -167,7 +185,7 @@ export async function EntityEditPage({ kind, id }: { kind: EntityKind; id: strin
         </Link>
         <h1 className="font-serif text-2xl mt-1">{id === "novo" ? `Nov${cfg.article} ${cfg.singular.toLowerCase()}` : cfg.singular}</h1>
       </div>
-      <EntityEditor kind={kind} initial={initial} productOptions={options} stockLine={stockLine} />
+      <EntityEditor kind={kind} initial={initial} productOptions={options} brandOptions={brandOptions} collectionOptions={collectionOptions} stockLine={stockLine} />
     </div>
   );
 }

@@ -42,6 +42,20 @@ export interface EntityPayload {
   starts_at: string;
   ends_at: string;
   alert_min_styles: number;
+  /** COLLECTION INVENTORY REVIEW level (styles available <=) */
+  alert_review_styles: number;
+  /** LOW INVENTORY — REVIEW REQUIRED level (styles available <=) */
+  alert_low_styles: number;
+  /** reminder days before the collection end date */
+  alert_end_days: number;
+  cover_mobile_url: string;
+  visible_ops: string[];
+  /** lookbooks: related brand / collection ("" = none) */
+  brand_id: string;
+  collection_id: string;
+  /** edits: editorial images (URLs) and selected brands */
+  gallery: string[];
+  brandIds: string[];
   partner: string;
   paid_placement: boolean;
   placement_start: string;
@@ -65,6 +79,15 @@ export function emptyEntity(): EntityPayload {
     starts_at: "",
     ends_at: "",
     alert_min_styles: 0,
+    alert_review_styles: 10,
+    alert_low_styles: 5,
+    alert_end_days: 14,
+    cover_mobile_url: "",
+    visible_ops: ["intl_b2b", "intl_b2c", "br_b2b", "br_b2c"],
+    brand_id: "",
+    collection_id: "",
+    gallery: [],
+    brandIds: [],
     partner: "",
     paid_placement: false,
     placement_start: "",

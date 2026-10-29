@@ -1,7 +1,5 @@
-import { headers } from "next/headers";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
-import { SITE_MODE_HEADER } from "@/lib/site-mode";
-import { operationForSiteMode, type OperationCode } from "@/lib/cms-types";
+import { currentOperation, visibleIn } from "@/lib/operation";
 import type { ProductPricing, Variant } from "@/lib/types";
 import { parseCrop, type ImageCrop } from "@/lib/image-crop";
 import { getColorResolver } from "@/lib/colors";
@@ -20,17 +18,6 @@ export interface CatalogProduct {
   imageUrl: string | null;
   imageCrop: ImageCrop | null;
 }
-
-/** Operation of the current request (Brazil mirror vs international); products can be hidden per operation. */
-async function currentOperation(): Promise<OperationCode> {
-  try {
-    return operationForSiteMode((await headers()).get(SITE_MODE_HEADER));
-  } catch {
-    return "intl_b2b";
-  }
-}
-
-const visibleIn = (ops: string[] | null | undefined, op: string) => !Array.isArray(ops) || ops.includes(op);
 
 const hasDb = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 
@@ -161,6 +148,8 @@ export interface ProductDetail {
   imageUrl: string | null;
   images: string[];
   imageCrops: (ImageCrop | null)[];
+  /** Buyer-facing color label each photo belongs to (null = every color), aligned with `images`. */
+  imageColors: (string | null)[];
   /** Buyer-facing reference: TDP + supplier reference (never the supplier name). */
   reference: string | null;
   sizes: string[];
@@ -204,7 +193,7 @@ export async function getProductDetail(
       .maybeSingle(),
     serviceClient
       .from("product_images")
-      .select("storage_path, position, is_cover, crop")
+      .select("storage_path, position, is_cover, crop, color_key")
       .eq("product_id", pub.id)
       .eq("review_status", "approved")
       .order("is_cover", { ascending: false })
@@ -213,6 +202,7 @@ export async function getProductDetail(
 
   const images = (imageRows ?? []).map((img) => img.storage_path);
   const imageCrops = (imageRows ?? []).map((img) => parseCrop(img.crop));
+  const imageColorKeys = (imageRows ?? []).map((img) => (img.color_key as string | null) ?? null);
   const primaryImage = images[0] ?? null;
   const description =
     (locale === "es" ? full?.description_es : locale === "en" ? full?.description_en : full?.description) ||
@@ -236,6 +226,7 @@ export async function getProductDetail(
       imageUrl: primaryImage,
       images,
       imageCrops,
+      imageColors: imageColorKeys.map(() => null),
       reference,
       sizes: [],
       colors: [],
@@ -299,6 +290,7 @@ export async function getProductDetail(
     imageUrl: primaryImage,
     images,
     imageCrops,
+    imageColors: imageColorKeys.map((k) => (k ? (labelByRaw.get(k) ?? null) : null)),
     reference,
     sizes,
     colors: (priced?.colors ?? []).map((c) => labelByRaw.get(c) ?? c),
