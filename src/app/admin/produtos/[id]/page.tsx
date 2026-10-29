@@ -5,7 +5,8 @@ import { ProductEditForm } from "@/components/product-edit-form";
 import { VariantStockTable } from "@/components/variant-stock-table";
 import { ProductImagesManager, type ImageRow } from "@/components/product-images-manager";
 import { SyncLocksPanel } from "@/components/sync-locks-panel";
-import { ProductPricingPanel, type ProductPricingData } from "@/components/product-pricing-panel";
+import { ProductPricingPanel, type MarginInfo, type ProductPricingData } from "@/components/product-pricing-panel";
+import { ProductRegistrationForm, type RegistrationData } from "@/components/product-registration-form";
 
 export default async function AdminProductEditPage({
   params,
@@ -17,12 +18,14 @@ export default async function AdminProductEditPage({
   const { data: product } = await supabase
     .from("products")
     .select(
-      "id, title, title_en, title_es, category, status, is_featured, connector_id, original_price, markup, price_brl, price_usd, price_eur, extra_cost_brl, margin_pct_override, commission_pct_override, price_adjust_pct, retail_usd, retail_eur, hs_code, weight_g, dims_cm, sizes, colors, default_stock, locked_fields, last_synced_at, source_snapshot"
+      "id, title, title_en, title_es, category, status, is_featured, connector_id, original_price, markup, price_brl, price_usd, price_eur, extra_cost_brl, margin_pct_override, commission_pct_override, price_adjust_pct, retail_usd, retail_eur, manual_price_usd, manual_price_eur, description, description_en, description_es, composition, origin_country, ncm, supplier_ref, tdp_ref, customs_description, visible_ops, hs_code, weight_g, dims_cm, sizes, colors, default_stock, locked_fields, last_synced_at, source_snapshot"
     )
     .eq("id", id)
     .single();
 
   if (!product) notFound();
+
+  const { data: marginInfo } = await supabase.rpc("tdp_product_margin", { p_product: id });
 
   const { data: variants } = await supabase
     .from("variants")
@@ -76,7 +79,9 @@ export default async function AdminProductEditPage({
         initialConnectorIds={initialConnectorIds}
       />
 
-      <ProductPricingPanel product={product as unknown as ProductPricingData} />
+      <ProductRegistrationForm product={product as unknown as RegistrationData} />
+
+      <ProductPricingPanel product={product as unknown as ProductPricingData} margin={(marginInfo as MarginInfo | null) ?? null} />
 
       <h2 className="text-sm font-medium uppercase tracking-wide mt-10 mb-4">
         Estoque por variante (matriz tamanho × cor)

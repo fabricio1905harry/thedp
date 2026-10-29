@@ -152,7 +152,14 @@ export async function bulkAdjustPrices(target: BulkTarget, action: BulkAction): 
 /** Per-product overrides (product page). Empty = follow the global rule. */
 export async function setProductPricing(
   productId: string,
-  input: { marginPct: number | null; commissionPct: number | null; adjustPct: number; extraCost: number }
+  input: {
+    marginPct: number | null;
+    commissionPct: number | null;
+    adjustPct: number;
+    extraCost: number;
+    manualUsd?: number | null;
+    manualEur?: number | null;
+  }
 ): Promise<{ error?: string }> {
   try {
     await requireStaff();
@@ -164,6 +171,8 @@ export async function setProductPricing(
         commission_pct_override: input.commissionPct === null ? null : num(input.commissionPct, 0, 94),
         price_adjust_pct: num(input.adjustPct, -90, 500),
         extra_cost_brl: num(input.extraCost, 0, 100_000),
+        manual_price_usd: input.manualUsd ? num(input.manualUsd, 0, 1_000_000) : null,
+        manual_price_eur: input.manualEur ? num(input.manualEur, 0, 1_000_000) : null,
       })
       .eq("id", productId);
     if (error) return { error: error.message };

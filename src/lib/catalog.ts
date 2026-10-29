@@ -1,4 +1,7 @@
+import { headers } from "next/headers";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { SITE_MODE_HEADER } from "@/lib/site-mode";
+import { operationForSiteMode, type OperationCode } from "@/lib/cms-types";
 import type { ProductPricing, Variant } from "@/lib/types";
 import { parseCrop, type ImageCrop } from "@/lib/image-crop";
 import { getColorResolver } from "@/lib/colors";
@@ -18,6 +21,17 @@ export interface CatalogProduct {
   imageCrop: ImageCrop | null;
 }
 
+/** Operation of the current request (Brazil mirror vs international); products can be hidden per operation. */
+async function currentOperation(): Promise<OperationCode> {
+  try {
+    return operationForSiteMode((await headers()).get(SITE_MODE_HEADER));
+  } catch {
+    return "intl_b2b";
+  }
+}
+
+const visibleIn = (ops: string[] | null | undefined, op: string) => !Array.isArray(ops) || ops.includes(op);
+
 const hasDb = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 
 async function getPublicProducts(limit = 50) {
@@ -30,6 +44,7 @@ async function getPublicProducts(limit = 50) {
       product_images ( storage_path, position, is_cover, crop )
     `)
     .eq("product_images.review_status", "approved")
+    .contains("visible_ops", [await currentOperation()])
     .order("created_at", { ascending: false })
     .limit(limit);
   return data ?? [];
@@ -116,6 +131,7 @@ export async function getCategoryProducts(
         product_images ( storage_path, position, is_cover, crop )
       `)
       .eq("product_images.review_status", "approved")
+      .contains("visible_ops", [await currentOperation()])
       .ilike("category", category)
       .order("created_at", { ascending: false }),
     getPricingMap(approved),
@@ -137,6 +153,9 @@ export interface ProductDetail {
   slug: string;
   title: string;
   description: string | null;
+  composition: string | null;
+  /** ISO 3166-1 alpha-2 */
+  originCountry: string;
   category: string | null;
   pricing: ProductPricing | null;
   imageUrl: string | null;
@@ -166,20 +185,21 @@ export async function getProductDetail(
   sizeChart: SizeChartRow[] = []
 ): Promise<ProductDetail | null> {
   const supabase = await createClient();
+  const operation = await currentOperation();
 
   const { data: pub } = await supabase
     .from("products_public")
-    .select("id, slug, title, category")
+    .select("id, slug, title, category, visible_ops")
     .eq("slug", slug)
     .maybeSingle();
-  if (!pub) return null;
+  if (!pub || !visibleIn(pub.visible_ops, operation)) return null;
 
   const serviceClient = createServiceRoleClient();
 
   const [{ data: full }, { data: imageRows }] = await Promise.all([
     supabase
       .from("products")
-      .select("description, source_id")
+      .select("description, description_en, description_es, composition, origin_country, tdp_ref, source_id")
       .eq("id", pub.id)
       .maybeSingle(),
     serviceClient
@@ -194,19 +214,29 @@ export async function getProductDetail(
   const images = (imageRows ?? []).map((img) => img.storage_path);
   const imageCrops = (imageRows ?? []).map((img) => parseCrop(img.crop));
   const primaryImage = images[0] ?? null;
+  const description =
+    (locale === "es" ? full?.description_es : locale === "en" ? full?.description_en : full?.description) ||
+    full?.description_en ||
+    full?.description ||
+    null;
+  const reference = full?.tdp_ref || (full?.source_id ? `TDP${full.source_id}` : null);
+  const composition = full?.composition ?? null;
+  const originCountry = full?.origin_country ?? "BR";
 
   if (!approved) {
     return {
       id: pub.id,
       slug: pub.slug,
       title: pub.title,
-      description: full?.description ?? null,
+      description,
+      composition,
+      originCountry,
       category: pub.category,
       pricing: null,
       imageUrl: primaryImage,
       images,
       imageCrops,
-      reference: full?.source_id ? `TDP${full.source_id}` : null,
+      reference,
       sizes: [],
       colors: [],
       colorHex: {},
@@ -227,7 +257,7 @@ export async function getProductDetail(
     supabase
       .rpc("get_priced_product", { product_slug: slug })
       .maybeSingle<PricedProductRow>(),
-    serviceClient.from("variants").select("id, size, size_br, size_us, size_eu, color, sku, stock").eq("product_id", pub.id),
+    serviceClient.from("variants").select("id, size, size_br, size_us, size_eu, color, sku, stock, visible_ops").eq("product_id", pub.id),
   ]);
 
   // Supplier color text stays internal: buyers get the TDP name in their language.
@@ -259,7 +289,9 @@ export async function getProductDetail(
     id: pub.id,
     slug: pub.slug,
     title: pub.title,
-    description: full?.description ?? null,
+    description,
+    composition,
+    originCountry,
     category: pub.category,
     pricing: priced
       ? { priceBrl: priced.price_brl, priceUsd: priced.price_usd, priceEur: priced.price_eur }
@@ -267,12 +299,12 @@ export async function getProductDetail(
     imageUrl: primaryImage,
     images,
     imageCrops,
-    reference: full?.source_id ? `TDP${full.source_id}` : null,
+    reference,
     sizes,
     colors: (priced?.colors ?? []).map((c) => labelByRaw.get(c) ?? c),
     colorHex,
     sizeInfo,
-    variants: (variantRows ?? []).map((v) => ({
+    variants: (variantRows ?? []).filter((v) => visibleIn(v.visible_ops, operation)).map((v) => ({
       id: v.id,
       size: v.size,
       sizeBr: v.size_br,

@@ -15,6 +15,7 @@ const ACTION_TYPE_LABELS_PT: Record<string, string> = {
   payment_coordination_required: "Coordenação de pagamento necessária",
   expired_unpaid_order: "Pedidos expirados não pagos / follow-up necessário",
   contact_message: "Mensagens de contato",
+  brand_application: "Candidaturas de marcas",
   order_above_stock: "Pedido acima do estoque disponível",
   restock_opportunity: "Oportunidades de reposição",
   reserve_actions: "Ações de Reserve",

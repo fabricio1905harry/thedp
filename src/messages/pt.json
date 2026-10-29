@@ -71,6 +71,7 @@
     "colorHelpTitle": "Precisa de ajuda com a cor exata?",
     "colorHelp": "As cores podem variar levemente conforme a tela e a iluminação. Para confirmar o tom exato antes de fazer seu pedido, fale com nossa equipe por",
     "accDetails": "Detalhes do produto",
+    "composition": "Composição",
     "countryOfOrigin": "País de origem",
     "brazil": "Brasil",
     "accSizeFit": "Tamanho e caimento",
@@ -255,7 +256,7 @@
     "emptyBody": "Novos modelos são adicionados semanalmente ao nosso catálogo de alta costura."
   },
   "institutional": {
-    "pendingNotice": "Conteúdo definitivo a ser fornecido pelo contratante (ver PRD, seção 11 — decisões pendentes). Este é um placeholder estrutural.",
+    "pendingNotice": "Esta página está em preparação. Fale conosco se precisar desta informação nesse meio tempo.",
     "titles": {
       "sobre": "Sobre",
       "faq": "Perguntas frequentes",

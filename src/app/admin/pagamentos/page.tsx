@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { PaymentRulesEditor } from "@/components/payment-rules-editor";
 import { saveBankInstructions, saveNumericSetting } from "./actions";
+import { StripeSection } from "@/components/stripe-section";
 
 const SETTINGS = [
   { key: "bank_processing_fee_brl", label: "Taxa bancária (BRL, cobrada por pagamento via Bank Transfer)", fallback: 135 },
@@ -78,17 +79,7 @@ export default async function AdminPaymentsPage() {
         </p>
       </section>
 
-      <section className="space-y-2 text-xs max-w-2xl">
-        <h2 className="text-sm font-medium uppercase tracking-wide">Stripe (cartão)</h2>
-        <p className="text-muted">
-          Os pagamentos com cartão são recebidos no deploy do <strong>site</strong>. Lá, defina <code>STRIPE_SECRET_KEY</code> e{" "}
-          <code>STRIPE_WEBHOOK_SECRET</code>, e crie um webhook do Stripe apontando para{" "}
-          <code>https://&lt;site&gt;/api/stripe/webhook</code> (eventos: checkout.session.completed,
-          checkout.session.async_payment_succeeded, charge.refunded, charge.dispute.created). Depois habilite o Stripe por
-          canal acima, por cliente ou por pedido (página do pedido → “Habilitar Stripe para este pedido”). Um pagamento com cartão
-          aprovado marca o pedido como PAGO automaticamente.
-        </p>
-      </section>
+      <StripeSection />
     </div>
   );
 }

@@ -25,7 +25,7 @@ const INTL_B2B = ["intl_b2b" as const];
 export const ABOUT_PHOTO_DRIVE_URL = "https://drive.google.com/file/d/1WwgaqwUjNE8mWy84zrF6VhXuEc67peYA/view?usp=drivesdk";
 
 /** Institutional text page: title, introduction and an ordered list of sections. */
-function pageDef(key: string, label: string, sort: number): BlockDef {
+function pageDef(key: string, label: string, sort: number, intro = t("", "", "")): BlockDef {
   return {
     scope: "pages",
     key,
@@ -45,7 +45,7 @@ function pageDef(key: string, label: string, sort: number): BlockDef {
         itemFields: [text("heading", "Subtítulo"), area("body", "Texto")],
       },
     ],
-    defaults: { title: t("", "", ""), intro: t("", "", ""), sections: [] },
+    defaults: { title: t("", "", ""), intro, sections: [] },
   };
 }
 
@@ -286,7 +286,7 @@ export const BLOCK_DEFS: BlockDef[] = [
     key: "featured_brands",
     label: "Marcas em destaque",
     description: "Mostra as marcas marcadas como “destaque” em Admin → Marcas. O módulo some sozinho se não houver marcas ativas em destaque.",
-    defaultActive: true,
+    defaultActive: false,
     defaultSort: 72,
     defaultOperations: ALL_OPERATIONS,
     placement: true,
@@ -352,7 +352,7 @@ export const BLOCK_DEFS: BlockDef[] = [
     key: "tdp_edits",
     label: "TDP Edits",
     description: "Mostra os edits editoriais marcados como “destaque” em Admin → Edits.",
-    defaultActive: true,
+    defaultActive: false,
     defaultSort: 78,
     defaultOperations: ALL_OPERATIONS,
     placement: true,
@@ -400,7 +400,7 @@ export const BLOCK_DEFS: BlockDef[] = [
     scope: "home",
     key: "become_a_brand",
     label: "Seja uma marca parceira",
-    defaultActive: true,
+    defaultActive: false,
     defaultSort: 90,
     defaultOperations: INTL_B2B,
     fields: [text("title", "Título"), area("text", "Texto"), text("cta_text", "Texto do CTA"), url("cta_link", "Link do CTA")],
@@ -416,7 +416,7 @@ export const BLOCK_DEFS: BlockDef[] = [
         "Conheça oportunidades de distribuição e comerciais conosco."
       ),
       cta_text: t("BECOME A BRAND", "SER UNA MARCA", "SER UMA MARCA"),
-      cta_link: "/contato?subject=brand",
+      cta_link: "/seja-uma-marca",
     },
   },
 
@@ -677,7 +677,7 @@ export const BLOCK_DEFS: BlockDef[] = [
         "Quer fazer parte da The Dressing Project ou conhecer oportunidades de distribuição e comerciais conosco?"
       ),
       cta_text: t("BECOME A BRAND", "SER UNA MARCA", "SER UMA MARCA"),
-      cta_link: "/contato?subject=brand",
+      cta_link: "/seja-uma-marca",
     },
   },
   // -------------------------------------------------------------- SITE
@@ -701,12 +701,152 @@ export const BLOCK_DEFS: BlockDef[] = [
     fields: [text("text", "Texto", "Deixe vazio para usar o texto padrão."), url("link", "Link (opcional)")],
     defaults: { text: t("", "", ""), link: "" },
   },
+  {
+    scope: "site",
+    key: "footer",
+    label: "Rodapé — links e textos",
+    description:
+      "Colunas do rodapé: cada link pertence a um grupo (o nome do grupo vira o título da coluna; a ordem é a da lista). No site nacional os links de atacado são ocultados automaticamente.",
+    defaultActive: true,
+    defaultSort: 30,
+    defaultOperations: ALL_OPERATIONS,
+    fields: [
+      text("tagline", "Frase sob o logo"),
+      {
+        key: "links",
+        label: "Links",
+        kind: "list",
+        itemLabel: "Link",
+        itemFields: [text("group", "Grupo (título da coluna)"), text("label", "Texto do link"), url("href", "Destino")],
+      },
+    ],
+    defaults: {
+      tagline: t(
+        "Dresses with identity, ready for the world.",
+        "Vestidos con identidad, listos para el mundo.",
+        "Vestidos com identidade, prontos para o mundo."
+      ),
+      links: [
+        { group: t("Explore", "Explorar", "Explorar"), label: t("Shop", "Tienda", "Loja"), href: "/shop" },
+        { group: t("Explore", "Explorar", "Explorar"), label: t("About", "Nosotros", "Sobre"), href: "/sobre" },
+        { group: t("Explore", "Explorar", "Explorar"), label: t("How it works", "Cómo funciona", "Como funciona"), href: "/como-funciona" },
+        { group: t("Explore", "Explorar", "Explorar"), label: t("Size guide", "Guía de tallas", "Guia de tamanhos"), href: "/guia-de-tamanhos" },
+        { group: t("Explore", "Explorar", "Explorar"), label: t("Contact", "Contacto", "Contato"), href: "/contato" },
+        { group: t("Explore", "Explorar", "Explorar"), label: t("Become a brand", "Ser una marca", "Seja uma marca"), href: "/seja-uma-marca" },
+        { group: t("Wholesale", "Mayorista", "Atacado"), label: t("Create a wholesale account", "Crear una cuenta mayorista", "Criar conta de atacado"), href: "/cadastro" },
+        { group: t("Wholesale", "Mayorista", "Atacado"), label: t("Sign in", "Iniciar sesión", "Entrar"), href: "/login" },
+        { group: t("Wholesale", "Mayorista", "Atacado"), label: t("My account", "Mi cuenta", "Minha conta"), href: "/minha-conta" },
+        { group: t("Wholesale", "Mayorista", "Atacado"), label: t("Reserve for later delivery", "Reserva para entrega posterior", "Reserva para entrega futura"), href: "/reserve-for-later-delivery" },
+        { group: t("Help", "Ayuda", "Ajuda"), label: t("FAQ", "Preguntas frecuentes", "Perguntas frequentes"), href: "/faq" },
+        { group: t("Help", "Ayuda", "Ajuda"), label: t("Shipping & duties", "Envío e impuestos", "Frete e impostos"), href: "/politicas/frete-e-impostos" },
+        { group: t("Help", "Ayuda", "Ajuda"), label: t("Incoterms & duties responsibility", "Incoterms y responsabilidad de impuestos", "Incoterms e responsabilidade por impostos"), href: "/politicas/incoterms" },
+        { group: t("Policies", "Políticas", "Políticas"), label: t("Wholesale terms", "Términos mayoristas", "Termos de atacado"), href: "/politicas/termos-de-atacado" },
+        { group: t("Policies", "Políticas", "Políticas"), label: t("Reserve terms", "Términos de reserva", "Termos de reserva"), href: "/politicas/termos-de-reserva" },
+        { group: t("Policies", "Políticas", "Políticas"), label: t("Terms of use", "Términos de uso", "Termos de uso"), href: "/politicas/termos" },
+        { group: t("Policies", "Políticas", "Políticas"), label: t("Privacy policy", "Política de privacidad", "Política de privacidade"), href: "/politicas/privacidade" },
+        { group: t("Policies", "Políticas", "Políticas"), label: t("Returns", "Cambios y devoluciones", "Trocas e devoluções"), href: "/politicas/trocas" },
+      ],
+    },
+  },
+  {
+    scope: "site",
+    key: "social",
+    label: "Rodapé — contatos e redes sociais",
+    description: "WhatsApp e e-mail clicáveis, Instagram e LinkedIn. Campos vazios não aparecem. WhatsApp vazio usa o número de Admin → WhatsApp.",
+    defaultActive: true,
+    defaultSort: 40,
+    defaultOperations: ALL_OPERATIONS,
+    fields: [
+      plain("whatsapp", "WhatsApp (número com DDI ou link)"),
+      plain("email", "E-mail de contato"),
+      url("instagram", "Instagram (URL)"),
+      url("linkedin", "LinkedIn (URL)"),
+    ],
+    defaults: { whatsapp: "", email: "", instagram: "", linkedin: "" },
+  },
+  {
+    scope: "site",
+    key: "newsletter",
+    label: "Rodapé — newsletter (Stay in the know)",
+    description: "Formulário de e-mail do rodapé. Os cadastros ficam em Admin → Newsletter. Desligue o bloco para ocultar.",
+    defaultActive: true,
+    defaultSort: 50,
+    defaultOperations: ALL_OPERATIONS,
+    fields: [
+      text("title", "Título"),
+      area("text", "Texto"),
+      text("placeholder", "Texto do campo de e-mail"),
+      text("button", "Texto do botão"),
+      text("success", "Mensagem de sucesso"),
+    ],
+    defaults: {
+      title: t("Stay in the know", "Mantente al día", "Fique por dentro"),
+      text: t(
+        "New collections, restocks and news from The Dressing Project.",
+        "Nuevas colecciones, reposiciones y novedades de The Dressing Project.",
+        "Novas coleções, reposições e novidades da The Dressing Project."
+      ),
+      placeholder: t("Your e-mail", "Tu correo", "Seu e-mail"),
+      button: t("SUBSCRIBE", "SUSCRIBIRME", "ASSINAR"),
+      success: t("Thank you! You are on the list.", "¡Gracias! Ya estás en la lista.", "Obrigado! Você está na lista."),
+    },
+  },
+  {
+    scope: "site",
+    key: "cookie_notice",
+    label: "Aviso de cookies",
+    description: "Faixa exibida no primeiro acesso até o visitante aceitar. Desligue para ocultar.",
+    defaultActive: true,
+    defaultSort: 60,
+    defaultOperations: ALL_OPERATIONS,
+    fields: [
+      area("text", "Texto"),
+      text("accept", "Texto do botão"),
+      text("link_label", "Texto do link da política"),
+      url("link", "Link da política"),
+    ],
+    defaults: {
+      text: t(
+        "We use cookies to keep you signed in, remember your cart and understand how the site is used.",
+        "Usamos cookies para mantener tu sesión, recordar tu carrito y entender cómo se usa el sitio.",
+        "Usamos cookies para manter você conectado, lembrar do seu carrinho e entender como o site é usado."
+      ),
+      accept: t("ACCEPT", "ACEPTAR", "ACEITAR"),
+      link_label: t("Privacy policy", "Política de privacidad", "Política de privacidade"),
+      link: "/politicas/privacidade",
+    },
+  },
 
   // ------------------------------------------------------------- PAGES
   pageDef("faq", "FAQ", 10),
   pageDef("terms", "Termos de uso", 20),
   pageDef("privacy", "Política de privacidade", 30),
   pageDef("returns", "Trocas e devoluções", 40),
+  pageDef("shipping_duties", "Frete e impostos (Shipping & Duties)", 50),
+  pageDef("wholesale_terms", "Termos de atacado (Wholesale Terms / Terms of Sale)", 60),
+  pageDef("reserve_terms", "Termos da reserva (Reserve for Later Delivery Terms)", 70),
+  pageDef("incoterms", "Incoterms e responsabilidade por impostos", 80),
+  pageDef(
+    "size_guide",
+    "Guia de tamanhos (texto acima da tabela)",
+    90,
+    t(
+      "Find your size. Measurements are body measurements in centimeters and inches.",
+      "Encuentra tu talla. Las medidas son del cuerpo, en centímetros y pulgadas.",
+      "Encontre o seu tamanho. As medidas são do corpo, em centímetros e polegadas."
+    )
+  ),
+  pageDef("how_it_works_page", "Como funciona (página)", 100),
+  pageDef(
+    "become_brand",
+    "Seja uma marca (texto acima do formulário)",
+    110,
+    t(
+      "Interested in joining The Dressing Project or exploring distribution and commercial opportunities with us? Tell us about your brand and our team will get back to you.",
+      "¿Te interesa unirte a The Dressing Project o explorar oportunidades de distribución y comerciales con nosotros? Cuéntanos sobre tu marca y nuestro equipo te responderá.",
+      "Quer fazer parte da The Dressing Project ou conhecer oportunidades de distribuição e comerciais conosco? Conte sobre a sua marca e nossa equipe retorna."
+    )
+  ),
 ];
 
 export function getBlockDef(scope: string, key: string): BlockDef | undefined {

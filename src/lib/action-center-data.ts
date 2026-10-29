@@ -11,7 +11,7 @@ export interface ActionCard {
 }
 
 /** Types whose card counts units (e.g. images) rather than queue items. */
-const COUNT_AFFECTED = new Set(["images_to_review"]);
+const COUNT_AFFECTED = new Set(["images_to_review", "colors_to_review", "brand_application"]);
 
 export async function loadActionCenter(sort: QueueSort = "system", type?: string) {
   const supabase = await createClient();
