@@ -24,17 +24,22 @@ const hasDb = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.
 async function getPublicProducts(limit = 50) {
   if (!hasDb()) return [];
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("products_public")
-    .select(`
+  const op = await currentOperation();
+  const build = (withOps: boolean) => {
+    let q = supabase
+      .from("products_public")
+      .select(`
       id, slug, title, title_en, title_es, category, is_featured, created_at,
       product_images ( storage_path, position, is_cover, crop )
     `)
-    .eq("product_images.review_status", "approved")
-    .contains("visible_ops", [await currentOperation()])
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  return data ?? [];
+      .eq("product_images.review_status", "approved");
+    // visible_ops comes with migration 0084: until it is applied the catalog must still load
+    if (withOps) q = q.contains("visible_ops", [op]);
+    return q.order("created_at", { ascending: false }).limit(limit);
+  };
+  let res = await build(true);
+  if (res.error) res = await build(false);
+  return res.data ?? [];
 }
 
 interface PricedCatalogRow {
@@ -110,19 +115,20 @@ export async function getCategoryProducts(
   approved: boolean
 ): Promise<CatalogProduct[]> {
   const supabase = await createClient();
-  const [{ data }, pricingMap] = await Promise.all([
-    supabase
+  const op = await currentOperation();
+  const build = (withOps: boolean) => {
+    let q = supabase
       .from("products_public")
       .select(`
         id, slug, title, title_en, title_es, category, is_featured, created_at,
         product_images ( storage_path, position, is_cover, crop )
       `)
-      .eq("product_images.review_status", "approved")
-      .contains("visible_ops", [await currentOperation()])
-      .ilike("category", category)
-      .order("created_at", { ascending: false }),
-    getPricingMap(approved),
-  ]);
+      .eq("product_images.review_status", "approved");
+    if (withOps) q = q.contains("visible_ops", [op]);
+    return q.ilike("category", category).order("created_at", { ascending: false });
+  };
+  const [first, pricingMap] = await Promise.all([build(true), getPricingMap(approved)]);
+  const data = first.error ? (await build(false)).data : first.data;
   return (data ?? []).map((row) => toCatalogProduct(row, pricingMap));
 }
 
@@ -176,29 +182,47 @@ export async function getProductDetail(
   const supabase = await createClient();
   const operation = await currentOperation();
 
-  const { data: pub } = await supabase
-    .from("products_public")
-    .select("id, slug, title, category, visible_ops")
-    .eq("slug", slug)
-    .maybeSingle();
+  let pubRes = await supabase.from("products_public").select("id, slug, title, category, visible_ops").eq("slug", slug).maybeSingle();
+  if (pubRes.error) {
+    // before migration 0084 the view has no visible_ops
+    pubRes = (await supabase.from("products_public").select("id, slug, title, category").eq("slug", slug).maybeSingle()) as unknown as typeof pubRes;
+  }
+  const pub = pubRes.data as { id: string; slug: string; title: string; category: string | null; visible_ops?: string[] | null } | null;
   if (!pub || !visibleIn(pub.visible_ops, operation)) return null;
 
   const serviceClient = createServiceRoleClient();
 
-  const [{ data: full }, { data: imageRows }] = await Promise.all([
+  const imageQuery = (columns: string) =>
+    serviceClient
+      .from("product_images")
+      .select(columns)
+      .eq("product_id", pub.id)
+      .eq("review_status", "approved")
+      .order("is_cover", { ascending: false })
+      .order("position", { ascending: true });
+  type FullRow = {
+    description: string | null;
+    description_en?: string | null;
+    description_es?: string | null;
+    composition?: string | null;
+    origin_country?: string | null;
+    tdp_ref?: string | null;
+    source_id: string | null;
+  };
+  type ImageRowData = { storage_path: string; crop: unknown; color_key?: string | null };
+  let [fullRes, imagesRes] = await Promise.all([
     supabase
       .from("products")
       .select("description, description_en, description_es, composition, origin_country, tdp_ref, source_id")
       .eq("id", pub.id)
       .maybeSingle(),
-    serviceClient
-      .from("product_images")
-      .select("storage_path, position, is_cover, crop, color_key")
-      .eq("product_id", pub.id)
-      .eq("review_status", "approved")
-      .order("is_cover", { ascending: false })
-      .order("position", { ascending: true }),
+    imageQuery("storage_path, position, is_cover, crop, color_key"),
   ]);
+  // before migrations 0084 the new columns do not exist: read what is there
+  if (fullRes.error) fullRes = (await supabase.from("products").select("description, source_id").eq("id", pub.id).maybeSingle()) as unknown as typeof fullRes;
+  if (imagesRes.error) imagesRes = (await imageQuery("storage_path, position, is_cover, crop")) as unknown as typeof imagesRes;
+  const full = fullRes.data as unknown as FullRow | null;
+  const imageRows = imagesRes.data as unknown as ImageRowData[] | null;
 
   const images = (imageRows ?? []).map((img) => img.storage_path);
   const imageCrops = (imageRows ?? []).map((img) => parseCrop(img.crop));

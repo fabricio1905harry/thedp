@@ -77,6 +77,13 @@ const COLUMNS: Record<"brands" | "collections" | "lookbooks" | "edits", { table:
   edits: { table: "tdp_edits", select: "id, slug, title, body, cover_url, cover_mobile_url, gallery, featured, sort, partner, paid_placement, placement_start, placement_end" },
 };
 
+const LEGACY_SELECT: Record<keyof typeof COLUMNS, string> = {
+  brands: "id, slug, name, logo_url, cover_url, story, country, featured, sort, partner, paid_placement, placement_start, placement_end",
+  collections: "id, slug, title, story, cover_url, featured, sort, partner, paid_placement, placement_start, placement_end",
+  lookbooks: "id, slug, title, story, cover_url, featured, sort, partner, paid_placement, placement_start, placement_end",
+  edits: "id, slug, title, body, cover_url, featured, sort, partner, paid_placement, placement_start, placement_end",
+};
+
 export async function listEntities(
   kind: keyof typeof COLUMNS,
   locale: string,
@@ -86,15 +93,17 @@ export async function listEntities(
   try {
     const supabase = await createClient();
     const op = await currentOperation();
-    let q = supabase
-      .from(COLUMNS[kind].table)
-      .select(COLUMNS[kind].select)
-      .contains("visible_ops", [op])
-      .order("sort")
-      .order("created_at", { ascending: false });
-    if (opts.featuredOnly) q = q.eq("featured", true);
+    const build = (select: string, withOps: boolean) => {
+      let q = supabase.from(COLUMNS[kind].table).select(select);
+      if (withOps) q = q.contains("visible_ops", [op]);
+      q = q.order("sort").order("created_at", { ascending: false });
+      return opts.featuredOnly ? q.eq("featured", true) : q;
+    };
     // the placement window is checked below, so the limit is applied after it
-    const { data } = await q;
+    let res = await build(COLUMNS[kind].select, true);
+    // migration 0086 adds the new columns: until it is applied keep serving the previous ones
+    if (res.error) res = await build(LEGACY_SELECT[kind], false);
+    const data = res.data;
     let cards = ((data ?? []) as unknown as Row[]).map((r) => card(r, locale, kind));
     if (opts.featuredOnly) cards = cards.filter((c) => c.featured);
     return opts.limit ? cards.slice(0, opts.limit) : cards;
@@ -108,8 +117,9 @@ export async function getEntityBySlug(kind: keyof typeof COLUMNS, slug: string, 
   try {
     const supabase = await createClient();
     const op = await currentOperation();
-    const { data } = await supabase.from(COLUMNS[kind].table).select(COLUMNS[kind].select).eq("slug", slug).contains("visible_ops", [op]).maybeSingle();
-    return data ? card(data as unknown as Row, locale, kind) : null;
+    let res = await supabase.from(COLUMNS[kind].table).select(COLUMNS[kind].select).eq("slug", slug).contains("visible_ops", [op]).maybeSingle();
+    if (res.error) res = (await supabase.from(COLUMNS[kind].table).select(LEGACY_SELECT[kind]).eq("slug", slug).maybeSingle()) as unknown as typeof res;
+    return res.data ? card(res.data as unknown as Row, locale, kind) : null;
   } catch {
     return null;
   }
