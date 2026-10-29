@@ -90,9 +90,9 @@ export default async function AdminAutomacaoPage() {
                 {runs.map((r) => (
                   <tr key={r.id} className="border-b border-border">
                     <td className="py-2 pr-4">{connectorName(r.connector_id)}</td>
-                    <td className="py-2 pr-4">{new Date(r.started_at).toLocaleString()}</td>
+                    <td className="py-2 pr-4">{new Date(r.started_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
                     <td className="py-2 pr-4">
-                      {r.finished_at ? new Date(r.finished_at).toLocaleString() : "em execução…"}
+                      {r.finished_at ? new Date(r.finished_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "em execução…"}
                     </td>
                     <td className="py-2 pr-4">{r.created}</td>
                     <td className="py-2 pr-4">{r.updated}</td>

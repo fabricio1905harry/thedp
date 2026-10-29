@@ -18,6 +18,8 @@ export interface PayPanelProps {
   charges: number;
   stripeEnabled: boolean;
   bankEnabled: boolean;
+  /** bank processing fee added to a transfer (order currency); 0 when none */
+  bankFee?: number;
   bankInstructions: string;
   /** buyer came back from a failed / canceled card payment */
   paymentFailed?: boolean;
@@ -88,6 +90,18 @@ export function OrderPayPanel(props: PayPanelProps) {
             <pre className="whitespace-pre-wrap font-sans text-muted leading-relaxed">{props.bankInstructions}</pre>
           ) : (
             <p className="text-muted">{t("payTransferContact")}</p>
+          )}
+          {(props.bankFee ?? 0) > 0 && (
+            <div className="border border-border p-3 space-y-1">
+              <p className="flex justify-between gap-4">
+                <span>{t("payBankFee")}</span>
+                <span>{formatCurrency(props.bankFee ?? 0, props.currency)}</span>
+              </p>
+              <p className="flex justify-between gap-4 font-semibold text-foreground">
+                <span>{t("payTransferTotal")}</span>
+                <span>{formatCurrency(props.total + (props.bankFee ?? 0), props.currency)}</span>
+              </p>
+            </div>
           )}
           <p className="text-muted">{t("payTransferNotice")}</p>
           <PaymentProofUpload orderId={props.orderId} hasPending={Boolean(props.proofPending)} />

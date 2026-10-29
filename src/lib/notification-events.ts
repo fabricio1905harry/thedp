@@ -312,7 +312,11 @@ function fmtDate(value: unknown, locale: NotificationLocale, withTime = false): 
   if (!value) return "";
   const d = new Date(String(value).length === 10 ? `${value}T12:00:00Z` : String(value));
   if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleString(DATE_LOCALE[locale], withTime ? { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" } : { dateStyle: "medium", timeZone: "UTC" }) + (withTime ? " UTC" : "");
+  // date-only values (noon UTC) keep their calendar day; timestamps are shown in Brasília time
+  const BRASILIA = { en: "Brasília time", es: "hora de Brasilia", pt: "horário de Brasília" }[locale];
+  return withTime
+    ? `${d.toLocaleString(DATE_LOCALE[locale], { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" })} (${BRASILIA})`
+    : d.toLocaleString(DATE_LOCALE[locale], { dateStyle: "medium", timeZone: "UTC" });
 }
 
 function fmtMoney(value: unknown, currency: unknown, locale: NotificationLocale): string {

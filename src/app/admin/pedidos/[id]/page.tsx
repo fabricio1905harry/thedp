@@ -177,7 +177,7 @@ export default async function AdminOrderDetailPage({
         <div className="rounded-xl border border-red-200 bg-red-50 text-red-900 p-4 text-sm space-y-1">
           <p className="font-semibold">
             Pedido cancelado{order.canceled_by_buyer ? " pelo comprador" : ""}
-            {order.canceled_at ? ` em ${new Date(order.canceled_at).toLocaleString("pt-BR")}` : ""}
+            {order.canceled_at ? ` em ${new Date(order.canceled_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}
           </p>
           {order.cancel_reason && <p>Motivo: {order.cancel_reason}</p>}
           <p className="text-xs">Nenhum pagamento foi recebido enquanto o pedido estava em solicitação.</p>

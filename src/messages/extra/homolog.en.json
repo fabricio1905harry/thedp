@@ -29,7 +29,7 @@
     "canceledBadge": "Order canceled",
     "canceledTitle": "This order was canceled",
     "canceledText": "No payment was taken. You can place a new order request at any time.",
-    "itemsRequestedTitle": "Requested items ({count})"
+    "itemsRequestedTitle": "Requested items ({count} pieces)"
   },
   "orderActions": {
     "cancelCta": "Cancel order request",
@@ -37,6 +37,7 @@
     "cancelConfirmText": "Nothing has been paid yet. Once canceled, the request cannot be reopened — you can place a new one.",
     "cancelReasonPlaceholder": "Reason (optional)",
     "cancelConfirm": "Yes, cancel",
+    "canceledDone": "Order canceled.",
     "canceling": "Canceling…",
     "keepOrder": "Keep my order",
     "returnTitle": "Return or after-sale request",

@@ -56,7 +56,7 @@ export function FxSettingsForm({ settings }: { settings: FxAutoSettings }) {
       <p className="text-[11px] text-muted mt-3">
         {last ? (
           <>
-            Última execução: {new Date(last.at).toLocaleString("pt-BR")} ·{" "}
+            Última execução: {new Date(last.at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} ·{" "}
             <strong className={last.ok ? "text-emerald-700" : "text-red-700"}>{last.ok ? "sucesso" : "falhou"}</strong> ·{" "}
             {last.source === "ptax" ? "PTAX" : "BCE"} ({last.trigger === "cron" ? "agendada" : "manual"}) — {last.message}
           </>

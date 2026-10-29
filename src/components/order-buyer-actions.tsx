@@ -13,6 +13,7 @@ export function CancelOrderButton({ orderId, compact = false }: { orderId: strin
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   function confirmCancel() {
     setError(null);
@@ -22,9 +23,19 @@ export function CancelOrderButton({ orderId, compact = false }: { orderId: strin
         setError(t(`errors.${res.error}`));
         return;
       }
+      // show the result at once; the server page refreshes right behind it (P8)
+      setDone(true);
       setOpen(false);
       router.refresh();
     });
+  }
+
+  if (done) {
+    return (
+      <p role="status" className="text-sm font-semibold">
+        {t("canceledDone")}
+      </p>
+    );
   }
 
   if (!open) {

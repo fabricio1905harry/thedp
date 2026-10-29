@@ -82,8 +82,8 @@ export default async function NotifyAdminPage({ searchParams }: { searchParams: 
                 <td className="p-2">{r.customers?.company_name || r.customers?.name || "—"}<span className="block text-xs text-muted">{r.customers?.email}</span></td>
                 <td className="p-2">{r.products?.title}</td>
                 <td className="p-2">{r.variants?.color ?? "—"} / {r.variants?.size ?? "—"}</td>
-                <td className="p-2 whitespace-nowrap">{new Date(r.created_at).toLocaleDateString("pt-BR")}</td>
-                <td className="p-2 whitespace-nowrap">{r.notified_at ? new Date(r.notified_at).toLocaleDateString("pt-BR") : "aguardando"}</td>
+                <td className="p-2 whitespace-nowrap">{new Date(r.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
+                <td className="p-2 whitespace-nowrap">{r.notified_at ? new Date(r.notified_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "aguardando"}</td>
               </tr>
             ))}
           </tbody>

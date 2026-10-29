@@ -24,7 +24,7 @@ export function InvoicePanel({ orderId, canIssue, invoice }: { orderId: string; 
       {invoice ? (
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <strong>{invoice.number}</strong>
-          <span className="text-muted">emitida em {new Date(invoice.issued_at).toLocaleDateString("pt-BR")}</span>
+          <span className="text-muted">emitida em {new Date(invoice.issued_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
           <a href={`/api/documents/invoice/${invoice.id}`} className="underline">
             Baixar PDF
           </a>

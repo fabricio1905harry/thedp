@@ -5,7 +5,6 @@ import { saveBankInstructions, saveNumericSetting } from "./actions";
 const SETTINGS = [
   { key: "bank_processing_fee_brl", label: "Taxa bancária (BRL, cobrada por pagamento via Bank Transfer)", fallback: 135 },
   { key: "reserve_markup_pct", label: "Reserve for Later Delivery — % sobre o custo do produto", fallback: 10 },
-  { key: "margin_target_pct", label: "Meta de margem % (abaixo → Action Center). Vazio = desativado", fallback: null },
 ] as const;
 
 export default async function AdminPaymentsPage() {
@@ -70,6 +69,9 @@ export default async function AdminPaymentsPage() {
           </label>
           <button type="submit" className="border border-border px-3 py-1 self-start">Salvar instruções</button>
         </form>
+        <p className="text-[11px] text-muted">
+          A meta de margem agora é única e fica em Precificação (margem desejada global, por categoria ou por produto).
+        </p>
         <p className="text-[11px] text-muted">
           A taxa bancária é convertida para a moeda do pedido com a taxa de câmbio vigente quando cada transferência é registrada;
           um depósito de Reserve + um saldo posterior por transferência = duas taxas.

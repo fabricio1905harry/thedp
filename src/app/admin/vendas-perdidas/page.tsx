@@ -175,7 +175,7 @@ export default async function LostSalesPage({
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-border">
-                  <td className="py-1 pr-2">{new Date(r.created_at).toLocaleDateString("pt-BR")}</td>
+                  <td className="py-1 pr-2">{new Date(r.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
                   <td className="py-1 pr-2">{r.customers?.company_name || r.customers?.name || r.customers?.email || "—"}</td>
                   <td className="py-1 pr-2">{r.product_title}<span className="block font-mono text-muted">{r.product_code}</span></td>
                   <td className="py-1 pr-2">{r.brand ?? "—"}</td>

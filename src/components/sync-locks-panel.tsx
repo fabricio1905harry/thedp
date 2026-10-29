@@ -42,7 +42,7 @@ export function SyncLocksPanel({
     <div className="border border-border p-3 mb-8 max-w-3xl text-xs">
       <p className="font-medium uppercase tracking-wide mb-1">Sincronização com fornecedor</p>
       <p className="text-muted mb-2">
-        Última sincronização: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString("pt-BR") : "nunca"}. Campos editados
+        Última sincronização: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "nunca"}. Campos editados
         manualmente ficam protegidos das próximas sincronizações; os demais continuam sincronizando.
       </p>
       {fields.length === 0 ? (

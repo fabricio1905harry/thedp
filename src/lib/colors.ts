@@ -27,7 +27,8 @@ export interface ColorResolver {
 }
 
 export function colorKey(raw: string | null | undefined): string {
-  return (raw ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  // same rule as norm_color_key() in the database: a trailing "-1", "-2"… is the same color
+  return (raw ?? "").trim().replace(/\s+/g, " ").toLowerCase().replace(/\s*-\s*\d+$/, "");
 }
 
 const EMPTY: ColorResolver = {

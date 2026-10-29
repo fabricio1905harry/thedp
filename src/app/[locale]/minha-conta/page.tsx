@@ -82,7 +82,7 @@ export default async function MyAccountPage() {
               <li key={o.id} className="pb-2">
                 <Link href={`/pedidos/${o.id}`} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 py-4 hover:bg-surface px-2 transition-colors">
                   <span className="font-medium text-sm">#{o.order_number ?? o.id.slice(0, 8)}</span>
-                  <span className="text-xs text-muted">{new Date(o.created_at).toLocaleDateString(dateLocale)}</span>
+                  <span className="text-xs text-muted">{new Date(o.created_at).toLocaleDateString(dateLocale, { timeZone: "America/Sao_Paulo" })}</span>
                   <span className="text-[11px] font-semibold uppercase tracking-[0.15em]">
                     {BUYER_STATUS_KEYS[o.status] ? tOrder(BUYER_STATUS_KEYS[o.status]) : o.status}
                   </span>

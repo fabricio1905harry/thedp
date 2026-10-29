@@ -580,7 +580,7 @@ function OrderHistoryPanel({ order, items, events }: { order: OrderSummary; item
         <ul className="text-xs space-y-1">
           {events.map((e) => (
             <li key={e.id} className="flex flex-wrap gap-x-3">
-              <span className="text-muted whitespace-nowrap">{new Date(e.created_at).toLocaleString("pt-BR")}</span>
+              <span className="text-muted whitespace-nowrap">{new Date(e.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
               <span>{e.summary}</span>
               <span className="text-muted">{e.customers?.email ?? ""}</span>
             </li>
@@ -632,7 +632,7 @@ function ChargesPanel({ order, editable, pending, run, dutiesRule }: { order: Or
         <h2 className="text-sm font-medium uppercase tracking-wide">Frete e impostos de importação ({order.currency})</h2>
         <span className={`text-[11px] px-2 py-0.5 ${order.charges_informed_at ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>
           {order.charges_informed_at
-            ? `Informado em ${new Date(order.charges_informed_at).toLocaleString("pt-BR")}`
+            ? `Informado em ${new Date(order.charges_informed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
             : "Não informado — o comprador vê “a informar após a confirmação de estoque”"}
         </span>
       </div>
@@ -721,7 +721,7 @@ function ReleasePanel({ order, editable, pending, run }: { order: OrderSummary; 
       {order.stock_hold_type && (
         <p className="text-xs mb-2">
           Atual: <strong>{STOCK_HOLD_LABELS[order.stock_hold_type]}</strong>
-          {order.stock_hold_until && <> — Estoque reservado até {new Date(order.stock_hold_until).toLocaleString("pt-BR")}</>}
+          {order.stock_hold_until && <> — Estoque reservado até {new Date(order.stock_hold_until).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</>}
         </p>
       )}
       {editable ? (
@@ -910,7 +910,7 @@ function PaymentsPanel({
           <h3 className="font-semibold uppercase tracking-wide text-red-700">Tentativas de pagamento que falharam</h3>
           {attempts.map((a) => (
             <p key={a.id}>
-              {new Date(a.created_at).toLocaleString("pt-BR")} · {ATTEMPT_STATUS_LABELS[a.status] ?? a.status}
+              {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · {ATTEMPT_STATUS_LABELS[a.status] ?? a.status}
               {a.amount !== null && a.currency ? ` · ${money(a.amount, a.currency)}` : ""}
               {a.message ? ` — ${a.message}` : ""}
             </p>

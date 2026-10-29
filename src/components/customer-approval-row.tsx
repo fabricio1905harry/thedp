@@ -72,7 +72,7 @@ export function CustomerApprovalRow({ customer }: { customer: Applicant }) {
         <span className={`text-[10px] font-semibold px-2 py-0.5 ${customer.status === "more_info" ? "bg-amber-100 text-amber-900" : "bg-surface border border-border"}`}>
           {customer.status === "more_info" ? "AGUARDANDO MAIS INFORMAÇÕES" : "PENDENTE"}
         </span>
-        <span className="text-xs text-muted">{new Date(customer.created_at).toLocaleDateString("pt-BR")}</span>
+        <span className="text-xs text-muted">{new Date(customer.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
       </div>
 
       <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-1 text-xs">

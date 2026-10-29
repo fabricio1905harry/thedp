@@ -168,7 +168,7 @@ export async function cancelOrderRequest(orderId: string, reason?: string): Prom
     });
 
     revalidatePath("/[locale]/minha-conta", "page");
-    revalidatePath(`/[locale]/pedidos/${orderId}`, "page");
+    revalidatePath("/[locale]/pedidos/[id]", "page");
     revalidatePath("/admin/pedidos");
     return { ok: true };
   } catch {

@@ -8,7 +8,9 @@ type Content = Record<string, unknown>;
 
 export function pointsToSignup(content: Content): boolean {
   const link = typeof content.cta_link === "string" ? content.cta_link : "";
-  return link.startsWith("/cadastro");
+  // "/cadastro", "/pt/cadastro", "https://site/en/cadastro?x=1"…
+  const path = link.replace(/^https?:\/\/[^/]+/i, "").split(/[?#]/)[0].replace(/^\/(pt|en|es)(?=\/|$)/i, "");
+  return path === "/cadastro" || path.startsWith("/cadastro/");
 }
 
 export function adaptCtaForSignedIn<T extends { key: string; content: Content }>(

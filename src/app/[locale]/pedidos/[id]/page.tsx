@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/currency";
 import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp-button";
 import { OrderPayPanel } from "@/components/order-pay-panel";
 import { OrderPostPayBuyer } from "@/components/order-postpay-buyer";
-import { computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
+import { bankFeeInCurrency, computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { BUYER_CANCELABLE_STATUSES, BUYER_RELEASED_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
 import { CancelOrderButton, ReturnRequestForm } from "@/components/order-buyer-actions";
@@ -84,12 +84,16 @@ export default async function OrderConfirmationPage({
   const isCanceled = order.status === "canceled";
   const canCancel = BUYER_CANCELABLE_STATUSES.includes(order.status);
   const canRequestReturn = !isCanceled && !canCancel;
-  const activeItemCount = (items ?? []).filter((i) => i.item_status === "available" || i.item_status === "requested").length;
+  // counts are PIECES, not lines (P7)
+  const activeItemCount = (items ?? [])
+    .filter((i) => i.item_status === "available" || i.item_status === "requested")
+    .reduce((sum, i) => sum + Number(i.qty), 0);
+  const requestedPieceCount = (items ?? []).filter((i) => !i.added_by_tdp).reduce((sum, i) => sum + Number(i.original_qty ?? i.qty), 0);
   const isRequestStage = ["created", "order_request", "stock_confirmation", "awaiting_buyer_decision"].includes(order.status);
   const statusLabel = BUYER_STATUS_KEYS[order.status] ? t(`order.${BUYER_STATUS_KEYS[order.status]}`) : order.status;
   const holdUntil =
     order.status === "confirmed_awaiting_payment" && order.stock_hold_until
-      ? new Date(order.stock_hold_until).toLocaleString(dateLocale, { dateStyle: "medium", timeStyle: "short" })
+      ? new Date(order.stock_hold_until).toLocaleString(dateLocale, { timeZone: "America/Sao_Paulo", dateStyle: "medium", timeStyle: "short" })
       : null;
 
   const holdValid = !order.stock_hold_until || new Date(order.stock_hold_until).getTime() > requestedAt;
@@ -103,6 +107,19 @@ export default async function OrderConfirmationPage({
   const enabledMethods = new Set(
     ((methods ?? []) as { method_code: string; enabled: boolean }[]).filter((m) => m.enabled).map((m) => m.method_code)
   );
+  // The bank fee is charged per transfer (DB trigger on payments) — the buyer must see it BEFORE paying.
+  let bankFee = 0;
+  if (due && enabledMethods.has("bank_transfer")) {
+    try {
+      const feeBrl = Number((await getSetting<number | string>("bank_processing_fee_brl")) ?? 0);
+      if (feeBrl > 0) {
+        const { data: rate } = await supabase.rpc("latest_brl_rate", { cur: order.currency });
+        bankFee = bankFeeInCurrency(feeBrl, rate ? Number(rate) : null, order.currency);
+      }
+    } catch {
+      bankFee = 0;
+    }
+  }
   const shippingAddr = (order.shipping_address as Record<string, string>) || {};
   const packagingSnapshot = (order.quote_snapshot as Record<string, unknown>)?.packaging as Record<string, unknown>;
   const packagesList = (packagingSnapshot?.packages as Array<Record<string, unknown>>) || [];
@@ -122,7 +139,7 @@ export default async function OrderConfirmationPage({
             {t("order.orderTitle", { number: order.order_number || order.id.slice(0, 8) })}
           </h1>
           <p className="text-xs text-muted mt-1">
-            {t("order.placedOn")} {new Date(order.created_at).toLocaleDateString(dateLocale, { day: "2-digit", month: "long", year: "numeric" })}
+            {t("order.placedOn")} {new Date(order.created_at).toLocaleDateString(dateLocale, { timeZone: "America/Sao_Paulo", day: "2-digit", month: "long", year: "numeric" })}
           </p>
         </div>
 
@@ -165,6 +182,7 @@ export default async function OrderConfirmationPage({
           charges={Math.round((due.total - due.merchandise) * 100) / 100}
           stripeEnabled={enabledMethods.has("stripe_card")}
           bankEnabled={enabledMethods.has("bank_transfer")}
+          bankFee={bankFee}
           bankInstructions={typeof bankInstructions === "string" ? bankInstructions : ""}
           paymentFailed={paymentFlag === "canceled" || paymentFlag === "failed"}
           proofPending={((payments ?? []) as unknown as { status: string; method_code: string }[]).some(
@@ -285,7 +303,7 @@ export default async function OrderConfirmationPage({
             return {
               id: item.id,
               title: product?.title || t("order.defaultProductTitle"),
-              color: variant?.color ?? null,
+              color: variant?.color ? colorNames.label(variant.color) : null,
               size: variant?.size ?? null,
               qty: item.qty,
               unit_price: Number(item.unit_price),
@@ -380,7 +398,7 @@ export default async function OrderConfirmationPage({
       <div className="bg-white border border-border/80 p-6 rounded-sm space-y-4">
         <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-accent border-b border-border/60 pb-3">
           {isRequestStage || isCanceled
-            ? t("order.itemsRequestedTitle", { count: items?.length ?? 0 })
+            ? t("order.itemsRequestedTitle", { count: requestedPieceCount })
             : t("order.itemsConfirmedTitle", { count: activeItemCount })}
         </h3>
         <div className="divide-y divide-border/60">

@@ -36,7 +36,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
   const scope = (SCOPES.includes(scopeParam as CmsScope) ? scopeParam : "home") as CmsScope;
   const blocks = await getEffectiveBlocks(scope);
   const [site, own] = await Promise.all([checkSite(), getCmsStatus()]);
-  const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR") : "—");
+  const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
   const siteSeesAll = site.state === "ok" && site.status?.ok && (site.status.customisedBlocks ?? 0) >= own.customisedBlocks;
 
   const editorBlocks: EditorBlock[] = blocks.map((b, i) => ({

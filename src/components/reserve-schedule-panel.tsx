@@ -57,7 +57,7 @@ export function ReserveSchedulePanel({
       </div>
       <p className="text-xs text-muted">
         Depósito: <strong>{fmt(deposit)}</strong> · Saldo estimado (com frete/impostos): <strong>{fmt(balance)}</strong>
-        {expiresAt && <> · Janela máxima até <strong>{new Date(expiresAt).toLocaleDateString("pt-BR")}</strong></>}
+        {expiresAt && <> · Janela máxima até <strong>{new Date(expiresAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</strong></>}
       </p>
       <div className="flex flex-wrap items-end gap-3 text-xs">
         <label className="space-y-1">

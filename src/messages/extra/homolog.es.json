@@ -37,6 +37,7 @@
     "cancelConfirmText": "Aún no se ha pagado nada. Una vez cancelada, la solicitud no se puede reabrir — puedes enviar una nueva.",
     "cancelReasonPlaceholder": "Motivo (opcional)",
     "cancelConfirm": "Sí, cancelar",
+    "canceledDone": "Pedido cancelado.",
     "canceling": "Cancelando…",
     "keepOrder": "Mantener mi pedido",
     "returnTitle": "Solicitud de devolución o posventa",

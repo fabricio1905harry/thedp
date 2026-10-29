@@ -21,6 +21,8 @@ export interface PricingRules {
   intl_freight_pct: number;
   local_taxes_pct: number;
   retail_markup: number;
+  /** false (PDF p. 48): a supplier cost change does not rewrite the sale price */
+  recalc_on_cost_change?: boolean;
 }
 
 export interface ProductPricingOverrides {

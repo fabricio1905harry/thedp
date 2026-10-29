@@ -42,7 +42,7 @@ export default async function UpcomingShipmentsPage({ searchParams }: { searchPa
 
   const today = new Date().toISOString().slice(0, 10);
   const daysLeft = (d: string | null) => (d ? Math.round((new Date(`${d}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / 86400_000) : null);
-  const fmtDate = (d: string | null) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString("pt-BR") : "—");
+  const fmtDate = (d: string | null) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
   const link = (extra: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries({ stage, month, q, ...extra })) if (v) p.set(k, v);
@@ -114,7 +114,7 @@ export default async function UpcomingShipmentsPage({ searchParams }: { searchPa
                     <td className="p-2 whitespace-nowrap">
                       {Number(r.reserve_amount ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / {Number(r.total).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} {r.currency}
                     </td>
-                    <td className="p-2 whitespace-nowrap">{r.reserve_expires_at ? new Date(r.reserve_expires_at).toLocaleDateString("pt-BR") : "—"}</td>
+                    <td className="p-2 whitespace-nowrap">{r.reserve_expires_at ? new Date(r.reserve_expires_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—"}</td>
                   </tr>
                 );
               })}

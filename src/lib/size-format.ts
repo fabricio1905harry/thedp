@@ -41,19 +41,23 @@ export function toSizeInfo(row: SizeChartRow): SizeInfo {
   return { br: row.size_br, us: row.size_us, eu: row.size_eu, letter: row.letter };
 }
 
+/** "88" → "34.6"; "86-90" → "33.9-35.4". Returns "" for non-numeric text. */
+export function cmToIn(cm: string): string {
+  const parts = cm.split(/\s*[-–]\s*/).map((p) => Number(p.replace(",", ".")));
+  if (parts.length === 0 || parts.some((n) => !Number.isFinite(n))) return "";
+  return parts.map((n) => (Math.round((n / 2.54) * 10) / 10).toString()).join("-");
+}
+
 /**
- * Buyer label without duplicated parentheses.
- * en / USD:  M / US 6 (BR 40)      es / EUR:  M / EU 40      pt:  M / BR 40 (US 6)
+ * Buyer label (PDF pp. 44/55): letter / US size with the Brazilian size in
+ * parentheses, in every language and currency.
+ *   en / es:  M / US 6 (BR 40)      pt:  M / BR 40 (US 6)
+ * The EU size is not shown: the PDF does not use it.
  */
-export function formatSize(raw: string, info: SizeInfo | undefined, locale: string, currency: string): string {
+export function formatSize(raw: string, info: SizeInfo | undefined, locale: string, _currency?: string): string {
   if (!info) return raw;
   const head = info.letter || (norm(raw) === norm(info.br) ? "" : raw);
   const join = (rest: string) => (head ? `${head} / ${rest}` : rest);
-  if (currency === "EUR" || locale === "es") {
-    return info.eu ? join(`EU ${info.eu}`) : head || raw;
-  }
-  if (locale === "pt" && currency !== "USD") {
-    return join(info.us ? `BR ${info.br} (US ${info.us})` : `BR ${info.br}`);
-  }
+  if (locale === "pt") return join(info.us ? `BR ${info.br} (US ${info.us})` : `BR ${info.br}`);
   return join(info.us ? `US ${info.us} (BR ${info.br})` : `BR ${info.br}`);
 }

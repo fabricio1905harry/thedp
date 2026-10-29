@@ -49,6 +49,7 @@ export async function savePricingRules(rules: PricingRules): Promise<{ error?: s
         intl_freight_pct: num(rules.intl_freight_pct, 0, 500),
         local_taxes_pct: num(rules.local_taxes_pct, 0, 500),
         retail_markup: num(rules.retail_markup, 0, 100),
+        recalc_on_cost_change: Boolean(rules.recalc_on_cost_change),
         updated_at: new Date().toISOString(),
         updated_by: staff.id,
       })
@@ -128,6 +129,11 @@ export async function bulkAdjustPrices(target: BulkTarget, action: BulkAction): 
           const { error } = await supabase.from("products").update({ original_price: Math.round(cost * (1 + pct) * 100) / 100 }).eq("id", r.id);
           if (error) return { error: error.message };
         }
+        // explicit staff action: reprice these products even though a cost change alone does not
+        for (let i = 0; i < ids.length; i += 500) {
+          const { error } = await supabase.rpc("recompute_product_prices", { p_ids: ids.slice(i, i + 500) });
+          if (error) return { error: error.message };
+        }
         refresh();
         return { count: ids.length };
       }
@@ -163,6 +169,34 @@ export async function setProductPricing(
     if (error) return { error: error.message };
     refresh();
     revalidatePath(`/admin/produtos/${productId}`);
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Falha ao salvar" };
+  }
+}
+
+/** Margin per category (empty value removes the category rule). */
+export async function saveCategoryMargin(category: string, margin: number | null): Promise<{ error?: string }> {
+  try {
+    const staff = await requireStaff();
+    const supabase = await createClient();
+    if (margin === null || Number.isNaN(margin)) {
+      const { error } = await supabase.from("category_pricing").delete().eq("category", category);
+      if (error) return { error: error.message };
+    } else {
+      const { error } = await supabase
+        .from("category_pricing")
+        .upsert({ category, margin_pct: num(margin, 0, 94), updated_at: new Date().toISOString(), updated_by: staff.id });
+      if (error) return { error: error.message };
+    }
+    // products of the category follow the new margin (explicit staff action)
+    const { data: ids } = await supabase.from("products").select("id").eq("category", category).limit(5000);
+    const list = (ids ?? []).map((r) => r.id as string);
+    for (let i = 0; i < list.length; i += 500) {
+      const { error } = await supabase.rpc("recompute_product_prices", { p_ids: list.slice(i, i + 500) });
+      if (error) return { error: error.message };
+    }
+    refresh();
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Falha ao salvar" };
