@@ -161,6 +161,72 @@ async function updateProductImpl(productId: string, input: UpdateProductInput) {
   revalidatePath(`/admin/produtos/${productId}`);
 }
 
+
+export interface ProductRegistrationInput {
+  description: string;
+  descriptionEn: string;
+  descriptionEs: string;
+  composition: string;
+  originCountry: string;
+  ncm: string;
+  supplierRef: string;
+  tdpRef: string;
+  customsDescription: string;
+  visibleOps: string[];
+}
+
+const OPERATIONS = ["intl_b2b", "intl_b2c", "br_b2b", "br_b2c"];
+
+/** Product registration fields (PDF pp. 36/53/55): descriptions, composition, origin, NCM, references, customs text, visibility. */
+async function updateProductRegistrationImpl(productId: string, input: ProductRegistrationInput) {
+  await requireStaff();
+  const supabase = await createClient();
+  const clean = (v: string, max = 2000) => (v ?? "").trim().slice(0, max) || null;
+
+  const ncmDigits = (input.ncm ?? "").replace(/\D/g, "");
+  if (ncmDigits && ncmDigits.length !== 8) throw new Error("O NCM tem 8 dígitos (o HS de 6 dígitos é derivado dele).");
+  const country = (input.originCountry ?? "").trim().toUpperCase();
+  if (country && !/^[A-Z]{2}$/.test(country)) throw new Error("País de origem: use o código de 2 letras (ex.: BR).");
+  const ops = (input.visibleOps ?? []).filter((o) => OPERATIONS.includes(o));
+  const tdpRef = (input.tdpRef ?? "").trim().toUpperCase();
+
+  const { data: current, error: readError } = await supabase
+    .from("products")
+    .select("description, locked_fields")
+    .eq("id", productId)
+    .single();
+  if (readError || !current) throw new Error(readError?.message ?? "Produto não encontrado");
+
+  // the supplier description is a syncable field: hand edits protect it from the next sync
+  const edited = changedFields({ description: current.description } as Partial<Record<SyncableField, unknown>>, {
+    description: clean(input.description),
+  } as Partial<Record<SyncableField, unknown>>);
+  const lockedFields = Array.from(new Set([...((current.locked_fields as string[]) ?? []), ...edited]));
+
+  const patch: Record<string, unknown> = {
+    description: clean(input.description),
+    description_en: clean(input.descriptionEn),
+    description_es: clean(input.descriptionEs),
+    composition: clean(input.composition, 300),
+    origin_country: country || "BR",
+    ncm: ncmDigits || null,
+    supplier_ref: clean(input.supplierRef, 120),
+    customs_description: clean(input.customsDescription, 300),
+    visible_ops: ops,
+    locked_fields: lockedFields,
+    updated_at: new Date().toISOString(),
+  };
+  if (tdpRef) patch.tdp_ref = tdpRef;
+
+  const { error } = await supabase.from("products").update(patch).eq("id", productId);
+  if (error) {
+    if (error.message.includes("products_tdp_ref_key")) throw new Error("Essa referência TDP já está em uso por outro produto.");
+    throw new Error(error.message);
+  }
+  revalidatePath("/admin/produtos");
+  revalidatePath(`/admin/produtos/${productId}`);
+}
+
 /**
  * "Reset to source": drops the manual lock on the given fields and restores
  * the last value the supplier sent (products.source_snapshot). Fields the
@@ -373,6 +439,21 @@ async function setImageCropImpl(imageId: string, crop: ImageCrop | null) {
   revalidateImages([data.product_id]);
 }
 
+/** Ties a photo to one color of the product (the supplier color text); empty = photo for every color. */
+async function setImageColorImpl(imageId: string, colorKey: string | null) {
+  await requireStaff();
+  const supabase = await createClient();
+  const value = (colorKey ?? "").trim().slice(0, 120) || null;
+  const { data, error } = await supabase
+    .from("product_images")
+    .update({ color_key: value })
+    .eq("id", imageId)
+    .select("product_id")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidateImages([data.product_id]);
+}
+
 async function insertTdpImage(
   productId: string,
   url: string,
@@ -525,6 +606,10 @@ export async function updateProduct(...args: Parameters<typeof updateProductImpl
   return safe(() => updateProductImpl(...args));
 }
 
+export async function updateProductRegistration(...args: Parameters<typeof updateProductRegistrationImpl>) {
+  return safe(() => updateProductRegistrationImpl(...args));
+}
+
 export async function resetFieldsToSource(...args: Parameters<typeof resetFieldsToSourceImpl>) {
   return safe(() => resetFieldsToSourceImpl(...args));
 }
@@ -551,6 +636,10 @@ export async function setCoverImage(...args: Parameters<typeof setCoverImageImpl
 
 export async function reorderProductImages(...args: Parameters<typeof reorderProductImagesImpl>) {
   return safe(() => reorderProductImagesImpl(...args));
+}
+
+export async function setImageColor(...args: Parameters<typeof setImageColorImpl>) {
+  return safe(() => setImageColorImpl(...args));
 }
 
 export async function setImageCrop(...args: Parameters<typeof setImageCropImpl>) {

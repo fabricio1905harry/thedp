@@ -6,11 +6,11 @@ import { computePrice, fixedTotal, type PricingRules } from "@/lib/pricing";
 import { savePricingRules, recomputeAllPrices } from "@/app/admin/precificacao/actions";
 
 const PCT_FIELDS: [keyof PricingRules, string][] = [
-  ["margin_pct", "Margem desejada %"],
-  ["commission_pct", "Comissão %"],
+  ["margin_pct", "Margem desejada % (meta única)"],
+  ["commission_pct", "Sales Commission %"],
   ["icms_pct", "ICMS %"],
   ["pis_cofins_pct", "PIS/COFINS %"],
-  ["card_fee_pct", "Taxa cartão internac. %"],
+  ["card_fee_pct", "Payment Cost %"],
 ];
 
 export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules; autoRates: { usd: number | null; eur: number | null } }) {
@@ -33,6 +33,10 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
 
   function save() {
     setMsg(null);
+    if (rules.fixed_costs.some((c) => !c.label.trim())) {
+      setMsg("Dê um nome a cada custo fixo (ex.: Etiqueta, Lacre, Frete inbound) antes de salvar.");
+      return;
+    }
     start(async () => {
       const res = await savePricingRules(rules);
       setMsg(res.error ?? `Regras salvas — ${res.count ?? 0} produtos atualizados com os novos preços.`);
@@ -59,7 +63,8 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
                 <input
                   placeholder="Nome do custo (ex.: Tag)"
                   aria-label="Nome do custo"
-                  className={`${input} min-w-0 flex-1`}
+                  required
+                  className={`${input} min-w-0 flex-1 ${c.label.trim() ? "" : "border-red-500"}`}
                   value={c.label}
                   onChange={(e) => set("fixed_costs", rules.fixed_costs.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
                 />
@@ -78,7 +83,7 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
             ))}
           </div>
           <div className="flex items-center justify-between text-xs">
-            <button type="button" onClick={() => set("fixed_costs", [...rules.fixed_costs, { label: "Novo custo", amount: 0 }])} className="border border-border px-3 py-1.5">
+            <button type="button" onClick={() => set("fixed_costs", [...rules.fixed_costs, { label: "", amount: 0 }])} className="border border-border px-3 py-1.5">
               + Adicionar custo
             </button>
             <span>
@@ -150,6 +155,22 @@ export function PricingRulesForm({ initial, autoRates }: { initial: PricingRules
               <input type="number" step="0.01" className={full} value={rules.retail_markup} onChange={(e) => set("retail_markup", Number(e.target.value))} />
             </label>
           </div>
+        </section>
+
+        <section className="border border-border p-4 space-y-2 text-xs">
+          <h2 className="text-sm font-medium uppercase tracking-wide">Quando o custo do fornecedor muda</h2>
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={Boolean(rules.recalc_on_cost_change)}
+              onChange={(e) => set("recalc_on_cost_change", e.target.checked)}
+            />
+            <span>
+              Recalcular automaticamente o preço de venda. Desligado (padrão do PDF), o preço fica como está e o produto vai para o
+              Action Center se a margem cair abaixo da meta. Preços fixos em USD/EUR nunca mudam sozinhos.
+            </span>
+          </label>
         </section>
 
         <div className="flex flex-wrap items-center gap-3">

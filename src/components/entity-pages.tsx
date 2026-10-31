@@ -8,8 +8,10 @@ import { ProductCard } from "@/components/product-card";
 import { normalizeImageUrl } from "@/lib/image-url";
 import {
   entityProductIds,
+  getEditBrands,
   getEntityBySlug,
   getLookbookImages,
+  getLookbookLinks,
   listEntities,
   productsByIds,
   type EntityCard,
@@ -26,8 +28,11 @@ export function EntityCardLink({ kind, e, partnerLabel }: { kind: EntityKind; e:
     <Link href={`/${ENTITY[kind].siteRoute}/${e.slug}`} className="group block border border-border/70 hover:border-foreground/40 transition-colors bg-white/90">
       <div className="relative aspect-[4/5] bg-surface overflow-hidden">
         {cover && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={cover} alt={e.title} referrerPolicy="no-referrer" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
+          <picture>
+            {e.coverMobileUrl && <source media="(max-width: 639px)" srcSet={e.coverMobileUrl} />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cover} alt={e.title} referrerPolicy="no-referrer" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
+          </picture>
         )}
         {e.partner && (
           <span className="absolute top-2.5 left-2.5 bg-background/90 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] font-semibold border border-border/80">
@@ -97,9 +102,12 @@ export async function EntityDetailPage({ kind, slug }: { kind: EntityKind; slug:
     <header className="mb-10">
       {back}
       {cover && kind !== "lookbooks" && (
-        <div className="mt-5 aspect-[16/7] bg-surface overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={cover} alt={e.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+        <div className="mt-5 aspect-[4/5] sm:aspect-[16/7] bg-surface overflow-hidden">
+          <picture>
+            {e.coverMobileUrl && <source media="(max-width: 639px)" srcSet={e.coverMobileUrl} />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cover} alt={e.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+          </picture>
         </div>
       )}
       <div className="mt-6 max-w-3xl">
@@ -119,9 +127,17 @@ export async function EntityDetailPage({ kind, slug }: { kind: EntityKind; slug:
 
   if (kind === "lookbooks") {
     const images = await getLookbookImages(e.id, locale, approved);
+    const links = await getLookbookLinks(e.brandId ?? null, e.collectionId ?? null, locale);
     return (
       <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14">
         {header}
+        {(links.brand || links.collection) && (
+          <p className={`${EYEBROW} -mt-4 mb-8`}>
+            {links.brand && <Link href={`/marcas/${links.brand.slug}`} className="underline underline-offset-2 text-foreground">{links.brand.name}</Link>}
+            {links.brand && links.collection && " · "}
+            {links.collection && <Link href={`/colecoes/${links.collection.slug}`} className="underline underline-offset-2 text-foreground">{links.collection.title}</Link>}
+          </p>
+        )}
         {images.length === 0 && <p className="text-sm text-muted py-10 text-center border border-dashed border-border">{t("noImages")}</p>}
         <div className="space-y-16">
           {images.map((img) => (
@@ -148,11 +164,30 @@ export async function EntityDetailPage({ kind, slug }: { kind: EntityKind; slug:
     );
   }
 
+  const editBrands = kind === "edits" ? await getEditBrands(e.id) : [];
   const ids = await entityProductIds(kind as "brands" | "collections" | "edits", e.id);
   const products = await productsByIds(ids, approved);
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 sm:py-14">
       {header}
+      {kind === "edits" && (e.gallery?.length ?? 0) > 0 && (
+        <div className="mb-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {e.gallery!.map((url, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={url} alt={e.title} referrerPolicy="no-referrer" loading="lazy" className="w-full h-auto" />
+          ))}
+        </div>
+      )}
+      {editBrands.length > 0 && (
+        <p className={`${EYEBROW} mb-8`}>
+          {editBrands.map((b, i) => (
+            <span key={b.slug}>
+              {i > 0 && " · "}
+              <Link href={`/marcas/${b.slug}`} className="underline underline-offset-2 text-foreground">{b.name}</Link>
+            </span>
+          ))}
+        </p>
+      )}
       {products.length === 0 ? (
         <p className="text-sm text-muted py-10 text-center border border-dashed border-border">{t("noProducts")}</p>
       ) : (

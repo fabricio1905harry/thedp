@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentStaff } from "@/lib/admin-auth";
 import { EDITABLE_ORDER_STATUSES } from "@/lib/order-status";
-import { computeReserve } from "@/lib/payments";
+import { applyReserveMode } from "@/lib/reserve";
 
 async function requireStaff() {
   const staff = await getCurrentStaff();
@@ -474,50 +474,13 @@ async function setOrderPaymentRuleImpl(orderId: string, methodCode: string, enab
 async function setReserveModeImpl(orderId: string, enabled: boolean) {
   const staff = await requireStaff();
   const supabase = await createClient();
-
-  if (!enabled) {
-    await supabase
-      .from("orders")
-      .update({ payment_mode: "standard", reserve_amount: null, reserve_pct_of_sale: null })
-      .eq("id", orderId);
-    await logEvent(orderId, staff.id, "reserve", "Modo de pagamento → padrão");
-    revalidateOrder(orderId);
-    return;
-  }
-
-  const [{ data: order }, { data: items }, { data: setting }] = await Promise.all([
-    supabase.from("orders").select("currency, subtotal").eq("id", orderId).single(),
-    supabase.from("order_items").select("qty, unit_cost_brl, item_status").eq("order_id", orderId),
-    supabase.from("app_settings").select("value").eq("key", "reserve_markup_pct").maybeSingle(),
-  ]);
-  if (!order) throw new Error("Pedido não encontrado");
-
-  const costBrl = (items ?? [])
-    .filter((i) => i.item_status === "available" || i.item_status === "requested")
-    .reduce((sum, i) => sum + Number(i.qty) * Number(i.unit_cost_brl ?? 0), 0);
-
-  let brlPerUnit = 1;
-  if (order.currency !== "BRL") {
-    const { data: rate } = await supabase
-      .from("fx_rates")
-      .select("rate")
-      .eq("base", "BRL")
-      .eq("quote", order.currency)
-      .order("fetched_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!rate) throw new Error(`Sem taxa de câmbio para ${order.currency}`);
-    brlPerUnit = Number(rate.rate);
-  }
-
-  const markupPct = Number(setting?.value ?? 10);
-  const reserve = computeReserve(costBrl / brlPerUnit, Number(order.subtotal), markupPct);
-  const { error } = await supabase
-    .from("orders")
-    .update({ payment_mode: "reserve", reserve_amount: reserve.amount, reserve_pct_of_sale: reserve.pctOfSale })
-    .eq("id", orderId);
-  if (error) throw new Error(error.message);
-  await logEvent(orderId, staff.id, "reserve", `Modo de pagamento → Reserve (${reserve.amount}, ${reserve.pctOfSale}% da venda)`);
+  const reserve = await applyReserveMode(supabase, orderId, enabled);
+  await logEvent(
+    orderId,
+    staff.id,
+    "reserve",
+    enabled ? `Modo de pagamento → Reserve (${reserve.amount}, ${reserve.pctOfSale}% da venda)` : "Modo de pagamento → padrão"
+  );
   revalidateOrder(orderId);
 }
 

@@ -26,7 +26,7 @@ export async function OrderPostPayBuyer({ order, locale }: { order: OrderLike; l
   const t = await getTranslations("postpay");
   const dateLocale = ({ pt: "pt-BR", en: "en-US", es: "es-ES" } as Record<string, string>)[locale] ?? locale;
   const supabase = createServiceRoleClient();
-  const fmtDate = (d: string | null) => (d ? new Date(d.length === 10 ? `${d}T12:00:00Z` : d).toLocaleDateString(dateLocale, { day: "2-digit", month: "long", year: "numeric" }) : null);
+  const fmtDate = (d: string | null) => (d ? new Date(d.length === 10 ? `${d}T12:00:00Z` : d).toLocaleDateString(dateLocale, { timeZone: "America/Sao_Paulo", day: "2-digit", month: "long", year: "numeric" }) : null);
   const money = (n: number) => formatCurrency(n, order.currency as Currency);
 
   const [{ data: shipment }, { data: invoice }] = await Promise.all([
@@ -108,7 +108,7 @@ export async function OrderPostPayBuyer({ order, locale }: { order: OrderLike; l
             {(events ?? []).length === 0 && <li className="text-muted">{t("noEvents")}</li>}
             {(events ?? []).map((e) => (
               <li key={e.id}>
-                <span className="text-xs text-muted block">{new Date(e.occurred_at).toLocaleString(dateLocale, { dateStyle: "medium", timeStyle: "short" })}</span>
+                <span className="text-xs text-muted block">{new Date(e.occurred_at).toLocaleString(dateLocale, { timeZone: "America/Sao_Paulo", dateStyle: "medium", timeStyle: "short" })}</span>
                 <span className="font-medium">{t(`shipStatus_${e.status}`)}</span>
                 {e.location ? <span className="text-muted"> · {e.location}</span> : null}
               </li>

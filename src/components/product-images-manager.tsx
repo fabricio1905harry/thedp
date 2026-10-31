@@ -9,6 +9,7 @@ import {
   reorderProductImages,
   setCoverImage,
   setImageCrop,
+  setImageColor,
   setImagesReviewStatus,
   uploadProductImage,
   type ReviewStatus,
@@ -28,6 +29,8 @@ export interface ImageRow {
   crop: unknown;
   replaces_image_id: string | null;
   product_title?: string | null;
+  /** supplier color text the photo belongs to (empty = every color) */
+  color_key?: string | null;
 }
 
 const STATUS_LABEL: Record<ImageRow["review_status"], string> = {
@@ -57,10 +60,13 @@ export function ProductImagesManager({
   productId,
   images,
   mode = "product",
+  colors = [],
 }: {
   productId?: string;
   images: ImageRow[];
   mode?: "product" | "queue";
+  /** supplier colors of the product (for the "photo of color" selector) */
+  colors?: string[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -249,6 +255,19 @@ export function ProductImagesManager({
                   )}
                   {img.review_status === "approved" && !img.is_cover && (
                     <ActionLink onClick={() => run(() => setCoverImage(img.id))}>Definir capa</ActionLink>
+                  )}
+                  {mode === "product" && colors.length > 0 && (
+                    <select
+                      value={img.color_key ?? ""}
+                      onChange={(e) => run(() => setImageColor(img.id, e.target.value))}
+                      aria-label="Cor desta foto"
+                      className="w-full border border-border bg-background px-1 py-0.5"
+                    >
+                      <option value="">Todas as cores</option>
+                      {colors.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
                   )}
                   {src && <ActionLink onClick={() => setCropping(img)}>Recortar</ActionLink>}
                   {src && <ActionLink onClick={() => setPreview(src)}>Ver</ActionLink>}

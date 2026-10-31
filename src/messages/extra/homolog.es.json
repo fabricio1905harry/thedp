@@ -29,7 +29,25 @@
     "canceledBadge": "Pedido cancelado",
     "canceledTitle": "Este pedido fue cancelado",
     "canceledText": "No se realizó ningún cobro. Puedes enviar una nueva solicitud de pedido cuando quieras.",
-    "itemsRequestedTitle": "Piezas solicitadas ({count})"
+    "itemsRequestedTitle": "Piezas solicitadas ({count})",
+    "deliveryMode": {
+      "title": "¿Cómo quieres recibir tu pedido?",
+      "shipNow": "Enviar ahora",
+      "shipNowText": "Paga el total ahora. Enviamos en cuanto se confirme el pago.",
+      "reserve": "Reservar para entrega posterior",
+      "reserveText": "Paga ahora un depósito de reserva no reembolsable para guardar las piezas; el saldo se paga antes de la fecha de envío que elijas.",
+      "desiredDate": "Fecha de envío deseada",
+      "confirm": "Confirmar reserva",
+      "update": "Actualizar reserva",
+      "errors": {
+        "auth": "Inicia sesión de nuevo.",
+        "notFound": "Pedido no encontrado.",
+        "notOpen": "Este pedido ya no está abierto para pago.",
+        "paid": "Ya se hizo un pago o se envió para verificación.",
+        "date": "Elige una fecha futura.",
+        "failed": "No se pudo guardar tu elección. Inténtalo de nuevo."
+      }
+    }
   },
   "orderActions": {
     "cancelCta": "Cancelar solicitud de pedido",
@@ -37,6 +55,7 @@
     "cancelConfirmText": "Aún no se ha pagado nada. Una vez cancelada, la solicitud no se puede reabrir — puedes enviar una nueva.",
     "cancelReasonPlaceholder": "Motivo (opcional)",
     "cancelConfirm": "Sí, cancelar",
+    "canceledDone": "Pedido cancelado.",
     "canceling": "Cancelando…",
     "keepOrder": "Mantener mi pedido",
     "returnTitle": "Solicitud de devolución o posventa",

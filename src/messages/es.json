@@ -71,6 +71,7 @@
     "colorHelpTitle": "¿Necesitas ayuda con el color exacto?",
     "colorHelp": "Los colores pueden variar ligeramente según la pantalla y la iluminación. Para confirmar el tono exacto antes de hacer tu pedido, contacta a nuestro equipo por",
     "accDetails": "Detalles del producto",
+    "composition": "Composición",
     "countryOfOrigin": "País de origen",
     "brazil": "Brasil",
     "accSizeFit": "Talla y calce",
@@ -255,7 +256,7 @@
     "emptyBody": "Se añaden nuevos modelos semanalmente a nuestro catálogo de alta costura."
   },
   "institutional": {
-    "pendingNotice": "Contenido definitivo a ser proporcionado por el contratante (ver PRD, sección 11 — decisiones pendientes). Este es un placeholder estructural.",
+    "pendingNotice": "Esta página está en preparación. Contáctanos si necesitas esta información mientras tanto.",
     "titles": {
       "sobre": "Sobre nosotros",
       "faq": "Preguntas frecuentes",
@@ -286,7 +287,7 @@
     "financialSummaryTitle": "Resumen Financiero",
     "dutiesEstimate": "Estimación de Aranceles (DDP):",
     "totalPaid": "Total Pagado:",
-    "itemsConfirmedTitle": "Piezas Confirmadas en el Pedido ({count})",
+    "itemsConfirmedTitle": "Piezas confirmadas en el pedido ({count})",
     "defaultProductTitle": "Vestido de Alta Costura",
     "sizeFullLabel": "Talla:",
     "continueBrowsing": "Continuar Navegando",
@@ -311,6 +312,8 @@
     "payByCard": "Pagar con tarjeta",
     "payRedirecting": "Redirigiendo al pago seguro…",
     "payError": "No se pudo iniciar el pago. Inténtalo de nuevo o contáctanos.",
+    "payBankFee": "Tarifa bancaria (por transferencia)",
+    "payTransferTotal": "Total a transferir",
     "payByTransfer": "Transferencia bancaria",
     "payTransferContact": "Contáctanos para recibir los datos bancarios de la transferencia.",
     "payTransferNotice": "Se añade una tarifa bancaria por cada transferencia. Después de transferir, envíanos el comprobante.",

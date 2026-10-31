@@ -17,16 +17,27 @@ import {
   type PickOption,
 } from "@/components/admin-ui";
 
+const OPS: [string, string][] = [
+  ["intl_b2b", "Internacional B2B"],
+  ["intl_b2c", "Internacional B2C"],
+  ["br_b2b", "Brasil B2B"],
+  ["br_b2c", "Brasil B2C"],
+];
+
 /** One editor for Marcas / Coleções / Lookbooks / Edits (ON/OFF, ordem, placement pago, produtos). */
 export function EntityEditor({
   kind,
   initial,
   productOptions,
+  brandOptions = [],
+  collectionOptions = [],
   stockLine,
 }: {
   kind: EntityKind;
   initial: EntityPayload;
   productOptions: PickOption[];
+  brandOptions?: PickOption[];
+  collectionOptions?: PickOption[];
   /** Collections: "4/10 estilos disponíveis" summary. */
   stockLine?: string;
 }) {
@@ -65,7 +76,8 @@ export function EntityEditor({
         <Field label="Endereço (slug)" hint="Aparece na URL do site. Deixe vazio para gerar a partir do título.">
           <input value={p.slug} onChange={(e) => set("slug", e.target.value)} className={inputCls} />
         </Field>
-        <ImageInput label="Imagem de capa" value={p.cover_url} onChange={(v) => set("cover_url", v)} />
+        <ImageInput label="Imagem de capa — desktop" value={p.cover_url} onChange={(v) => set("cover_url", v)} />
+        <ImageInput label="Imagem de capa — mobile (opcional)" value={p.cover_mobile_url} onChange={(v) => set("cover_mobile_url", v)} />
         {kind === "brands" && (
           <>
             <ImageInput label="Logo" value={p.logo_url} onChange={(v) => set("logo_url", v)} />
@@ -96,6 +108,21 @@ export function EntityEditor({
             <input type="number" value={p.sort} onChange={(e) => set("sort", Number(e.target.value))} className={`${inputCls} w-24`} />
           </label>
         </div>
+        <fieldset className="text-sm">
+          <legend className="text-xs font-medium mb-1">Visível nas operações</legend>
+          <div className="flex flex-wrap gap-4">
+            {OPS.map(([code, label]) => (
+              <label key={code} className="flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={p.visible_ops.includes(code)}
+                  onChange={(e) => set("visible_ops", e.target.checked ? [...p.visible_ops, code] : p.visible_ops.filter((o) => o !== code))}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         {kind === "collections" && (
           <div className="grid sm:grid-cols-3 gap-3">
             <Field label="Mostrar a partir de">
@@ -104,14 +131,14 @@ export function EntityEditor({
             <Field label="Mostrar até">
               <input type="date" value={p.ends_at} onChange={(e) => set("ends_at", e.target.value)} className={inputCls} />
             </Field>
-            <Field label="Alerta de estoque: mínimo de estilos disponíveis" hint="0 = sem alerta. Abaixo disso, entra no Action Center.">
-              <input
-                type="number"
-                min={0}
-                value={p.alert_min_styles}
-                onChange={(e) => set("alert_min_styles", Number(e.target.value))}
-                className={inputCls}
-              />
+            <Field label="Alerta COLLECTION INVENTORY REVIEW (estilos disponíveis ≤)" hint="Padrão 10. 0 = sem este alerta.">
+              <input type="number" min={0} value={p.alert_review_styles} onChange={(e) => set("alert_review_styles", Number(e.target.value))} className={inputCls} />
+            </Field>
+            <Field label="Alerta LOW INVENTORY — REVIEW REQUIRED (estilos disponíveis ≤)" hint="Padrão 5. 0 = sem este alerta.">
+              <input type="number" min={0} value={p.alert_low_styles} onChange={(e) => set("alert_low_styles", Number(e.target.value))} className={inputCls} />
+            </Field>
+            <Field label="Lembrete antes do fim da coleção (dias)" hint="Aviso no Action Center quando faltarem tantos dias para “Mostrar até”.">
+              <input type="number" min={0} value={p.alert_end_days} onChange={(e) => set("alert_end_days", Number(e.target.value))} className={inputCls} />
             </Field>
           </div>
         )}
@@ -120,7 +147,9 @@ export function EntityEditor({
 
       <section className="border border-border p-4 space-y-3">
         <h2 className="text-sm font-semibold">Placement pago</h2>
-        <p className="text-xs text-muted">Com datas preenchidas, o item some do site sozinho quando o período termina (e só aparece depois do início).</p>
+        <p className="text-xs text-muted">
+          As datas controlam só o destaque pago (selo de parceiro e posição de destaque). Quando o período termina o destaque encerra, mas a marca, coleção, lookbook, edit e seus produtos continuam no site. Lembretes (7 dias, 1 dia e no dia) aparecem no Action Center e por e-mail.
+        </p>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={p.paid_placement} onChange={(e) => set("paid_placement", e.target.checked)} /> Placement pago (mostra “parceiro”)
         </label>
@@ -136,6 +165,51 @@ export function EntityEditor({
           </Field>
         </div>
       </section>
+
+      {kind === "lookbooks" && (
+        <section className="border border-border p-4 space-y-3">
+          <h2 className="text-sm font-semibold">Vínculos do lookbook</h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Marca relacionada">
+              <select value={p.brand_id} onChange={(e) => set("brand_id", e.target.value)} className={inputCls}>
+                <option value="">— nenhuma —</option>
+                {brandOptions.map((b) => (
+                  <option key={b.id} value={b.id}>{b.label}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Coleção relacionada">
+              <select value={p.collection_id} onChange={(e) => set("collection_id", e.target.value)} className={inputCls}>
+                <option value="">— nenhuma —</option>
+                {collectionOptions.map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </section>
+      )}
+
+      {kind === "edits" && (
+        <>
+          <section className="border border-border p-4 space-y-3">
+            <h2 className="text-sm font-semibold">Imagens editoriais</h2>
+            {p.gallery.map((url, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <div className="flex-1">
+                  <ImageInput label={`Imagem ${i + 1}`} value={url} onChange={(v) => set("gallery", p.gallery.map((g, k) => (k === i ? v : g)))} />
+                </div>
+                <button type="button" onClick={() => set("gallery", p.gallery.filter((_, k) => k !== i))} className="text-xs text-red-600 pb-2">Remover</button>
+              </div>
+            ))}
+            <button type="button" onClick={() => set("gallery", [...p.gallery, ""])} className={btnGhost}>+ Adicionar imagem</button>
+          </section>
+          <section className="border border-border p-4 space-y-3">
+            <h2 className="text-sm font-semibold">Marcas deste edit</h2>
+            <ProductPicker options={brandOptions} value={p.brandIds} onChange={(ids) => set("brandIds", ids)} ordered />
+          </section>
+        </>
+      )}
 
       {kind !== "lookbooks" ? (
         <section className="border border-border p-4 space-y-3">

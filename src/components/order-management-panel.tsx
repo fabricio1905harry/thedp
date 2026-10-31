@@ -27,6 +27,7 @@ import { EDITABLE_ORDER_STATUSES, ITEM_STATUS_LABELS, STOCK_HOLD_LABELS } from "
 import { PASS_THROUGH_COMPONENTS, PAYMENT_METHOD_LABELS } from "@/lib/payments";
 import { DUTIES_MODES, DUTIES_MODE_LABELS_PT, dutiesDefaultAmount, type DutiesMode } from "@/lib/duties";
 import { PaymentProofLink } from "@/components/payment-proof-link";
+import { OrderLanguageSelect, StaffProofUpload } from "@/components/order-staff-tools";
 
 export interface OrderItemRow {
   id: string;
@@ -42,6 +43,11 @@ export interface OrderItemRow {
   added_by_tdp: boolean;
   original_qty: number | null;
   original_unit_price: number | null;
+  /** internal references shown to the TDP only (supplier name, supplier ref, TDP ref, synced stock) */
+  supplier_name?: string | null;
+  supplier_ref?: string | null;
+  tdp_ref?: string | null;
+  synced_stock?: number | null;
 }
 
 export interface OrderEventRow {
@@ -103,6 +109,8 @@ export interface DutiesRuleInfo {
 
 export interface OrderSummary {
   duties_mode?: string | null;
+  communication_locale?: string | null;
+  buyer_locale?: string | null;
   id: string;
   status: string;
   currency: string;
@@ -186,6 +194,8 @@ export function OrderManagementPanel({
   return (
     <div className="space-y-8">
       {error && <p className="text-sm text-red-600 border border-red-300 p-2">{error}</p>}
+
+      <OrderLanguageSelect orderId={order.id} value={order.communication_locale ?? null} accountLocale={order.buyer_locale ?? null} />
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -350,6 +360,9 @@ function ItemRow({
       <td className="py-2 pr-2">
         <span className={inactive ? "line-through" : ""}>{item.product_title ?? "—"}</span>
         <span className="block text-muted font-mono">{item.sku}</span>
+        <span className="block text-[10px] text-muted">
+          Fornecedor: {item.supplier_name || "—"} · ref. fornecedor: {item.supplier_ref || "—"} · ref. TDP: {item.tdp_ref || "—"} · estoque sincronizado: {item.synced_stock ?? "—"}
+        </span>
         {item.added_by_tdp && <span className="block text-[10px] uppercase text-accent">adicionado pela TDP</span>}
         {substitutedFor && (
           <span className="block text-[10px] text-muted">substitui {substitutedFor.product_title} {substitutedFor.color}/{substitutedFor.size}</span>
@@ -580,7 +593,7 @@ function OrderHistoryPanel({ order, items, events }: { order: OrderSummary; item
         <ul className="text-xs space-y-1">
           {events.map((e) => (
             <li key={e.id} className="flex flex-wrap gap-x-3">
-              <span className="text-muted whitespace-nowrap">{new Date(e.created_at).toLocaleString("pt-BR")}</span>
+              <span className="text-muted whitespace-nowrap">{new Date(e.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
               <span>{e.summary}</span>
               <span className="text-muted">{e.customers?.email ?? ""}</span>
             </li>
@@ -632,7 +645,7 @@ function ChargesPanel({ order, editable, pending, run, dutiesRule }: { order: Or
         <h2 className="text-sm font-medium uppercase tracking-wide">Frete e impostos de importação ({order.currency})</h2>
         <span className={`text-[11px] px-2 py-0.5 ${order.charges_informed_at ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>
           {order.charges_informed_at
-            ? `Informado em ${new Date(order.charges_informed_at).toLocaleString("pt-BR")}`
+            ? `Informado em ${new Date(order.charges_informed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
             : "Não informado — o comprador vê “a informar após a confirmação de estoque”"}
         </span>
       </div>
@@ -721,7 +734,7 @@ function ReleasePanel({ order, editable, pending, run }: { order: OrderSummary; 
       {order.stock_hold_type && (
         <p className="text-xs mb-2">
           Atual: <strong>{STOCK_HOLD_LABELS[order.stock_hold_type]}</strong>
-          {order.stock_hold_until && <> — Estoque reservado até {new Date(order.stock_hold_until).toLocaleString("pt-BR")}</>}
+          {order.stock_hold_until && <> — Estoque reservado até {new Date(order.stock_hold_until).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</>}
         </p>
       )}
       {editable ? (
@@ -910,7 +923,7 @@ function PaymentsPanel({
           <h3 className="font-semibold uppercase tracking-wide text-red-700">Tentativas de pagamento que falharam</h3>
           {attempts.map((a) => (
             <p key={a.id}>
-              {new Date(a.created_at).toLocaleString("pt-BR")} · {ATTEMPT_STATUS_LABELS[a.status] ?? a.status}
+              {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · {ATTEMPT_STATUS_LABELS[a.status] ?? a.status}
               {a.amount !== null && a.currency ? ` · ${money(a.amount, a.currency)}` : ""}
               {a.message ? ` — ${a.message}` : ""}
             </p>
@@ -937,6 +950,9 @@ function PaymentsPanel({
                 <td className="py-1 pr-2">
                   {PAYMENT_METHOD_LABELS[p.method_code] ?? p.method_code} · {PAYMENT_KIND_LABELS[p.kind] ?? p.kind}
                   {p.proof_path && <PaymentProofLink orderId={order.id} paymentId={p.id} name={p.proof_name ?? null} />}
+                  {p.method_code === "bank_transfer" && p.status === "pending_verification" && (
+                    <StaffProofUpload orderId={order.id} paymentId={p.id} hasProof={Boolean(p.proof_path)} />
+                  )}
                 </td>
                 <td className="py-1 pr-2">{money(p.merchandise_amount, p.currency)}</td>
                 <td className="py-1 pr-2">{money(p.bank_fee_amount, p.currency)}</td>

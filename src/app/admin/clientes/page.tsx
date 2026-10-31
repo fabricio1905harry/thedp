@@ -31,6 +31,8 @@ interface BuyerRow {
   channel: string | null;
   status: string;
   approved_at: string | null;
+  referral_code: string | null;
+  locale: string | null;
 }
 
 async function getBuyers(search: string) {
@@ -39,7 +41,7 @@ async function getBuyers(search: string) {
     const supabase = await createClient();
     let query = supabase
       .from("customers")
-      .select("id, email, name, company_name, country, channel, status, approved_at")
+      .select("id, email, name, company_name, country, channel, status, approved_at, referral_code, locale")
       .eq("role", "customer")
       .eq("status", "approved")
       .order("company_name", { ascending: true, nullsFirst: false })
@@ -98,6 +100,8 @@ export default async function AdminClientesPage({ searchParams }: { searchParams
                 <tr className="text-left text-xs text-muted border-b border-border">
                   <th className="py-2 pr-4">Empresa / contato</th>
                   <th className="py-2 pr-4">País</th>
+                  <th className="py-2 pr-4">Idioma</th>
+                  <th className="py-2 pr-4">Representante</th>
                   <th className="py-2 pr-4">Canal</th>
                   <th className="py-2 pr-4">Status</th>
                   <th className="py-2 pr-4">Pedidos</th>
@@ -116,6 +120,8 @@ export default async function AdminClientesPage({ searchParams }: { searchParams
                       </p>
                     </td>
                     <td className="py-2 pr-4">{b.country ? `${countryName(b.country, "pt")} (${b.country})` : "—"}</td>
+                    <td className="py-2 pr-4">{b.locale ? b.locale.toUpperCase() : "—"}</td>
+                    <td className="py-2 pr-4">{b.referral_code || "—"}</td>
                     <td className="py-2 pr-4">{b.channel ? CHANNEL_LABELS[b.channel] ?? b.channel : "—"}</td>
                     <td className="py-2 pr-4">Aprovado</td>
                     <td className="py-2 pr-4">{b.orders.count}</td>

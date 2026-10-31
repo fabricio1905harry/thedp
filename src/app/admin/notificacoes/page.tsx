@@ -130,7 +130,7 @@ export default async function AdminNotificationsPage({
                 <tbody>
                   {logRows.map((row) => (
                     <tr key={row.id} className="border-t border-border align-top">
-                      <td className="p-2 whitespace-nowrap">{new Date(row.created_at).toLocaleString("pt-BR")}</td>
+                      <td className="p-2 whitespace-nowrap">{new Date(row.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
                       <td className="p-2">
                         {EVENT_BY_CODE[row.event]?.label ?? row.event}
                         {row.is_test && <span className="ml-1 text-[10px] border border-border px-1">TESTE</span>}

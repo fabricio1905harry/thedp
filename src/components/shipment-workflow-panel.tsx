@@ -204,7 +204,7 @@ export function ShipmentWorkflowPanel({
               <ul className="space-y-1">
                 {events.map((e) => (
                   <li key={e.id}>
-                    <span className="text-muted">{new Date(e.occurred_at).toLocaleString("pt-BR")}</span> · <strong>{STATUS_LABELS[e.status] ?? e.status}</strong>
+                    <span className="text-muted">{new Date(e.occurred_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span> · <strong>{STATUS_LABELS[e.status] ?? e.status}</strong>
                     {e.description ? ` — ${e.description}` : ""}
                     {e.location ? ` (${e.location})` : ""}
                     <span className="text-muted"> [{e.source}]</span>

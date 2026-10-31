@@ -99,6 +99,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/conteudo", label: "Conteúdo do site", icon: OverviewIcon },
       { href: "/admin/textos", label: "Textos da interface", icon: OverviewIcon },
       { href: "/admin/contatos", label: "Contatos recebidos", icon: CustomersIcon },
+      { href: "/admin/candidaturas-marcas", label: "Candidaturas de marcas", icon: CustomersIcon },
+      { href: "/admin/newsletter", label: "Newsletter", icon: CustomersIcon },
     ],
   },
   {

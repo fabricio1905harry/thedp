@@ -54,7 +54,9 @@ export async function saveSizeRow(input: SizeRowInput): Promise<Result> {
     const { error } = await supabase.from("size_chart").insert(row);
     if (error) return { error: error.code === "23505" ? "Já existe uma linha com esse tamanho BR." : error.message };
   }
+  await supabase.rpc("refresh_size_mapping_action");
   revalidatePath("/admin/tamanhos");
+  revalidatePath("/admin");
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -66,7 +68,9 @@ export async function deleteSizeRow(id: string): Promise<Result> {
   const { data, error } = await supabase.from("size_chart").delete().eq("id", id).select("id");
   if (error) return { error: error.message };
   if (!data || data.length === 0) return { error: "Linha não encontrada." };
+  await supabase.rpc("refresh_size_mapping_action");
   revalidatePath("/admin/tamanhos");
+  revalidatePath("/admin");
   revalidatePath("/", "layout");
   return { ok: true };
 }

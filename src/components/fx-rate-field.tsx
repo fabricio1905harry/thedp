@@ -49,7 +49,7 @@ export function FxRateField({
             Cotação atual: <span className="font-semibold text-foreground text-sm">{currentRate.toFixed(4)}</span> BRL
           </p>
           <p>
-            Última atualização: {fetchedAt ? new Date(fetchedAt).toLocaleString("pt-BR") : "—"}
+            Última atualização: {fetchedAt ? new Date(fetchedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—"}
             {updatedByEmail ? ` por ${updatedByEmail}` : ""}
           </p>
         </div>

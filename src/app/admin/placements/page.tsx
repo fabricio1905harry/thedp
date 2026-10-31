@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ENTITY, type EntityKind } from "@/lib/entities";
+import { PlacementActions } from "@/components/placement-actions";
 
 export const metadata = { title: "Placements pagos — Admin" };
 
@@ -16,6 +17,8 @@ interface Item {
   start: string;
   end: string;
   active: boolean;
+  table?: string;
+  id?: string;
 }
 
 function daysBetween(a: string, b: string) {
@@ -42,6 +45,8 @@ export default async function PlacementsPage() {
         start: s(r.placement_start),
         end: s(r.placement_end),
         active: Boolean(r.active),
+        table: cfg.table,
+        id: s(r.id),
       });
     }
   }
@@ -60,7 +65,9 @@ export default async function PlacementsPage() {
   }
 
   const status = (i: Item) => {
-    if (i.end && i.end < today) return { label: "Expirado (oculto)", cls: "bg-red-100 text-red-900", rank: 0 };
+    if (i.end && i.end < today) {
+      return { label: i.id ? "Destaque encerrado (item continua no site)" : "Expirado (bloco oculto)", cls: "bg-red-100 text-red-900", rank: 0 };
+    }
     if (i.end && daysBetween(today, i.end) <= 14) return { label: `Expira em ${daysBetween(today, i.end)} dia(s)`, cls: "bg-amber-100 text-amber-900", rank: 1 };
     if (i.start && i.start > today) return { label: "Agendado", cls: "bg-surface", rank: 2 };
     return { label: "Em vigor", cls: "bg-green-100 text-green-900", rank: 3 };
@@ -75,7 +82,7 @@ export default async function PlacementsPage() {
       <div>
         <h1 className="font-serif text-2xl">Placements pagos</h1>
         <p className="text-sm text-muted mt-1">
-          Marcas, coleções, lookbooks, edits e blocos da Home com parceiro/datas. Quando o fim passa, o item some do site automaticamente.
+          Marcas, coleções, lookbooks, edits e blocos da Home com parceiro/datas. Quando o fim passa, só o destaque pago termina (selo de parceiro e posição de destaque): a marca, coleção, lookbook, edit e seus produtos continuam no site. Lembretes 7 dias, 1 dia e no dia chegam ao Action Center e por e-mail. Blocos da Home com parceiro continuam saindo do ar ao fim do período.
         </p>
         <p className="mt-2 text-sm">
           <span className={`inline-block px-2 py-0.5 text-xs rounded-sm ${expiring ? "bg-amber-100 text-amber-900" : "bg-green-100 text-green-900"}`}>
@@ -92,12 +99,13 @@ export default async function PlacementsPage() {
               <th className="p-2">Parceiro</th>
               <th className="p-2">Período</th>
               <th className="p-2">Situação</th>
+              <th className="p-2">Ações</th>
             </tr>
           </thead>
           <tbody>
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-4 text-muted">Nenhum placement cadastrado.</td>
+                <td colSpan={6} className="p-4 text-muted">Nenhum placement cadastrado.</td>
               </tr>
             )}
             {sorted.map(({ i, st }, k) => (
@@ -110,6 +118,7 @@ export default async function PlacementsPage() {
                 <td className="p-2">{i.partner || "—"}{i.paid ? "" : " (não pago)"}</td>
                 <td className="p-2 whitespace-nowrap">{i.start || "…"} → {i.end || "sem fim"}</td>
                 <td className="p-2"><span className={`text-xs px-2 py-0.5 rounded-sm ${st.cls}`}>{st.label}</span></td>
+                <td className="p-2">{i.table && i.id ? <PlacementActions table={i.table} id={i.id} /> : <span className="text-xs text-muted">em Conteúdo do site</span>}</td>
               </tr>
             ))}
           </tbody>

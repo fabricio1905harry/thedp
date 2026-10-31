@@ -14,6 +14,7 @@ import { WhatsAppContextSetter } from "@/components/whatsapp-button";
 import { getWhatsAppSettings } from "@/lib/settings";
 import { getPublicBlock } from "@/lib/cms";
 import { operationForSiteMode } from "@/lib/cms-types";
+import { countryName } from "@/lib/countries";
 
 function Accordion({ title, children, open }: { title: string; children: React.ReactNode; open?: boolean }) {
   return (
@@ -63,7 +64,7 @@ export default async function ProductPage({
       <WhatsAppContextSetter
         context={{ kind: "product", product: { name: product.title, code: product.reference ?? product.slug, url: productUrl } }}
       />
-      <ProductGallery images={product.images} crops={product.imageCrops} slug={product.slug} title={product.title} />
+      <ProductGallery images={product.images} crops={product.imageCrops} imageColors={product.imageColors} slug={product.slug} title={product.title} />
 
       <div>
         <p className="text-[11px] uppercase tracking-[0.25em] text-muted">
@@ -147,8 +148,13 @@ export default async function ProductPage({
         <div className="mt-10">
           <Accordion title={t("accDetails")} open>
             {product.description && <p>{product.description}</p>}
+            {product.composition && (
+              <p>
+                <span className="text-foreground">{t("composition")}:</span> {product.composition}
+              </p>
+            )}
             <p>
-              <span className="text-foreground">{t("countryOfOrigin")}:</span> {t("brazil")}
+              <span className="text-foreground">{t("countryOfOrigin")}:</span> {countryName(product.originCountry, locale)}
             </p>
           </Accordion>
           <Accordion title={t("accSizeFit")}>
@@ -160,7 +166,7 @@ export default async function ProductPage({
               <Accordion title={t("accShipping")}>
                 <p>{t("shippingText")}</p>
                 <p>
-                  <Link href="/contato?subject=shipping" className="underline text-foreground">
+                  <Link href="/politicas/frete-e-impostos" className="underline text-foreground">
                     {t("shippingLearn")}
                   </Link>
                 </p>

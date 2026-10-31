@@ -1,3 +1,4 @@
+import { getColorResolver } from "@/lib/colors";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { PAGE_WIDTH, PdfDocument, wrapText } from "@/lib/pdf-writer";
 
@@ -46,6 +47,8 @@ export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplate = {
 export interface InvoiceLine {
   description: string;
   sku: string;
+  /** customs description (English), shown under the line when the product has one */
+  customs?: string;
   hsCode: string;
   qty: number;
   unitPrice: number;
@@ -84,6 +87,12 @@ const CHARGE_LABELS: [string, string][] = [
   ["other_charges_amount", "Other charges"],
 ];
 
+/** HS code at 6 digits (the international level); an 8-digit Brazilian NCM is cut to its first 6. */
+export function hs6(code: string | null | undefined): string {
+  const digits = (code ?? "").replace(/\D/g, "");
+  return digits.length >= 6 ? digits.slice(0, 6) : "";
+}
+
 async function buildInvoiceData(orderId: string, number: string, issuedAt: string): Promise<InvoiceData> {
   const supabase = createServiceRoleClient();
   const { data: order } = await supabase.from("orders").select("*").eq("id", orderId).maybeSingle();
@@ -98,14 +107,23 @@ async function buildInvoiceData(orderId: string, number: string, issuedAt: strin
   const active = (items ?? []).filter((i) => i.item_status === "available" || i.item_status === "requested");
   const productIds = [...new Set(active.map((i) => i.product_id).filter(Boolean))] as string[];
   const hsByProduct = new Map<string, string>();
+  const titleEnByProduct = new Map<string, string>();
+  const customsByProduct = new Map<string, string>();
   if (productIds.length > 0) {
-    const { data: products } = await supabase.from("products").select("id, hs_code").in("id", productIds);
-    for (const p of products ?? []) hsByProduct.set(p.id, p.hs_code ?? "");
+    const { data: products } = await supabase.from("products").select("id, hs_code, title_en, customs_description").in("id", productIds);
+    for (const p of products ?? []) {
+      hsByProduct.set(p.id, hs6(p.hs_code));
+      if (p.title_en) titleEnByProduct.set(p.id, p.title_en);
+      if (p.customs_description) customsByProduct.set(p.id, p.customs_description);
+    }
   }
+  // The invoice is ALWAYS in English: product name and color, whatever the buyer's language.
+  const colorsEn = await getColorResolver("en");
 
   const lines: InvoiceLine[] = active.map((i) => ({
-    description: `${i.product_title ?? "Item"}${i.color ? ` - ${i.color}` : ""}${i.size ? ` / ${i.size}` : ""}`,
-    sku: i.sku ?? "",
+    description: `${(i.product_id && titleEnByProduct.get(i.product_id)) || i.product_title || "Item"}${i.color ? ` - ${colorsEn.label(i.color)}` : ""}${i.size ? ` / ${i.size}` : ""}`,
+    sku: "", // internal variant codes never go on the commercial invoice
+    customs: (i.product_id && customsByProduct.get(i.product_id)) || undefined,
     hsCode: (i.product_id && hsByProduct.get(i.product_id)) || "",
     qty: Number(i.qty),
     unitPrice: Number(i.unit_price),
@@ -211,13 +229,15 @@ export function renderInvoicePdf(d: InvoiceData): Uint8Array {
   header();
   for (const line of d.lines) {
     const desc = wrapText(line.description + (line.sku ? ` (${line.sku})` : ""), 9, cols.hs - cols.desc - 8);
-    const height = desc.length * 11 + 4;
+    const customs = line.customs ? wrapText(line.customs, 8, cols.hs - cols.desc - 8) : [];
+    const height = desc.length * 11 + customs.length * 10 + 4;
     if (y + height > 760) {
       doc.addPage();
       y = 50;
       header();
     }
     desc.forEach((part, i) => doc.text(cols.desc, y + i * 11, part, { size: 9 }));
+    customs.forEach((part, i) => doc.text(cols.desc, y + desc.length * 11 + i * 10, part, { size: 8, gray: 0.35 }));
     doc.text(cols.hs, y, line.hsCode || "-", { size: 9 });
     doc.text(cols.qty, y, String(line.qty), { size: 9, align: "right" });
     doc.text(cols.unit, y, line.unitPrice.toFixed(2), { size: 9, align: "right" });

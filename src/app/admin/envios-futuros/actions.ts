@@ -45,7 +45,7 @@ export async function setReserveSchedule(orderId: string, desiredDate: string | 
   }
 }
 
-/** Extends the maximum reserve window (default 180 days) by `days` — a deliberate staff decision. */
+/** Extends the storage window (default 180 days AFTER the shipping date) by `days` — a deliberate staff decision. */
 export async function extendReserveWindow(orderId: string, days: number): Promise<ActionResult> {
   try {
     const staff = await getCurrentStaff();
@@ -68,7 +68,7 @@ export async function extendReserveWindow(orderId: string, days: number): Promis
         order_id: orderId,
         actor_id: staff.id,
         event_type: "reserve",
-        summary: `Reserve: janela máxima estendida em ${days} dias (até ${next.slice(0, 10)})`,
+        summary: `Reserve: armazenagem estendida em ${days} dias (até ${next.slice(0, 10)})`,
       });
     } catch {
       // best-effort

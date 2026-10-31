@@ -71,6 +71,7 @@
     "colorHelpTitle": "Need help with the exact color?",
     "colorHelp": "Colors may vary slightly depending on screen settings and lighting. To confirm the exact shade before placing your order, contact our team via",
     "accDetails": "Product details",
+    "composition": "Composition",
     "countryOfOrigin": "Country of origin",
     "brazil": "Brazil",
     "accSizeFit": "Size & fit",
@@ -255,7 +256,7 @@
     "emptyBody": "New pieces are added weekly to our haute couture catalog."
   },
   "institutional": {
-    "pendingNotice": "Final content to be provided by the client (see PRD, section 11 — pending decisions). This is a structural placeholder.",
+    "pendingNotice": "This page is being prepared. Please contact us if you need this information in the meantime.",
     "titles": {
       "sobre": "About",
       "faq": "FAQ",
@@ -286,7 +287,7 @@
     "financialSummaryTitle": "Financial Summary",
     "dutiesEstimate": "Import Duties Estimate (DDP):",
     "totalPaid": "Total Paid:",
-    "itemsConfirmedTitle": "Confirmed Items ({count})",
+    "itemsConfirmedTitle": "Confirmed items ({count} pieces)",
     "defaultProductTitle": "Haute Couture Dress",
     "sizeFullLabel": "Size:",
     "continueBrowsing": "Continue Browsing",
@@ -311,6 +312,8 @@
     "payByCard": "Pay by card",
     "payRedirecting": "Redirecting to secure payment…",
     "payError": "Could not start the payment. Please try again or contact us.",
+    "payBankFee": "Bank processing fee (per transfer)",
+    "payTransferTotal": "Total to transfer",
     "payByTransfer": "Bank transfer",
     "payTransferContact": "Contact us to receive the bank details for the transfer.",
     "payTransferNotice": "A bank processing fee is added to each bank transfer. After transferring, send us the proof of payment.",

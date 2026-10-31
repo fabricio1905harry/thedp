@@ -29,7 +29,25 @@
     "canceledBadge": "Order canceled",
     "canceledTitle": "This order was canceled",
     "canceledText": "No payment was taken. You can place a new order request at any time.",
-    "itemsRequestedTitle": "Requested items ({count})"
+    "itemsRequestedTitle": "Requested items ({count} pieces)",
+    "deliveryMode": {
+      "title": "How would you like to receive your order?",
+      "shipNow": "Ship now",
+      "shipNowText": "Pay the full amount now. We ship right after the payment is confirmed.",
+      "reserve": "Reserve for later delivery",
+      "reserveText": "Pay a non-refundable reserve deposit now to hold the pieces; the balance is paid before the shipping date you choose.",
+      "desiredDate": "Desired shipping date",
+      "confirm": "Confirm reserve",
+      "update": "Update reserve",
+      "errors": {
+        "auth": "Please sign in again.",
+        "notFound": "Order not found.",
+        "notOpen": "This order is not open for payment any more.",
+        "paid": "A payment was already made or sent for verification.",
+        "date": "Choose a future date.",
+        "failed": "Could not save your choice. Please try again."
+      }
+    }
   },
   "orderActions": {
     "cancelCta": "Cancel order request",
@@ -37,6 +55,7 @@
     "cancelConfirmText": "Nothing has been paid yet. Once canceled, the request cannot be reopened — you can place a new one.",
     "cancelReasonPlaceholder": "Reason (optional)",
     "cancelConfirm": "Yes, cancel",
+    "canceledDone": "Order canceled.",
     "canceling": "Canceling…",
     "keepOrder": "Keep my order",
     "returnTitle": "Return or after-sale request",

@@ -102,11 +102,11 @@ export default async function AdminAbandonedCartsPage({ searchParams }: { search
                     <td className="p-2 whitespace-nowrap">
                       {Number(c.total_value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} {c.currency}
                     </td>
-                    <td className="p-2 whitespace-nowrap">{new Date(c.last_activity_at).toLocaleString("pt-BR")}</td>
+                    <td className="p-2 whitespace-nowrap">{new Date(c.last_activity_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
                     <td className="p-2">
-                      {c.reminder_1_sent_at ? `1: ${new Date(c.reminder_1_sent_at).toLocaleString("pt-BR")}` : "1: —"}
+                      {c.reminder_1_sent_at ? `1: ${new Date(c.reminder_1_sent_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : "1: —"}
                       <br />
-                      {c.reminder_2_sent_at ? `2: ${new Date(c.reminder_2_sent_at).toLocaleString("pt-BR")}` : "2: —"}
+                      {c.reminder_2_sent_at ? `2: ${new Date(c.reminder_2_sent_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : "2: —"}
                       {c.recovery_clicked_at && <span className="block text-muted">clicou no link</span>}
                     </td>
                     <td className="p-2">

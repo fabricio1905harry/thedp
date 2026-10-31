@@ -1,15 +1,17 @@
 import { cache } from "react";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { pickLocale } from "@/lib/cms-types";
+import { currentOperation } from "@/lib/operation";
 import { normalizeImageUrl } from "@/lib/image-url";
 import { getShopCatalog, type ShopProduct } from "@/lib/catalog";
 import type { SizeChartRow } from "@/lib/size-format";
 
 /**
  * Catalog phase 2 (migrations 0050–0053): brands, collections, lookbooks,
- * TDP edits and the size chart. Visibility (active + placement/schedule
- * window) is enforced by RLS on the anon/authenticated client, so an expired
- * placement disappears here without anyone switching it off.
+ * TDP edits and the size chart. Visibility (active + the collection's own
+ * schedule) is enforced by RLS on the anon/authenticated client and the
+ * operation by `visible_ops`. A paid placement that ended only loses its paid
+ * highlight (partner label, featured spot): the item itself stays on the site.
  */
 
 const hasDb = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
@@ -21,7 +23,14 @@ export interface EntityCard {
   title: string;
   text: string;
   coverUrl: string | null;
+  /** mobile cover (falls back to the desktop one) */
+  coverMobileUrl?: string | null;
   logoUrl?: string | null;
+  /** lookbooks: related brand / collection */
+  brandId?: string | null;
+  collectionId?: string | null;
+  /** edits: editorial images */
+  gallery?: string[];
   country?: string | null;
   featured: boolean;
   /** Paid placement label (partner name) — shown as "Partner" on the cards. */
@@ -31,26 +40,48 @@ export interface EntityCard {
 type Row = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 
+/** The paid highlight is only in force inside its window (start ≤ today ≤ end). */
+function placementInForce(row: Row): boolean {
+  if (!row.paid_placement) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  const start = str(row.placement_start);
+  const end = str(row.placement_end);
+  return (!start || start <= today) && (!end || end >= today);
+}
+
 function card(row: Row, locale: string, kind: "brands" | "collections" | "lookbooks" | "edits"): EntityCard {
   const textKey = kind === "edits" ? "body" : "story";
+  const paid = placementInForce(row);
   return {
     id: str(row.id),
     slug: str(row.slug),
     title: kind === "brands" ? str(row.name) : pickLocale(row.title, locale),
     text: pickLocale(row[textKey], locale),
     coverUrl: normalizeImageUrl(str(row.cover_url) || null, 1600),
+    coverMobileUrl: normalizeImageUrl(str(row.cover_mobile_url) || null, 1000),
+    brandId: str(row.brand_id) || null,
+    collectionId: str(row.collection_id) || null,
+    gallery: Array.isArray(row.gallery) ? (row.gallery as unknown[]).map((u) => normalizeImageUrl(str(u) || null, 1800) ?? "").filter(Boolean) : [],
     logoUrl: normalizeImageUrl(str(row.logo_url) || null, 600),
     country: str(row.country) || null,
-    featured: Boolean(row.featured),
-    partner: row.paid_placement ? str(row.partner) || null : null,
+    // a paid highlight that is out of its window no longer counts as featured nor shows the partner
+    featured: Boolean(row.featured) && (!row.paid_placement || paid),
+    partner: paid ? str(row.partner) || null : null,
   };
 }
 
 const COLUMNS: Record<"brands" | "collections" | "lookbooks" | "edits", { table: string; select: string }> = {
-  brands: { table: "brands", select: "id, slug, name, logo_url, cover_url, story, country, featured, sort, partner, paid_placement" },
-  collections: { table: "collections", select: "id, slug, title, story, cover_url, featured, sort, partner, paid_placement" },
-  lookbooks: { table: "lookbooks", select: "id, slug, title, story, cover_url, featured, sort, partner, paid_placement" },
-  edits: { table: "tdp_edits", select: "id, slug, title, body, cover_url, featured, sort, partner, paid_placement" },
+  brands: { table: "brands", select: "id, slug, name, logo_url, cover_url, cover_mobile_url, story, country, featured, sort, partner, paid_placement, placement_start, placement_end" },
+  collections: { table: "collections", select: "id, slug, title, story, cover_url, cover_mobile_url, featured, sort, partner, paid_placement, placement_start, placement_end" },
+  lookbooks: { table: "lookbooks", select: "id, slug, title, story, cover_url, cover_mobile_url, brand_id, collection_id, featured, sort, partner, paid_placement, placement_start, placement_end" },
+  edits: { table: "tdp_edits", select: "id, slug, title, body, cover_url, cover_mobile_url, gallery, featured, sort, partner, paid_placement, placement_start, placement_end" },
+};
+
+const LEGACY_SELECT: Record<keyof typeof COLUMNS, string> = {
+  brands: "id, slug, name, logo_url, cover_url, story, country, featured, sort, partner, paid_placement, placement_start, placement_end",
+  collections: "id, slug, title, story, cover_url, featured, sort, partner, paid_placement, placement_start, placement_end",
+  lookbooks: "id, slug, title, story, cover_url, featured, sort, partner, paid_placement, placement_start, placement_end",
+  edits: "id, slug, title, body, cover_url, featured, sort, partner, paid_placement, placement_start, placement_end",
 };
 
 export async function listEntities(
@@ -61,11 +92,21 @@ export async function listEntities(
   if (!hasDb()) return [];
   try {
     const supabase = await createClient();
-    let q = supabase.from(COLUMNS[kind].table).select(COLUMNS[kind].select).order("sort").order("created_at", { ascending: false });
-    if (opts.featuredOnly) q = q.eq("featured", true);
-    if (opts.limit) q = q.limit(opts.limit);
-    const { data } = await q;
-    return ((data ?? []) as unknown as Row[]).map((r) => card(r, locale, kind));
+    const op = await currentOperation();
+    const build = (select: string, withOps: boolean) => {
+      let q = supabase.from(COLUMNS[kind].table).select(select);
+      if (withOps) q = q.contains("visible_ops", [op]);
+      q = q.order("sort").order("created_at", { ascending: false });
+      return opts.featuredOnly ? q.eq("featured", true) : q;
+    };
+    // the placement window is checked below, so the limit is applied after it
+    let res = await build(COLUMNS[kind].select, true);
+    // migration 0086 adds the new columns: until it is applied keep serving the previous ones
+    if (res.error) res = await build(LEGACY_SELECT[kind], false);
+    const data = res.data;
+    let cards = ((data ?? []) as unknown as Row[]).map((r) => card(r, locale, kind));
+    if (opts.featuredOnly) cards = cards.filter((c) => c.featured);
+    return opts.limit ? cards.slice(0, opts.limit) : cards;
   } catch {
     return [];
   }
@@ -75,8 +116,10 @@ export async function getEntityBySlug(kind: keyof typeof COLUMNS, slug: string, 
   if (!hasDb()) return null;
   try {
     const supabase = await createClient();
-    const { data } = await supabase.from(COLUMNS[kind].table).select(COLUMNS[kind].select).eq("slug", slug).maybeSingle();
-    return data ? card(data as unknown as Row, locale, kind) : null;
+    const op = await currentOperation();
+    let res = await supabase.from(COLUMNS[kind].table).select(COLUMNS[kind].select).eq("slug", slug).contains("visible_ops", [op]).maybeSingle();
+    if (res.error) res = (await supabase.from(COLUMNS[kind].table).select(LEGACY_SELECT[kind]).eq("slug", slug).maybeSingle()) as unknown as typeof res;
+    return res.data ? card(res.data as unknown as Row, locale, kind) : null;
   } catch {
     return null;
   }
@@ -224,4 +267,40 @@ export async function getNotifyVariantIds(customerId: string, productId: string)
   } catch {
     return [];
   }
+}
+
+/** Brands selected for a TDP edit (active and visible only). */
+export async function getEditBrands(editId: string): Promise<{ slug: string; name: string }[]> {
+  if (!hasDb()) return [];
+  try {
+    const supabase = await createClient();
+    const { data: links } = await supabase.from("tdp_edit_brands").select("brand_id, sort").eq("edit_id", editId).order("sort");
+    const ids = (links ?? []).map((l) => l.brand_id as string);
+    if (ids.length === 0) return [];
+    const { data: brands } = await supabase.from("brands").select("id, slug, name").in("id", ids);
+    const byId = new Map((brands ?? []).map((b) => [b.id as string, b]));
+    return ids.map((id) => byId.get(id)).filter((b): b is NonNullable<typeof b> => Boolean(b)).map((b) => ({ slug: b.slug as string, name: b.name as string }));
+  } catch {
+    return [];
+  }
+}
+
+/** Brand / collection a lookbook is tied to (active and visible only). */
+export async function getLookbookLinks(brandId: string | null, collectionId: string | null, locale: string) {
+  const out: { brand: { slug: string; name: string } | null; collection: { slug: string; title: string } | null } = { brand: null, collection: null };
+  if (!hasDb()) return out;
+  try {
+    const supabase = await createClient();
+    if (brandId) {
+      const { data } = await supabase.from("brands").select("slug, name").eq("id", brandId).maybeSingle();
+      if (data) out.brand = { slug: data.slug as string, name: data.name as string };
+    }
+    if (collectionId) {
+      const { data } = await supabase.from("collections").select("slug, title").eq("id", collectionId).maybeSingle();
+      if (data) out.collection = { slug: data.slug as string, title: pickLocale(data.title, locale) };
+    }
+  } catch {
+    // links are optional decoration
+  }
+  return out;
 }

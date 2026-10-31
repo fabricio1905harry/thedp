@@ -65,7 +65,7 @@ export function ContactMessageRow({ row }: { row: ContactRow }) {
     <div className="border border-border">
       <button type="button" onClick={() => setOpen((v) => !v)} className="w-full text-left p-3 flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className={`px-2 py-0.5 text-[10px] font-semibold ${STATUS_CLASS[row.status]}`}>{STATUS_LABEL[row.status]}</span>
-        <span className="text-xs text-muted whitespace-nowrap">{new Date(row.created_at).toLocaleString("pt-BR")}</span>
+        <span className="text-xs text-muted whitespace-nowrap">{new Date(row.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
         <span className="text-sm font-medium">{SUBJECT_LABEL[row.subject] ?? row.subject}</span>
         {row.order_number && <span className="text-xs text-muted">Pedido {row.order_number}</span>}
         {row.replied_at && <span className="text-[10px] text-emerald-800">respondido</span>}
@@ -94,7 +94,7 @@ export function ContactMessageRow({ row }: { row: ContactRow }) {
           </dl>
           {row.reply_text && (
             <div className="text-xs border-l-2 border-border pl-3">
-              <p className="text-muted">Última resposta ({row.replied_at ? new Date(row.replied_at).toLocaleString("pt-BR") : ""}):</p>
+              <p className="text-muted">Última resposta ({row.replied_at ? new Date(row.replied_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : ""}):</p>
               <p className="whitespace-pre-wrap">{row.reply_text}</p>
             </div>
           )}

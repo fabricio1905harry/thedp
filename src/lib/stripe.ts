@@ -9,6 +9,14 @@ export function stripeConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
+/** "test" for sk_test_/rk_test_ keys (sandbox), "live" for sk_live_/rk_live_, "unset" when no key. */
+export function stripeMode(): "test" | "live" | "unset" {
+  const key = process.env.STRIPE_SECRET_KEY ?? "";
+  if (/^(sk|rk)_test_/.test(key)) return "test";
+  if (/^(sk|rk)_live_/.test(key)) return "live";
+  return "unset";
+}
+
 export interface CheckoutSessionInput {
   currency: string;
   amount: number; // major units (e.g. 1234.50)

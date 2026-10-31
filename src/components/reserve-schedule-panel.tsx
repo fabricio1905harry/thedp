@@ -9,7 +9,7 @@ export const RESERVE_STAGE_LABELS: Record<string, string> = {
   balance_due: "SALDO A PAGAR",
   ready_to_ship: "PRONTO PARA ENVIO",
   overdue: "ATRASADO",
-  expired: "EXPIRADO (180 dias)",
+  expired: "ARMAZENAGEM EXPIRADA (180 dias após o envio)",
   completed: "CONCLUÍDO",
 };
 
@@ -57,7 +57,7 @@ export function ReserveSchedulePanel({
       </div>
       <p className="text-xs text-muted">
         Depósito: <strong>{fmt(deposit)}</strong> · Saldo estimado (com frete/impostos): <strong>{fmt(balance)}</strong>
-        {expiresAt && <> · Janela máxima até <strong>{new Date(expiresAt).toLocaleDateString("pt-BR")}</strong></>}
+        {expiresAt && <> · Armazenagem (180 dias após a data de envio) até <strong>{new Date(expiresAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</strong></>}
       </p>
       <div className="flex flex-wrap items-end gap-3 text-xs">
         <label className="space-y-1">
@@ -74,7 +74,7 @@ export function ReserveSchedulePanel({
       </div>
       <p className="text-[11px] text-muted">Lembretes automáticos ao comprador 14, 8 e 7 dias antes do vencimento; após a data o pedido vira ATRASADO.</p>
       <div className="flex flex-wrap items-center gap-2 text-xs border-t border-border pt-3">
-        <span className="text-muted">Estender janela máxima em</span>
+        <span className="text-muted">Estender armazenagem em</span>
         <input value={days} onChange={(e) => setDays(e.target.value)} className="w-16 border border-border px-2 py-1" inputMode="numeric" />
         <span className="text-muted">dias</span>
         <button type="button" disabled={pending} onClick={() => run(() => extendReserveWindow(orderId, Number(days)))} className="border border-border px-3 py-1.5 disabled:opacity-40">
