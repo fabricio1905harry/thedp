@@ -72,11 +72,15 @@ function MapRow({ row, colors }: { row: Row; colors: Color[] }) {
       <td className="py-2 pr-3">
         <select value={value} onChange={(e) => setValue(e.target.value)} className={inputCls}>
           <option value="">— sem correspondência (fora do filtro) —</option>
-          {colors.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name_pt} / {c.name_en}
-            </option>
-          ))}
+          {/* P15: an inactive color is not offered, except the one this row is already mapped to (association kept) */}
+          {colors
+            .filter((c) => c.active || c.id === value)
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name_pt} / {c.name_en}
+                {c.active ? "" : " (inativa)"}
+              </option>
+            ))}
         </select>
       </td>
       <td className="py-2 pr-3">

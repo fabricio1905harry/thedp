@@ -128,6 +128,9 @@ export async function placeOrderServerAction(
         // Order Request: the TDP confirms stock with the supplier, adjusts
         // the composition and releases the Confirmed Order for payment.
         status: "order_request",
+        // P33: the e-mails about this order go out in the language the buyer was browsing in (PDF p. 9 and 28);
+        // the TDP can still change it on the order in the Admin.
+        communication_locale: ["en", "es", "pt"].includes(input.locale ?? "") ? input.locale : null,
         currency: input.currency || "BRL",
         subtotal,
         total: subtotal,

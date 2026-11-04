@@ -179,7 +179,7 @@ export function PackagingManager({
             <button
               onClick={() =>
                 setEditingRule({
-                  category: "Dresses",
+                  category: "Vestidos",
                   packagingTypeId: types[0]?.id ?? "",
                   minQuantity: 1,
                   maxQuantity: 20,
@@ -407,7 +407,7 @@ export function PackagingManager({
                 <input
                   type="text"
                   name="category"
-                  defaultValue={editingRule.category ?? "Dresses"}
+                  defaultValue={editingRule.category ?? "Vestidos"}
                   required
                   className="w-full border border-border px-3 py-2 bg-surface"
                 />

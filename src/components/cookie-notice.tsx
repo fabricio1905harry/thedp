@@ -15,16 +15,29 @@ function subscribe(callback: () => void) {
   };
 }
 
+/** "1" = all cookies accepted, "essential" = non-essential cookies refused (P36). Either answer hides the notice. */
+export type CookieChoice = "1" | "essential";
+
 function readAccepted() {
   try {
-    return localStorage.getItem(KEY) === "1";
+    const v = localStorage.getItem(KEY);
+    return v === "1" || v === "essential";
   } catch {
     return false;
   }
 }
 
+function choose(value: CookieChoice) {
+  try {
+    localStorage.setItem(KEY, value);
+  } catch {
+    // storage blocked: the notice just returns next visit
+  }
+  window.dispatchEvent(new Event(EVENT));
+}
+
 /** First-visit cookie notice (texts edited in Admin → Conteúdo → Barras do site). */
-export function CookieNotice({ text, accept, linkLabel, link }: { text: string; accept: string; linkLabel: string; link: string }) {
+export function CookieNotice({ text, accept, reject, linkLabel, link }: { text: string; accept: string; reject?: string; linkLabel: string; link: string }) {
   // server snapshot = "accepted" so nothing is rendered (or hydrated) until the browser says otherwise
   const accepted = useSyncExternalStore(subscribe, readAccepted, () => true);
   if (accepted || !text) return null;
@@ -40,20 +53,16 @@ export function CookieNotice({ text, accept, linkLabel, link }: { text: string; 
             </Link>
           )}
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            try {
-              localStorage.setItem(KEY, "1");
-            } catch {
-              // storage blocked: the notice just returns next visit
-            }
-            window.dispatchEvent(new Event(EVENT));
-          }}
-          className="btn-primary px-5 py-2 text-[11px] uppercase tracking-[0.2em] font-semibold shrink-0"
-        >
-          {accept}
-        </button>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          {reject && (
+            <button type="button" onClick={() => choose("essential")} className="border border-foreground px-5 py-2 text-[11px] uppercase tracking-[0.2em] font-semibold">
+              {reject}
+            </button>
+          )}
+          <button type="button" onClick={() => choose("1")} className="btn-primary px-5 py-2 text-[11px] uppercase tracking-[0.2em] font-semibold">
+            {accept}
+          </button>
+        </div>
       </div>
     </div>
   );

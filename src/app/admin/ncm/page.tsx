@@ -25,7 +25,11 @@ export default async function NcmPage({ searchParams }: { searchParams: Promise<
       .or("hs_code.is.null,hs_code.eq.,weight_g.is.null"),
     supabase.from("hs_rules").select("*").order("category").order("composition_label"),
   ]);
-  const categories = [...new Set([...(cats ?? []).map((c) => c.category as string), ...(defaults ?? []).map((d) => d.category as string)])].sort();
+  // P18: "Dresses" and "Vestidos" are one category; blank names are not categories
+  const canonicalCategory = (c: string) => (["dresses", "dress", "vestido"].includes(c.trim().toLowerCase()) ? "Vestidos" : c.trim());
+  const categories = [
+    ...new Set([...(cats ?? []).map((c) => c.category as string), ...(defaults ?? []).map((d) => d.category as string)].map(canonicalCategory).filter(Boolean)),
+  ].sort();
 
   const tabs = [
     ["revisao", `Revisão (${review?.length ?? 0})`],

@@ -1,12 +1,13 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
 import { useCurrency } from "@/components/currency-provider";
 import { useCart } from "@/components/cart-provider";
 import { FavoriteButton } from "@/components/favorite-button";
 import { formatPicked } from "@/lib/currency";
+import { localizedTitle } from "@/lib/product-title";
 import type { CatalogProduct } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
 
@@ -25,6 +26,8 @@ export function ProductCard({
   priority?: boolean;
 }) {
   const t = useTranslations("product");
+  const locale = useLocale();
+  const title = localizedTitle(product, locale);
   const { currency } = useCurrency();
   const { items } = useCart();
   // Pieces of this style already in the buyer's order, shown wherever the card appears.
@@ -51,7 +54,7 @@ export function ProductCard({
       <div className="relative overflow-hidden w-full bg-surface">
         <ProductImagePlaceholder
           slug={product.slug}
-          label={product.title}
+          label={title}
           imageUrl={product.imageUrl}
           crop={product.imageCrop}
           priority={priority}
@@ -73,7 +76,7 @@ export function ProductCard({
       <div className="p-3.5 flex flex-col justify-between flex-1 bg-white space-y-2">
         <div>
           <h3 className="font-serif text-base sm:text-lg font-medium text-foreground group-hover:text-accent transition-colors duration-300 line-clamp-1 tracking-wide">
-            {product.title}
+            {title}
           </h3>
         </div>
 

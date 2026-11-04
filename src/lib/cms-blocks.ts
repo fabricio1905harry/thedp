@@ -801,7 +801,8 @@ export const BLOCK_DEFS: BlockDef[] = [
     defaultOperations: ALL_OPERATIONS,
     fields: [
       area("text", "Texto"),
-      text("accept", "Texto do botão"),
+      text("accept", "Texto do botão aceitar"),
+      text("reject", "Texto do botão recusar (apenas essenciais)"),
       text("link_label", "Texto do link da política"),
       url("link", "Link da política"),
     ],
@@ -811,7 +812,8 @@ export const BLOCK_DEFS: BlockDef[] = [
         "Usamos cookies para mantener tu sesión, recordar tu carrito y entender cómo se usa el sitio.",
         "Usamos cookies para manter você conectado, lembrar do seu carrinho e entender como o site é usado."
       ),
-      accept: t("ACCEPT", "ACEPTAR", "ACEITAR"),
+      accept: t("ACCEPT ALL", "ACEPTAR TODAS", "ACEITAR TODOS"),
+      reject: t("ESSENTIAL ONLY", "SOLO ESENCIALES", "SOMENTE ESSENCIAIS"),
       link_label: t("Privacy policy", "Política de privacidad", "Política de privacidade"),
       link: "/politicas/privacidade",
     },

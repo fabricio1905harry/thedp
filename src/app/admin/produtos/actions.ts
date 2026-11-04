@@ -291,6 +291,17 @@ async function setVariantStockImpl(variantId: string, stock: number) {
   revalidatePath(`/admin/produtos/${data.product_id}`);
 }
 
+/** P16: in which operations a variant (size × color) is sold. At least one must stay on. */
+async function setVariantVisibilityImpl(variantId: string, visibleOps: string[]) {
+  await requireStaff();
+  const ops = [...new Set((visibleOps ?? []).filter((o) => OPERATIONS.includes(o)))];
+  if (ops.length === 0) throw new Error("Deixe a variante visível em pelo menos uma operação (ou zere o estoque dela).");
+  const supabase = await createClient();
+  const { error, data } = await supabase.from("variants").update({ visible_ops: ops }).eq("id", variantId).select("product_id").single();
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/produtos/${data.product_id}`);
+}
+
 /** "Reset to Source Stock/Availability": the supplier value applies again. */
 async function resetVariantStockToSourceImpl(variantIds: string[]) {
   await requireStaff();
@@ -620,6 +631,10 @@ export async function setProductFeatured(...args: Parameters<typeof setProductFe
 
 export async function setVariantStock(...args: Parameters<typeof setVariantStockImpl>) {
   return safe(() => setVariantStockImpl(...args));
+}
+
+export async function setVariantVisibility(...args: Parameters<typeof setVariantVisibilityImpl>) {
+  return safe(() => setVariantVisibilityImpl(...args));
 }
 
 export async function resetVariantStockToSource(...args: Parameters<typeof resetVariantStockToSourceImpl>) {

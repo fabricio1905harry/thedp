@@ -55,6 +55,10 @@ export function CheckoutPanel({ addresses, defaults }: { addresses: Address[]; d
   const [selectedAddressId, setSelectedAddressId] = useState(first?.id ?? "new");
   const [saveAddress, setSaveAddress] = useState(!first);
   const [placingOrder, setPlacingOrder] = useState(false);
+  // N3: once the order is created the cart is cleared; without this the panel would flash "Your cart is empty"
+  // (and let the buyer submit again) until the order page loads.
+  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
+  const tOrder = useTranslations("order");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Custom address fields
@@ -72,6 +76,19 @@ export function CheckoutPanel({ addresses, defaults }: { addresses: Address[]; d
     return sum + (picked?.amount ?? 0) * item.qty;
   }, 0);
 
+  if (placedOrderId) {
+    return (
+      <div className="py-16 text-center space-y-4" role="status">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em]">{tOrder("requestReceivedTitle")}</h2>
+        <p className="text-sm text-muted">{tOrder("requestReceivedP1")}</p>
+        <p className="text-sm font-medium">{tOrder("requestReceivedNoPayment")}</p>
+        <Link href={`/pedidos/${placedOrderId}`} className="text-accent underline font-medium text-sm">
+          {t("viewOrderRequest")}
+        </Link>
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <div className="py-16 text-center space-y-4">
@@ -84,6 +101,7 @@ export function CheckoutPanel({ addresses, defaults }: { addresses: Address[]; d
 
 
   async function handlePlaceOrder() {
+    if (placingOrder || placedOrderId) return;
     try {
       setPlacingOrder(true);
       setErrorMsg(null);
@@ -138,6 +156,7 @@ export function CheckoutPanel({ addresses, defaults }: { addresses: Address[]; d
         return;
       }
       if (res.success && res.orderId) {
+        setPlacedOrderId(res.orderId);
         clear();
         router.push(`/pedidos/${res.orderId}`);
       } else {
