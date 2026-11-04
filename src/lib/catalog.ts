@@ -2,7 +2,8 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { currentOperation, visibleIn } from "@/lib/operation";
 import type { ProductPricing, Variant } from "@/lib/types";
 import { parseCrop, type ImageCrop } from "@/lib/image-crop";
-import { getColorResolver } from "@/lib/colors";
+import { colorKey, getColorResolver } from "@/lib/colors";
+import { localizedTitle } from "@/lib/product-title";
 import { matchSize, toSizeInfo, type SizeChartRow, type SizeInfo } from "@/lib/size-format";
 
 export interface CatalogProduct {
@@ -182,12 +183,12 @@ export async function getProductDetail(
   const supabase = await createClient();
   const operation = await currentOperation();
 
-  let pubRes = await supabase.from("products_public").select("id, slug, title, category, visible_ops").eq("slug", slug).maybeSingle();
+  let pubRes = await supabase.from("products_public").select("id, slug, title, title_en, title_es, category, visible_ops").eq("slug", slug).maybeSingle();
   if (pubRes.error) {
     // before migration 0084 the view has no visible_ops
-    pubRes = (await supabase.from("products_public").select("id, slug, title, category").eq("slug", slug).maybeSingle()) as unknown as typeof pubRes;
+    pubRes = (await supabase.from("products_public").select("id, slug, title, title_en, title_es, category").eq("slug", slug).maybeSingle()) as unknown as typeof pubRes;
   }
-  const pub = pubRes.data as { id: string; slug: string; title: string; category: string | null; visible_ops?: string[] | null } | null;
+  const pub = pubRes.data as { id: string; slug: string; title: string; title_en?: string | null; title_es?: string | null; category: string | null; visible_ops?: string[] | null } | null;
   if (!pub || !visibleIn(pub.visible_ops, operation)) return null;
 
   const serviceClient = createServiceRoleClient();
@@ -210,8 +211,10 @@ export async function getProductDetail(
     source_id: string | null;
   };
   type ImageRowData = { storage_path: string; crop: unknown; color_key?: string | null };
+  // P16: `products` is staff-only under RLS, so the buyer's own client returned nothing here (no description,
+  // composition, origin or TDP reference on the product page). Only these public fields are read, server side.
   let [fullRes, imagesRes] = await Promise.all([
-    supabase
+    serviceClient
       .from("products")
       .select("description, description_en, description_es, composition, origin_country, tdp_ref, source_id")
       .eq("id", pub.id)
@@ -219,7 +222,7 @@ export async function getProductDetail(
     imageQuery("storage_path, position, is_cover, crop, color_key"),
   ]);
   // before migrations 0084 the new columns do not exist: read what is there
-  if (fullRes.error) fullRes = (await supabase.from("products").select("description, source_id").eq("id", pub.id).maybeSingle()) as unknown as typeof fullRes;
+  if (fullRes.error) fullRes = (await serviceClient.from("products").select("description, source_id").eq("id", pub.id).maybeSingle()) as unknown as typeof fullRes;
   if (imagesRes.error) imagesRes = (await imageQuery("storage_path, position, is_cover, crop")) as unknown as typeof imagesRes;
   const full = fullRes.data as unknown as FullRow | null;
   const imageRows = imagesRes.data as unknown as ImageRowData[] | null;
@@ -241,7 +244,7 @@ export async function getProductDetail(
     return {
       id: pub.id,
       slug: pub.slug,
-      title: pub.title,
+      title: localizedTitle({ title: pub.title, titleEn: pub.title_en, titleEs: pub.title_es }, locale),
       description,
       composition,
       originCountry,
@@ -281,6 +284,8 @@ export async function getProductDetail(
     ...new Set<string>([...(priced?.colors ?? []), ...(variantRows ?? []).map((v) => v.color as string).filter(Boolean)]),
   ];
   const labelByRaw = new Map<string, string>();
+  // P31: photo colors are matched by the normalized key too (case / spacing / "-1" suffix of the supplier text)
+  const labelByKey = new Map<string, string>();
   const taken = new Map<string, number>();
   const colorHex: Record<string, string> = {};
   for (const raw of rawColors) {
@@ -290,6 +295,7 @@ export async function getProductDetail(
     // two supplier colors of one style that normalize to the same TDP color stay distinguishable
     if (n > 1) label = `${label} (${n})`;
     labelByRaw.set(raw, label);
+    labelByKey.set(colorKey(raw), label);
     const hex = resolver.hex(raw);
     if (hex) colorHex[label] = hex;
   }
@@ -303,7 +309,7 @@ export async function getProductDetail(
   return {
     id: pub.id,
     slug: pub.slug,
-    title: pub.title,
+    title: localizedTitle({ title: pub.title, titleEn: pub.title_en, titleEs: pub.title_es }, locale),
     description,
     composition,
     originCountry,
@@ -314,7 +320,7 @@ export async function getProductDetail(
     imageUrl: primaryImage,
     images,
     imageCrops,
-    imageColors: imageColorKeys.map((k) => (k ? (labelByRaw.get(k) ?? null) : null)),
+    imageColors: imageColorKeys.map((k) => (k ? (labelByRaw.get(k) ?? labelByKey.get(colorKey(k)) ?? null) : null)),
     reference,
     sizes,
     colors: (priced?.colors ?? []).map((c) => labelByRaw.get(c) ?? c),

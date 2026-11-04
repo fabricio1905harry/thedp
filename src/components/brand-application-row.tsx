@@ -17,6 +17,10 @@ export interface BrandApplicationRow {
   message: string | null;
   status: BrandStatus;
   notes: string | null;
+  product_categories?: string[] | null;
+  current_markets?: string | null;
+  wholesale_presence?: string | null;
+  opportunity_type?: string | null;
 }
 
 export const BRAND_STATUS_LABELS: Record<BrandStatus, string> = {
@@ -60,6 +64,14 @@ export function BrandApplicationRowView({ row }: { row: BrandApplicationRow }) {
           {row.website && <> · <a href={/^https?:/.test(row.website) ? row.website : `https://${row.website}`} className="underline" target="_blank" rel="noopener noreferrer">{row.website}</a></>}
           {row.instagram && <> · {row.instagram}</>}
         </p>
+        {(row.product_categories?.length || row.current_markets || row.wholesale_presence || row.opportunity_type) && (
+          <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+            {row.product_categories && row.product_categories.length > 0 && (<div><dt className="inline text-muted">Categorias: </dt><dd className="inline">{row.product_categories.join(", ")}</dd></div>)}
+            {row.current_markets && (<div><dt className="inline text-muted">Mercados atuais: </dt><dd className="inline">{row.current_markets}</dd></div>)}
+            {row.wholesale_presence && (<div><dt className="inline text-muted">Vende no atacado: </dt><dd className="inline">{row.wholesale_presence}</dd></div>)}
+            {row.opportunity_type && (<div><dt className="inline text-muted">Oportunidade: </dt><dd className="inline">{row.opportunity_type}</dd></div>)}
+          </dl>
+        )}
         {row.message && <p className="whitespace-pre-line">{row.message}</p>}
         <div className="flex flex-wrap items-start gap-3 text-xs">
           <label className="space-y-1">

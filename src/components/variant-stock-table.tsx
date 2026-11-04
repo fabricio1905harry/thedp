@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { resetVariantStockToSource, setVariantStock } from "@/app/admin/produtos/actions";
+import { resetVariantStockToSource, setVariantStock, setVariantVisibility } from "@/app/admin/produtos/actions";
 
 interface VariantRow {
   id: string;
@@ -15,7 +15,16 @@ interface VariantRow {
   stock: number;
   source_stock?: number | null;
   stock_override?: number | null;
+  /** operations where this variant is sold (null = all) */
+  visible_ops?: string[] | null;
 }
+
+const OPS: [string, string][] = [
+  ["intl_b2b", "Int. B2B"],
+  ["intl_b2c", "Int. B2C"],
+  ["br_b2b", "BR B2B"],
+  ["br_b2c", "BR B2C"],
+];
 
 /**
  * Stock per color + size. "Source" is what the supplier sync reports;
@@ -36,7 +45,7 @@ export function VariantStockTable({ variants }: { variants: VariantRow[] }) {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       {overridden.length > 0 && (
         <button
           type="button"
@@ -65,6 +74,7 @@ export function VariantStockTable({ variants }: { variants: VariantRow[] }) {
             <th className="py-2 pr-3">Cor</th>
             <th className="py-2 pr-3">SKU</th>
             <th className="py-2 pr-3">Fornecedor</th>
+            <th className="py-2 pr-3">Visível em</th>
             <th className="py-2">Estoque no site</th>
           </tr>
         </thead>
@@ -83,6 +93,24 @@ function VariantRowItem({ variant }: { variant: VariantRow }) {
   const [stock, setStock] = useState(variant.stock);
   const [pending, startTransition] = useTransition();
   const isOverride = variant.stock_override !== null && variant.stock_override !== undefined;
+  const [ops, setOps] = useState<string[]>(variant.visible_ops ?? OPS.map(([k]) => k));
+  const [opsError, setOpsError] = useState<string | null>(null);
+
+  function toggleOp(key: string) {
+    const next = ops.includes(key) ? ops.filter((o) => o !== key) : [...ops, key];
+    const previous = ops;
+    setOps(next);
+    setOpsError(null);
+    startTransition(async () => {
+      const res = await setVariantVisibility(variant.id, next);
+      if (res && typeof res === "object" && "error" in res) {
+        setOps(previous);
+        setOpsError((res as { error: string }).error);
+        return;
+      }
+      router.refresh();
+    });
+  }
 
   function save(next: number) {
     setStock(next);
@@ -103,6 +131,17 @@ function VariantRowItem({ variant }: { variant: VariantRow }) {
       <td className="py-2 pr-3">{variant.color}</td>
       <td className="py-2 pr-3 text-muted text-xs font-mono">{variant.sku}</td>
       <td className="py-2 pr-3 text-muted">{variant.source_stock ?? "—"}</td>
+      <td className="py-2 pr-3">
+        <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
+          {OPS.map(([key, label]) => (
+            <label key={key} className="inline-flex items-center gap-1 whitespace-nowrap">
+              <input type="checkbox" checked={ops.includes(key)} disabled={pending} onChange={() => toggleOp(key)} />
+              {label}
+            </label>
+          ))}
+        </div>
+        {opsError && <p className="text-[11px] text-red-700">{opsError}</p>}
+      </td>
       <td className="py-2 flex items-center gap-2">
         <input
           type="number"

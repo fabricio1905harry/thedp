@@ -13,7 +13,8 @@
       "address": "Please complete the recipient name, address and city.",
       "country": "Please choose the delivery country.",
       "generic": "We could not complete your order. Please try again."
-    }
+    },
+    "viewOrderRequest": "View your order request"
   },
   "cart": {
     "quantityNote": "Some quantities may exceed what is available — availability is confirmed before payment.",
@@ -29,7 +30,7 @@
     "canceledBadge": "Order canceled",
     "canceledTitle": "This order was canceled",
     "canceledText": "No payment was taken. You can place a new order request at any time.",
-    "itemsRequestedTitle": "Requested items ({count} pieces)",
+    "itemsRequestedTitle": "Requested items ({count, plural, one {# piece} other {# pieces}})",
     "deliveryMode": {
       "title": "How would you like to receive your order?",
       "shipNow": "Ship now",

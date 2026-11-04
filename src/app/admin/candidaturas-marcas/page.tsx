@@ -7,12 +7,22 @@ export default async function AdminBrandApplicationsPage({ searchParams }: { sea
   const supabase = await createClient();
   let query = supabase
     .from("brand_applications")
-    .select("id, created_at, brand_name, contact_name, email, phone, website, instagram, country, message, status, notes")
+    .select("id, created_at, brand_name, contact_name, email, phone, website, instagram, country, message, status, notes, product_categories, current_markets, wholesale_presence, opportunity_type")
     .order("created_at", { ascending: false })
     .limit(300);
   if (status) query = query.eq("status", status);
-  const { data, error } = await query;
-  const rows = (data ?? []) as BrandApplicationRow[];
+  let { data, error } = await query;
+  // before migration 0089 the extra columns do not exist
+  if (error && /column|schema cache/i.test(error.message)) {
+    let q2 = supabase
+      .from("brand_applications")
+      .select("id, created_at, brand_name, contact_name, email, phone, website, instagram, country, message, status, notes")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (status) q2 = q2.eq("status", status);
+    ({ data, error } = (await q2) as unknown as { data: typeof data; error: typeof error });
+  }
+  const rows = (data ?? []) as unknown as BrandApplicationRow[];
 
   return (
     <div className="max-w-4xl space-y-5">

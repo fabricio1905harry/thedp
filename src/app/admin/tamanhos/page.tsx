@@ -11,9 +11,9 @@ export default async function SizesPage() {
       <div>
         <h1 className="font-serif text-2xl">Tabela de tamanhos</h1>
         <p className="text-sm text-muted mt-1">
-          Tabela inicial sugerida (BR 36–46 → US 2–12, EU = BR, letras XS–XXL): <strong>o cliente precisa validar</strong>. No site, o comprador vê
-          o tamanho no idioma dele (US + BR para inglês, EU para espanhol/Europa) e o botão “Guia de tamanhos”. “Apelidos” são outros nomes
-          que o fornecedor usa para o mesmo tamanho (ex.: P, G, GG), separados por vírgula.
+          Tabela do PDF (pág. 116): BR 36 a 56 com a letra e o tamanho US de cada um. Medidas em cm (busto, cintura, quadril) são editáveis; as
+          polegadas do site são calculadas a partir delas (faixas como “79-86” são aceitas). O PDF não usa tamanho EU: o site mostra
+          “M / US 6 (BR 40)”. “Apelidos” são outros nomes que o fornecedor usa para o mesmo tamanho (ex.: P, G, GG, 3G), separados por vírgula.
         </p>
       </div>
       <SizeChartAdmin rows={data ?? []} />

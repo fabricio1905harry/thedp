@@ -48,7 +48,8 @@ export function ProductGallery({
   const order = useMemo(() => {
     const idx = allImages.map((_, i) => i);
     if (!color || !imageColors.some(Boolean)) return idx;
-    const own = idx.filter((i) => imageColors[i] === color);
+    const same = (a: string | null | undefined) => (a ?? "").trim().toLowerCase() === color.trim().toLowerCase();
+    const own = idx.filter((i) => same(imageColors[i]));
     const shared = idx.filter((i) => !imageColors[i]);
     const list = [...own, ...shared];
     return list.length > 0 ? list : idx;

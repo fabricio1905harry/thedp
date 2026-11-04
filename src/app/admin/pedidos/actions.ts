@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentStaff } from "@/lib/admin-auth";
 import { EDITABLE_ORDER_STATUSES } from "@/lib/order-status";
 import { applyReserveMode } from "@/lib/reserve";
@@ -101,24 +101,35 @@ async function setOrderChargesImpl(orderId: string, input: OrderChargesInput) {
     if (!Number.isFinite(x) || x < 0) throw new Error("Os valores devem ser zero ou positivos.");
     return Math.round(x * 100) / 100;
   };
-  const { error } = await supabase
-    .from("orders")
-    .update({
-      freight_amount: n(input.freightAmount),
-      insurance_amount: n(input.insuranceAmount),
-      fuel_surcharge_amount: n(input.fuelSurchargeAmount),
-      demand_surcharge_amount: n(input.demandSurchargeAmount),
-      export_declaration_amount: n(input.exportDeclarationAmount),
-      other_dhl_amount: n(input.otherDhlAmount),
-      duties_taxes_amount: n(input.dutiesTaxesAmount),
-      other_charges_amount: n(input.otherChargesAmount),
-      duties_mode: input.dutiesMode ?? null,
-      delivery_days: input.deliveryDays && input.deliveryDays > 0 ? Math.round(input.deliveryDays) : null,
-      charges_note: input.note.trim() || null,
-      charges_informed_at: new Date().toISOString(),
-      charges_informed_by: staff.id,
-    })
-    .eq("id", orderId);
+  const changes = {
+    freight_amount: n(input.freightAmount),
+    insurance_amount: n(input.insuranceAmount),
+    fuel_surcharge_amount: n(input.fuelSurchargeAmount),
+    demand_surcharge_amount: n(input.demandSurchargeAmount),
+    export_declaration_amount: n(input.exportDeclarationAmount),
+    other_dhl_amount: n(input.otherDhlAmount),
+    duties_taxes_amount: n(input.dutiesTaxesAmount),
+    other_charges_amount: n(input.otherChargesAmount),
+    duties_mode: input.dutiesMode ?? null,
+    delivery_days: input.deliveryDays && input.deliveryDays > 0 ? Math.round(input.deliveryDays) : null,
+    charges_note: input.note.trim() || null,
+    charges_informed_at: new Date().toISOString(),
+    charges_informed_by: staff.id,
+  };
+  // P32: the save used to go through the staff member's own session and report success even when no row was
+  // written (an expired access token is refreshed by the first request and the write ran as anonymous, so RLS
+  // updated 0 rows silently: the 2nd click worked). Staff is verified above, so the write itself is done server
+  // side, and a write that touches no row is an error instead of a silent no-op.
+  let writer = supabase;
+  try {
+    writer = createServiceRoleClient() as unknown as typeof supabase;
+  } catch {
+    // no service key in this deployment: keep the session client (the row check below still applies)
+  }
+  const { data: saved, error } = await writer.from("orders").update(changes).eq("id", orderId).select("id, charges_informed_at");
+  if (!error && (!saved || saved.length === 0 || !saved[0].charges_informed_at)) {
+    throw new Error("Não foi possível gravar o frete: nenhuma linha foi alterada. Atualize a página e tente de novo.");
+  }
   if (error) throw new Error(error.message);
   await logEvent(orderId, staff.id, "charges", "Frete e impostos de importação informados", { ...input });
   revalidateOrder(orderId);

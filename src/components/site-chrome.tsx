@@ -55,6 +55,7 @@ export async function SiteChrome({
         <CookieNotice
           text={str(cookie.text)}
           accept={str(cookie.accept)}
+          reject={str(cookie.reject)}
           linkLabel={str(cookie.link_label)}
           link={str(cookie.link)}
         />

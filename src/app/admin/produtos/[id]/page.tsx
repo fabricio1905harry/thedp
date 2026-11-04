@@ -27,11 +27,20 @@ export default async function AdminProductEditPage({
 
   const { data: marginInfo } = await supabase.rpc("tdp_product_margin", { p_product: id });
 
-  const { data: variants } = await supabase
+  let variantsRes = await supabase
     .from("variants")
-    .select("id, size, size_br, size_us, size_eu, color, sku, stock, source_stock, stock_override")
+    .select("id, size, size_br, size_us, size_eu, color, sku, stock, source_stock, stock_override, visible_ops")
     .eq("product_id", id)
     .order("size");
+  // before migration 0084 variants have no visible_ops
+  if (variantsRes.error) {
+    variantsRes = (await supabase
+      .from("variants")
+      .select("id, size, size_br, size_us, size_eu, color, sku, stock, source_stock, stock_override")
+      .eq("product_id", id)
+      .order("size")) as unknown as typeof variantsRes;
+  }
+  const variants = variantsRes.data as unknown as React.ComponentProps<typeof VariantStockTable>["variants"] | null;
 
   const { data: images } = await supabase
     .from("product_images")

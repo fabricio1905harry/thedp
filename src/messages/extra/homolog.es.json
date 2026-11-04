@@ -13,7 +13,8 @@
       "address": "Completa el nombre del destinatario, la dirección y la ciudad.",
       "country": "Elige el país de entrega.",
       "generic": "No pudimos completar tu pedido. Inténtalo de nuevo."
-    }
+    },
+    "viewOrderRequest": "Ver tu solicitud de pedido"
   },
   "cart": {
     "quantityNote": "Algunas cantidades pueden superar lo disponible — la disponibilidad se confirma antes del pago.",

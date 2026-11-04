@@ -27,5 +27,6 @@ Se algum já foi rodado antes, pode pular. Ao terminar, avise para o merge.
 | 20 | 2026-10-29_apply_0086.sql | placements (só o destaque expira), alertas de coleção em 2 níveis, armazenagem de 180 dias após o envio, tipos do Action Center |
 | 21 | 2026-10-29_apply_0087.sql | idioma da comunicação do pedido |
 | 22 | 2026-10-29_apply_0088.sql | regras de NCM/HS por categoria + composição, padrão de Vestidos (1,60 kg, 36×34×11) |
+| 23 | 2026-11-04_apply_0089.sql | reteste 03/11: MULTI em ES, categorias "Dresses"/em branco unificadas em "Vestidos" (NCM, embalagens) com o padrão de 1,60 kg e 36×34×11 |
 
 Os itens 1 a 3 e 14 e 15 só precisam rodar se ainda não foram rodados.
