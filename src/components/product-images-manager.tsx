@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -349,7 +350,8 @@ function ImagePreviewPanel({ src, onClose }: { src: string; onClose: () => void 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-  return (
+  // rendered on <body>: an animated ancestor (page transition) would otherwise pin "fixed" to the page, not the screen
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-3 sm:p-6"
       role="dialog"
@@ -378,7 +380,8 @@ function ImagePreviewPanel({ src, onClose }: { src: string; onClose: () => void 
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
