@@ -230,9 +230,10 @@ export interface FlushResult {
 }
 
 /** One e-mail through Resend. Returns an error message instead of throwing. Never pretends success. */
-export async function sendEmailNow(input: { to: string; subject: string; lines: string[]; locale: string; quote?: { label: string; text: string } }): Promise<{ error?: string }> {
+export async function sendEmailNow(input: { to: string; subject: string; lines: string[]; locale: string; quote?: { label: string; text: string }; cc?: string[] }): Promise<{ error?: string }> {
   if (!emailConfigured()) return { error: "Provedor de e-mail não configurado (RESEND_API_KEY e EMAIL_FROM)." };
   const l = loc(input.locale);
+  const cc = (input.cc ?? []).filter((c) => c.toLowerCase() !== input.to.toLowerCase());
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -240,6 +241,7 @@ export async function sendEmailNow(input: { to: string; subject: string; lines: 
       body: JSON.stringify({
         from: process.env.EMAIL_FROM,
         to: [input.to],
+        cc: cc.length > 0 ? cc : undefined,
         reply_to: process.env.EMAIL_REPLY_TO || undefined,
         subject: input.subject,
         html: toHtml(input.lines, l, input.quote),
@@ -333,7 +335,7 @@ export async function flushEmailOutbox(limit = 25): Promise<FlushResult> {
       continue;
     }
 
-    const sent = await sendEmailNow({ to: row.to_email, subject: rendered.subject, lines: rendered.lines, locale: l, quote: rendered.quote });
+    const sent = await sendEmailNow({ to: row.to_email, subject: rendered.subject, lines: rendered.lines, locale: l, quote: rendered.quote, cc: row.template === "contact_reply" ? contactReplyCc() : undefined });
     if (!sent.error) {
       await supabase.from("email_outbox").update({ status: "sent", sent_at: new Date().toISOString(), error: null }).eq("id", row.id);
       await logOutcome(row.id, row, "sent", null, rendered);
@@ -346,6 +348,18 @@ export async function flushEmailOutbox(limit = 25): Promise<FlushResult> {
     }
   }
   return result;
+}
+
+/**
+ * Team members copied (CC) on every reply sent to a contact message, so they get the same e-mail and
+ * can continue the conversation. Env CONTACT_REPLY_CC (comma/semicolon separated) overrides the default.
+ */
+export function contactReplyCc(): string[] {
+  const raw = process.env.CONTACT_REPLY_CC ?? "ricardo@thedressingproject.com,marcela@thedressingproject.com";
+  return raw
+    .split(/[,;\s]+/)
+    .map((e) => e.trim().toLowerCase())
+    .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 }
 
 /** Team addresses that receive internal notices (env TEAM_NOTIFY_EMAILS, comma/semicolon separated). */
