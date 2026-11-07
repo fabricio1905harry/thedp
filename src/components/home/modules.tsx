@@ -14,9 +14,12 @@ const EYEBROW = "text-[11px] font-semibold uppercase tracking-[0.3em] text-muted
 const BUTTON =
   "inline-block bg-foreground text-background px-8 py-3.5 text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-accent-hover transition-colors";
 
-export function HeroModule({ c }: { c: C }) {
-  const desktop = normalizeImageUrl(s(c.desktop_image));
-  const mobile = normalizeImageUrl(s(c.mobile_image)) ?? desktop;
+export function HeroModule({ c, locale }: { c: C; locale: string }) {
+  // One desktop + one mobile banner per language; a language without its own falls back to the default banner.
+  const lang = ["en", "es", "pt"].includes(locale) ? locale : "en";
+  const pick = (kind: "desktop" | "mobile") => normalizeImageUrl(s(c[`${kind}_image_${lang}`])) ?? normalizeImageUrl(s(c[`${kind}_image`]));
+  const desktop = pick("desktop");
+  const mobile = pick("mobile") ?? desktop;
   const headline = s(c.headline);
   const text = s(c.text);
   const link = s(c.link).trim();

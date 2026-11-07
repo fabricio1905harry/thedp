@@ -75,7 +75,7 @@ export default async function HomePage() {
         const node = (() => {
         switch (key) {
           case "hero":
-            return <HeroModule key={key} c={content} />;
+            return <HeroModule key={key} c={content} locale={locale} />;
           case "institutional_banner":
             return <InstitutionalBannerModule key={key} c={content} />;
           case "ready_to_ship":
