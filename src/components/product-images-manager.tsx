@@ -337,8 +337,9 @@ export function ProductImagesManager({
 }
 
 /**
- * "Ver": the full photo in a popup that always fits the current screen (dvh follows the mobile
- * browser bars): the card never exceeds the viewport and the photo shrinks to what is left.
+ * "Ver": the photo in a compact fixed popup. On desktop it is bounded to the content area (it starts at the
+ * right edge of the side menu, w-56, so the menu stays visible and usable); on phones it uses the whole
+ * screen. The card never exceeds the viewport (dvh) and stays narrow, so the photo does not blow up.
  * Closes with Esc, the button or a click outside the card.
  */
 function ImagePreviewPanel({ src, onClose }: { src: string; onClose: () => void }) {
@@ -351,30 +352,30 @@ function ImagePreviewPanel({ src, onClose }: { src: string; onClose: () => void 
   }, [onClose]);
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-6"
+      className="fixed inset-y-0 right-0 left-0 z-40 flex items-center justify-center bg-black/25 p-3 sm:p-6 md:left-56"
       role="dialog"
       aria-modal="true"
       aria-label="Foto"
       onClick={onClose}
     >
       <div
-        className="flex max-h-full max-w-full flex-col rounded-2xl border border-border bg-white p-3 shadow-lg sm:p-4"
-        style={{ maxHeight: "calc(100dvh - 1.5rem)" }}
+        className="flex w-full max-w-[26rem] flex-col rounded-2xl border border-border bg-white p-3 shadow-lg"
+        style={{ maxHeight: "calc(100dvh - 3rem)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-2 flex shrink-0 items-center justify-between gap-6">
+        <div className="mb-2 flex shrink-0 items-center justify-between gap-4">
           <h3 className="text-sm font-semibold">Foto</h3>
           <button type="button" onClick={onClose} className="text-xs text-muted hover:text-foreground">
             Fechar ✕
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 items-center justify-center">
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={src}
             alt=""
             className="block h-auto w-auto max-w-full rounded-lg bg-surface object-contain"
-            style={{ maxHeight: "calc(100dvh - 6.5rem)" }}
+            style={{ maxHeight: "calc(100dvh - 8rem)" }}
           />
         </div>
       </div>
