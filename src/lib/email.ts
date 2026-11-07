@@ -28,7 +28,12 @@ function escapeHtml(s: string) {
 interface Rendered {
   subject: string;
   lines: string[];
+  /** the customer's original message, shown as a quoted block under the reply */
+  quote?: { label: string; text: string };
 }
+
+/** Logo shown at the top of every e-mail (public image, rendered at a fixed width). */
+export const EMAIL_LOGO_URL = "https://fkyrjdunrfkfpydufxuq.supabase.co/storage/v1/object/public/aleatrorio/marca-vertical_6.png";
 
 function render(template: string, locale: Locale, payload: Payload): Rendered | null {
   const name = (payload.buyer_name as string) || "";
@@ -115,8 +120,10 @@ function render(template: string, locale: Locale, payload: Payload): Rendered | 
             es: "Gracias por contactar a The Dressing Project. Recibimos tu mensaje y nuestro equipo responderá lo antes posible.",
             pt: "Obrigado por entrar em contato com a The Dressing Project. Recebemos sua mensagem e nossa equipe responderá o quanto antes.",
           }[locale],
-          payload.message ? `“${String(payload.message).slice(0, 600)}”` : "",
         ],
+        quote: payload.message
+          ? { label: { en: "Your message", es: "Tu mensaje", pt: "Sua mensagem" }[locale], text: String(payload.message).slice(0, 600) }
+          : undefined,
       };
     case "contact_reply":
       return {
@@ -125,13 +132,10 @@ function render(template: string, locale: Locale, payload: Payload): Rendered | 
           es: `Re: ${(payload.subject as string) || "tu mensaje"}${order ? ` — ${order}` : ""}`,
           pt: `Re: ${(payload.subject as string) || "sua mensagem"}${order ? ` — ${order}` : ""}`,
         }[locale],
-        lines: [
-          hi,
-          String(payload.reply ?? ""),
-          payload.original
-            ? { en: `Your message:\n${String(payload.original).slice(0, 800)}`, es: `Tu mensaje:\n${String(payload.original).slice(0, 800)}`, pt: `Sua mensagem:\n${String(payload.original).slice(0, 800)}` }[locale]
-            : "",
-        ],
+        lines: [hi, String(payload.reply ?? "")],
+        quote: payload.original
+          ? { label: { en: "Your message", es: "Tu mensaje", pt: "Sua mensagem" }[locale], text: String(payload.original).slice(0, 800) }
+          : undefined,
       };
     case "internal_new_contact":
       return {
@@ -176,9 +180,41 @@ function render(template: string, locale: Locale, payload: Payload): Rendered | 
   }
 }
 
-function toHtml(lines: string[], locale: Locale) {
-  const body = lines.filter(Boolean).map((l) => `<p style="margin:0 0 14px">${escapeHtml(l).replace(/\n/g, "<br>")}</p>`).join("");
-  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#111;max-width:560px">${body}<p style="margin:24px 0 0;letter-spacing:.08em;text-transform:uppercase;font-size:12px">${SIGN[locale]}</p></div>`;
+const FOOTER_NOTE: Record<Locale, string> = {
+  en: "You are receiving this e-mail because you contacted The Dressing Project.",
+  es: "Recibes este correo porque te pusiste en contacto con The Dressing Project.",
+  pt: "Você recebeu este e-mail porque entrou em contato com a The Dressing Project.",
+};
+
+/**
+ * E-mail layout (table based, inline styles, so it renders the same in Gmail, Outlook and Apple Mail):
+ * logo on top, white card on a soft background, the message, the customer's original message as a
+ * quote, and a signature footer.
+ */
+function toHtml(lines: string[], locale: Locale, quote?: { label: string; text: string }) {
+  const [first, ...rest] = lines.filter(Boolean);
+  const para = (l: string) => `<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#1a1a1a">${escapeHtml(l).replace(/\n/g, "<br>")}</p>`;
+  const body = [first ? `<p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#111;font-weight:bold">${escapeHtml(first)}</p>` : "", ...rest.map(para)].join("");
+  const quoted = quote
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:26px 0 0"><tr><td style="border-left:3px solid #111;background:#f6f6f4;padding:14px 18px">` +
+      `<p style="margin:0 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#777">${escapeHtml(quote.label)}</p>` +
+      `<p style="margin:0;font-size:13px;line-height:1.65;color:#555">${escapeHtml(quote.text).replace(/\n/g, "<br>")}</p></td></tr></table>`
+    : "";
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const site = origin ? `<a href="${origin}" style="color:#777;text-decoration:underline">${origin.replace(/^https?:\/\//, "")}</a>` : "";
+  return (
+    `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>` +
+    `<body style="margin:0;padding:0;background:#f0efeb">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0efeb"><tr><td align="center" style="padding:32px 12px">` +
+    `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:4px;font-family:Arial,Helvetica,sans-serif">` +
+    `<tr><td align="center" style="padding:34px 32px 22px;border-bottom:1px solid #ecebe6">` +
+    `<img src="${EMAIL_LOGO_URL}" width="130" alt="The Dressing Project" style="display:block;width:130px;max-width:60%;height:auto;border:0;outline:none;margin:0 auto"></td></tr>` +
+    `<tr><td style="padding:32px 36px 12px">${body}${quoted}</td></tr>` +
+    `<tr><td style="padding:12px 36px 34px"><table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:8px"><tr><td style="border-top:1px solid #111;padding-top:12px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#111;font-weight:bold">${SIGN[locale]}</td></tr></table></td></tr>` +
+    `</table>` +
+    `<p style="margin:18px 0 0;max-width:560px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.6;color:#8a8a85;text-align:center">${quote ? `${escapeHtml(FOOTER_NOTE[locale])}<br>` : ""}${site}</p>` +
+    `</td></tr></table></body></html>`
+  );
 }
 
 export function emailConfigured() {
@@ -194,7 +230,7 @@ export interface FlushResult {
 }
 
 /** One e-mail through Resend. Returns an error message instead of throwing. Never pretends success. */
-export async function sendEmailNow(input: { to: string; subject: string; lines: string[]; locale: string }): Promise<{ error?: string }> {
+export async function sendEmailNow(input: { to: string; subject: string; lines: string[]; locale: string; quote?: { label: string; text: string } }): Promise<{ error?: string }> {
   if (!emailConfigured()) return { error: "Provedor de e-mail não configurado (RESEND_API_KEY e EMAIL_FROM)." };
   const l = loc(input.locale);
   try {
@@ -206,8 +242,8 @@ export async function sendEmailNow(input: { to: string; subject: string; lines: 
         to: [input.to],
         reply_to: process.env.EMAIL_REPLY_TO || undefined,
         subject: input.subject,
-        html: toHtml(input.lines, l),
-        text: input.lines.filter(Boolean).join("\n\n"),
+        html: toHtml(input.lines, l, input.quote),
+        text: [...input.lines.filter(Boolean), input.quote ? `${input.quote.label}:\n${input.quote.text}` : ""].filter(Boolean).join("\n\n"),
       }),
     });
     if (!res.ok) return { error: `Resend ${res.status}: ${(await res.text()).slice(0, 300)}` };
@@ -243,7 +279,7 @@ export async function flushEmailOutbox(limit = 25): Promise<FlushResult> {
       error,
       provider: "resend",
       subject: rendered?.subject ?? null,
-      body: rendered ? rendered.lines.filter(Boolean).join("\n\n") : null,
+      body: rendered ? [...rendered.lines.filter(Boolean), rendered.quote ? `${rendered.quote.label}:\n${rendered.quote.text}` : ""].filter(Boolean).join("\n\n") : null,
       sent_at: status === "sent" ? new Date().toISOString() : null,
     };
     const { data } = await supabase.from("notification_log").update(patch).eq("email_outbox_id", outboxId).select("id");
@@ -297,7 +333,7 @@ export async function flushEmailOutbox(limit = 25): Promise<FlushResult> {
       continue;
     }
 
-    const sent = await sendEmailNow({ to: row.to_email, subject: rendered.subject, lines: rendered.lines, locale: l });
+    const sent = await sendEmailNow({ to: row.to_email, subject: rendered.subject, lines: rendered.lines, locale: l, quote: rendered.quote });
     if (!sent.error) {
       await supabase.from("email_outbox").update({ status: "sent", sent_at: new Date().toISOString(), error: null }).eq("id", row.id);
       await logOutcome(row.id, row, "sent", null, rendered);
