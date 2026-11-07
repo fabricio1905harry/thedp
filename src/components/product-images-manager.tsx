@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -337,24 +337,47 @@ export function ProductImagesManager({
 }
 
 /**
- * "Ver": the full photo in a light panel inside the page (same look as the crop editor),
- * instead of a full-screen black layer.
+ * "Ver": the full photo in a popup that always fits the current screen (dvh follows the mobile
+ * browser bars): the card never exceeds the viewport and the photo shrinks to what is left.
+ * Closes with Esc, the button or a click outside the card.
  */
 function ImagePreviewPanel({ src, onClose }: { src: string; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [src]);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   return (
-    <div ref={ref} className="scroll-mt-6 mt-6 rounded-2xl border border-border bg-white p-5 shadow-sm animate-fade-in">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold">Foto</h3>
-        <button type="button" onClick={onClose} className="text-xs text-muted hover:text-foreground">
-          Fechar ✕
-        </button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Foto"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-full max-w-full flex-col rounded-2xl border border-border bg-white p-3 shadow-lg sm:p-4"
+        style={{ maxHeight: "calc(100dvh - 1.5rem)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-2 flex shrink-0 items-center justify-between gap-6">
+          <h3 className="text-sm font-semibold">Foto</h3>
+          <button type="button" onClick={onClose} className="text-xs text-muted hover:text-foreground">
+            Fechar ✕
+          </button>
+        </div>
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt=""
+            className="block h-auto w-auto max-w-full rounded-lg bg-surface object-contain"
+            style={{ maxHeight: "calc(100dvh - 6.5rem)" }}
+          />
+        </div>
       </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="mx-auto w-auto max-w-full max-h-[70vh] object-contain bg-surface rounded-lg" />
     </div>
   );
 }
