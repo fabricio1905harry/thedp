@@ -14,36 +14,47 @@ const EYEBROW = "text-[11px] font-semibold uppercase tracking-[0.3em] text-muted
 const BUTTON =
   "inline-block bg-foreground text-background px-8 py-3.5 text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-accent-hover transition-colors";
 
-export function HeroModule({ c, locale }: { c: C; locale: string }) {
-  // One desktop + one mobile banner per language; a language without its own falls back to the default banner.
+/** Desktop + mobile banner of the visitor's language; a language without its own uses the default banner. */
+function localizedBanners(c: C, locale: string) {
   const lang = ["en", "es", "pt"].includes(locale) ? locale : "en";
   const pick = (kind: "desktop" | "mobile") => normalizeImageUrl(s(c[`${kind}_image_${lang}`])) ?? normalizeImageUrl(s(c[`${kind}_image`]));
   const desktop = pick("desktop");
-  const mobile = pick("mobile") ?? desktop;
+  return { desktop, mobile: pick("mobile") ?? desktop };
+}
+
+/**
+ * The whole art is shown (no crop, no distortion): desktop and mobile each keep their own aspect ratio. On
+ * large screens the height is capped to the visible area under the header so the banner never needs a scroll.
+ */
+function BannerPicture({ desktop, mobile, alt, priority }: { desktop: string | null; mobile: string | null; alt: string; priority: boolean }) {
+  return (
+    <picture className="block">
+      {mobile && <source media="(max-width: 639px)" srcSet={optimizedSrcSet(mobile, 828) ?? mobile} sizes="100vw" />}
+      <img
+        src={desktop && isOptimizable(desktop) ? optimizedUrl(desktop, 1920) : desktop ?? mobile ?? ""}
+        srcSet={desktop ? optimizedSrcSet(desktop) : undefined}
+        sizes="100vw"
+        decoding="async"
+        loading={priority ? "eager" : "lazy"}
+        alt={alt}
+        referrerPolicy="no-referrer"
+        fetchPriority={priority ? "high" : "auto"}
+        className="mx-auto block h-auto w-auto max-w-full sm:max-h-[calc(100svh-11rem)] xl:max-h-[calc(100svh-7.5rem)]"
+      />
+    </picture>
+  );
+}
+
+export function HeroModule({ c, locale }: { c: C; locale: string }) {
+  const { desktop, mobile } = localizedBanners(c, locale);
   const headline = s(c.headline);
   const text = s(c.text);
   const link = s(c.link).trim();
   if (!desktop && !mobile) return null;
 
-  // The whole art is shown (no crop, no distortion): desktop and mobile each
-  // keep their own aspect ratio. On large screens the height is capped to the
-  // visible area under the header so the bottom of the banner never needs a scroll.
   const banner = (
     <div className="relative w-full overflow-hidden bg-surface">
-      <picture className="block">
-        {mobile && <source media="(max-width: 639px)" srcSet={optimizedSrcSet(mobile, 828) ?? mobile} sizes="100vw" />}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={desktop && isOptimizable(desktop) ? optimizedUrl(desktop, 1920) : desktop ?? mobile ?? ""}
-          srcSet={desktop ? optimizedSrcSet(desktop) : undefined}
-          sizes="100vw"
-          decoding="async"
-          alt={s(c.alt)}
-          referrerPolicy="no-referrer"
-          fetchPriority="high"
-          className="mx-auto block h-auto w-auto max-w-full sm:max-h-[calc(100svh-11rem)] xl:max-h-[calc(100svh-7.5rem)]"
-        />
-      </picture>
+      <BannerPicture desktop={desktop} mobile={mobile} alt={s(c.alt)} priority />
       {(headline || text) && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent p-6 sm:p-12 text-white">
           <div className="max-w-7xl mx-auto">
@@ -68,12 +79,38 @@ export function HeroModule({ c, locale }: { c: C; locale: string }) {
   );
 }
 
-export function InstitutionalBannerModule({ c }: { c: C }) {
+/** Second banner, right below the Hero: optional art (per language) + headline / subheadline. */
+export function InstitutionalBannerModule({ c, locale }: { c: C; locale: string }) {
+  const { desktop, mobile } = localizedBanners(c, locale);
+  const headline = s(c.headline);
+  const sub = s(c.subheadline);
+  const link = s(c.link).trim();
+  const hasArt = Boolean(desktop || mobile);
+  const art = hasArt ? (
+    <div className="w-full overflow-hidden bg-surface">
+      <BannerPicture desktop={desktop} mobile={mobile} alt={s(c.alt)} priority={false} />
+    </div>
+  ) : null;
   return (
-    <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-      <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{s(c.headline)}</h2>
-      <p className="mt-5 text-[11px] sm:text-xs uppercase tracking-[0.35em] text-muted">{s(c.subheadline)}</p>
-    </section>
+    <>
+      {art && (
+        <section className="w-full bg-surface">
+          {link ? (
+            <CmsLink href={link} className="block w-full cursor-pointer">
+              {art}
+            </CmsLink>
+          ) : (
+            art
+          )}
+        </section>
+      )}
+      {(headline || sub) && (
+        <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
+          {headline && <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{headline}</h2>}
+          {sub && <p className="mt-5 text-[11px] sm:text-xs uppercase tracking-[0.35em] text-muted">{sub}</p>}
+        </section>
+      )}
+    </>
   );
 }
 

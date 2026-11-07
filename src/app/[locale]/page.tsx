@@ -77,7 +77,7 @@ export default async function HomePage() {
           case "hero":
             return <HeroModule key={key} c={content} locale={locale} />;
           case "institutional_banner":
-            return <InstitutionalBannerModule key={key} c={content} />;
+            return <InstitutionalBannerModule key={key} c={content} locale={locale} />;
           case "ready_to_ship":
             return <ReadyToShipModule key={key} c={content} />;
           case "how_it_works":
