@@ -138,6 +138,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/pagamentos", label: "Pagamentos", icon: ExchangeIcon },
       { href: "/admin/cambio", label: "Câmbio", icon: ExchangeIcon },
       { href: "/admin/impostos", label: "Impostos e taxas", icon: ExchangeIcon },
+      { href: "/admin/invoices", label: "Invoices emitidas", icon: ExchangeIcon },
       { href: "/admin/invoice", label: "Configurações da invoice", icon: ExchangeIcon },
     ],
   },
