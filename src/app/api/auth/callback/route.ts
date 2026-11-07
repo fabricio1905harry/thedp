@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/pt";
   const locale = next.split("/")[1] && ["en", "es", "pt"].includes(next.split("/")[1]) ? next.split("/")[1] : "pt";
 
-  const fail = NextResponse.redirect(`${origin}/${locale}/esqueci-senha?error=expired`);
+  // the panel has no locale: an expired admin link goes back to its login (where "Esqueci minha senha" is)
+  const isAdmin = next === "/admin" || next.startsWith("/admin/");
+  const fail = NextResponse.redirect(isAdmin ? `${origin}/admin` : `${origin}/${locale}/esqueci-senha?error=expired`);
   try {
     const supabase = await createClient();
     if (code) {
