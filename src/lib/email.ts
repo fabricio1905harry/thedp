@@ -84,7 +84,7 @@ function render(template: string, locale: Locale, payload: Payload): Rendered | 
           }[locale],
         ],
       };
-    // --- homologation stream 1: Order Request / contact -----------------
+    // --- Order Request / contact -----------------
     case "order_request_received": {
       const currency = (payload.currency as string) || "";
       const link = (payload.account_url as string) || "";
