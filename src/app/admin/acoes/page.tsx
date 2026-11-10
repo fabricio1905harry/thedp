@@ -53,8 +53,11 @@ export default async function AdminActionCenterPage({
         )}
       </div>
 
-      <section>
-        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">Ação necessária — {queue.length}</h2>
+      <section id="fila" className="scroll-mt-6">
+        <h2 className="text-sm font-medium uppercase tracking-wide mb-2">
+          Ação necessária — {queue.length}
+          {sp.type && <span className="normal-case tracking-normal font-normal text-muted"> · só {actionTypeLabelPt(sp.type, labels.get(sp.type) ?? sp.type)}</span>}
+        </h2>
         <ActionQueue items={queue} labels={Object.fromEntries(labels)} manualTypes={[...manualTypes]} now={now} />
       </section>
     </div>

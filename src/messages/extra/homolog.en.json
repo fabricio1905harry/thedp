@@ -94,11 +94,15 @@
   },
   "nav": {
     "myAccount": "My account",
-    "accountMenu": "Account menu"
+    "accountMenu": "Account menu",
+    "search": "Search",
+    "searchPlaceholder": "Search dresses…"
   },
   "shop": {
     "filtersButton": "Filters",
-    "filtersActive": "{n} active"
+    "filtersActive": "{n} active",
+    "searchResults": "Results for “{q}”",
+    "clearSearch": "Clear search"
   },
   "auth": {
     "email": "E-mail",

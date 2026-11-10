@@ -2,7 +2,7 @@
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentCustomer } from "@/lib/auth";
-import { calculateShipmentPackages } from "@/lib/dhl-packaging";
+import { calculateShipmentPackages, pieceWeightKg } from "@/lib/dhl-packaging";
 import type { ShipSmartAddress } from "@/lib/shipsmart";
 import { COUNTRY_CODES } from "@/lib/countries";
 import { queueEmail, queueTeamNotice, flushEmailOutbox, siteOrigin } from "@/lib/email";
@@ -102,7 +102,8 @@ export async function placeOrderServerAction(
     const packaging = await calculateShipmentPackages({
       quantity: totalQty,
       category: "Vestidos",
-      unitWeightKg: 1.6,
+      // P18: the weight of each product (from its category), not a fixed 1.6 kg
+      unitWeightKg: await pieceWeightKg(pricedItems.map((i) => ({ variantId: i.variantId, qty: i.qty }))),
     });
 
     // 2. Destination address (the ISO country code is stored: it drives channel/currency/freight later)

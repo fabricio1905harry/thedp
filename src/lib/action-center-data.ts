@@ -6,7 +6,10 @@ export interface ActionCard {
   label: string;
   priorityGroup: number;
   count: number;
+  /** the pending items of this type only (Action Center filtered by type) */
   href: string;
+  /** the screen where this kind of item is handled (all records, not only the pending ones) */
+  screenHref: string | null;
   manualResolve: boolean;
 }
 
@@ -34,7 +37,9 @@ export async function loadActionCenter(sort: QueueSort = "system", type?: string
       label: t.label,
       priorityGroup: t.priority_group,
       count: COUNT_AFFECTED.has(t.code) ? ofType.reduce((s, i) => s + (i.affected_count ?? 1), 0) : ofType.length,
-      href: t.card_href ?? `/admin/acoes?type=${t.code}`,
+      // P40: a counter opens ITS pending items (not the general screen, which lists every record)
+      href: `/admin/acoes?type=${t.code}#fila`,
+      screenHref: t.card_href ?? null,
       manualResolve: t.manual_resolve,
     };
   });

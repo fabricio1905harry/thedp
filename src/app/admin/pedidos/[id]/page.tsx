@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { calculateShipmentPackages } from "@/lib/dhl-packaging";
+import { calculateShipmentPackages, pieceWeightKg } from "@/lib/dhl-packaging";
 import { PostPaymentSections } from "@/components/post-payment-sections";
 import { DhlShipmentReviewPanel } from "@/components/dhl-shipment-review-panel";
 import { StatusBadge } from "@/components/status-badge";
@@ -165,7 +165,15 @@ export default async function AdminOrderDetailPage({
     .reduce((sum, i) => sum + Number(i.qty), 0);
   const showDhl = ["paid", "processing", "shipped", "delivered"].includes(order.status);
   const initialCalculation = showDhl
-    ? await calculateShipmentPackages({ quantity: activeQty > 0 ? activeQty : 1, category: "Dresses" })
+    ? await calculateShipmentPackages({
+        quantity: activeQty > 0 ? activeQty : 1,
+        category: "Dresses",
+        unitWeightKg: await pieceWeightKg(
+          (items ?? [])
+            .filter((i) => i.item_status === "available" || i.item_status === "requested")
+            .map((i) => ({ productId: i.product_id ?? null, variantId: i.variant_id ?? null, qty: Number(i.qty) }))
+        ),
+      })
     : null;
 
   const customer = (customerRow ?? null) as { email: string; name: string | null; company_name: string | null } | null;

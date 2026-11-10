@@ -2,7 +2,7 @@
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
-import { BRAND_OPPORTUNITY_TYPES, BRAND_PRODUCT_CATEGORIES, BRAND_WHOLESALE_PRESENCE } from "@/lib/brand-application";
+import { BRAND_OPPORTUNITY_TYPES, BRAND_PRODUCT_CATEGORIES } from "@/lib/brand-application";
 
 export interface BrandApplicationInput {
   brandName: string;
@@ -50,7 +50,7 @@ export async function submitBrandApplication(input: BrandApplicationInput): Prom
     const extra = {
       product_categories: (input.productCategories ?? []).filter((c) => (BRAND_PRODUCT_CATEGORIES as readonly string[]).includes(c)),
       current_markets: clean(input.currentMarkets ?? "", 300) || null,
-      wholesale_presence: pick(input.wholesalePresence, BRAND_WHOLESALE_PRESENCE),
+      wholesale_presence: clean(input.wholesalePresence ?? "", 500) || null,
       opportunity_type: pick(input.opportunityType, BRAND_OPPORTUNITY_TYPES),
     };
     let { error } = await supabase.from("brand_applications").insert({ ...base, ...extra });

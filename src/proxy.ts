@@ -1,6 +1,6 @@
 import createIntlMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
-import { routing } from "./i18n/routing";
+import { locales, routing } from "./i18n/routing";
 import { getAppTarget } from "./lib/app-target";
 import {
   SITE_MODE_COOKIE,
@@ -40,6 +40,17 @@ export function proxy(request: NextRequest) {
     devOverride === "nacional" || devOverride === "internacional"
       ? devOverride
       : resolveSiteMode(request.nextUrl.hostname);
+
+  // P49: a visit without a language in the URL enters in the language of the site (Brazil → PT, international
+  // → EN), not in the browser's. Once the visitor picks a language (NEXT_LOCALE cookie) that choice wins.
+  const first = pathname.split("/")[1] ?? "";
+  if (!(locales as readonly string[]).includes(first) && !request.cookies.get("NEXT_LOCALE")) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${siteMode === "nacional" ? "pt" : "en"}${pathname === "/" ? "" : pathname}`;
+    const redirect = NextResponse.redirect(url);
+    redirect.cookies.set(SITE_MODE_COOKIE, siteMode, { path: "/" });
+    return redirect;
+  }
 
   const response = intlMiddleware(request) ?? NextResponse.next();
   response.headers.set(SITE_MODE_HEADER, siteMode);

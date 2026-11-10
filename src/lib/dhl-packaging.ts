@@ -47,6 +47,35 @@ export interface ShipmentCalculationResult {
 
 export const DEFAULT_SHIPPING_WEIGHT_KG = 1.60;
 
+/**
+ * Average weight per piece (kg) of the given lines, from each product's weight (which comes from its category,
+ * Admin → Categorias). Products without a weight count as the default 1.60 kg. Never throws.
+ */
+export async function pieceWeightKg(lines: { productId?: string | null; variantId?: string | null; qty: number }[]): Promise<number> {
+  try {
+    const supabase = createServiceRoleClient();
+    const variantIds = lines.filter((l) => !l.productId && l.variantId).map((l) => l.variantId as string);
+    const productOfVariant = new Map<string, string>();
+    if (variantIds.length > 0) {
+      const { data } = await supabase.from("variants").select("id, product_id").in("id", variantIds);
+      for (const v of data ?? []) productOfVariant.set(v.id as string, v.product_id as string);
+    }
+    const resolved = lines.map((l) => ({ productId: l.productId || (l.variantId ? productOfVariant.get(l.variantId) : undefined), qty: Number(l.qty) || 0 }));
+    const ids = [...new Set(resolved.map((l) => l.productId).filter(Boolean))] as string[];
+    const weight = new Map<string, number>();
+    if (ids.length > 0) {
+      const { data } = await supabase.from("products").select("id, weight_g").in("id", ids);
+      for (const p of data ?? []) if (Number(p.weight_g) > 0) weight.set(p.id as string, Number(p.weight_g) / 1000);
+    }
+    const total = resolved.reduce((s, l) => s + l.qty, 0);
+    if (total <= 0) return DEFAULT_SHIPPING_WEIGHT_KG;
+    const kg = resolved.reduce((s, l) => s + l.qty * ((l.productId && weight.get(l.productId)) || DEFAULT_SHIPPING_WEIGHT_KG), 0);
+    return Math.round((kg / total) * 1000) / 1000;
+  } catch {
+    return DEFAULT_SHIPPING_WEIGHT_KG;
+  }
+}
+
 /** Fetch all packaging types from DB */
 export async function getPackagingTypes(): Promise<PackagingType[]> {
   const supabase = createServiceRoleClient();

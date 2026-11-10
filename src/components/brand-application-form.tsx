@@ -3,26 +3,23 @@
 import { useState, useTransition } from "react";
 import { useLocale } from "next-intl";
 import { submitBrandApplication } from "@/app/[locale]/seja-uma-marca/actions";
-import { BRAND_OPPORTUNITY_TYPES, BRAND_PRODUCT_CATEGORIES, BRAND_WHOLESALE_PRESENCE } from "@/lib/brand-application";
+import { BRAND_OPPORTUNITY_TYPES, BRAND_PRODUCT_CATEGORIES } from "@/lib/brand-application";
 
 const X = {
   en: {
-    categories: "Product categories", markets: "Current markets (countries / regions where you sell)", presence: "Do you already sell wholesale?", opportunity: "Type of opportunity", choose: "Select…",
-    cat: { dresses: "Dresses", tops: "Tops", bottoms: "Bottoms", knitwear: "Knitwear", swimwear: "Swimwear", accessories: "Accessories", other: "Other" },
-    pres: { yes: "Yes", starting: "Starting now", no: "No" },
-    opp: { distribution: "Distribution", wholesale: "Wholesale", partnership: "Brand partnership", other: "Other" },
+    categories: "Product categories", markets: "Current markets (countries / regions where you sell)", presence: "Wholesale presence (stores, showrooms or platforms where you sell wholesale)", opportunity: "Type of opportunity", choose: "Select…",
+    cat: { dresses: "Dresses", tops: "Tops", skirts: "Skirts", pants: "Pants", jumpsuits: "Jumpsuits", sets: "Sets", resort: "Resort", accessories: "Accessories" },
+    opp: { international_distribution: "International Distribution", national_distribution: "National Distribution", wholesale_b2b: "Wholesale / B2B", commercial_placement: "Commercial Placement / Brand Partnership", other: "Other" },
   },
   es: {
-    categories: "Categorías de producto", markets: "Mercados actuales (países / regiones donde vendes)", presence: "¿Ya vendes al por mayor?", opportunity: "Tipo de oportunidad", choose: "Seleccionar…",
-    cat: { dresses: "Vestidos", tops: "Tops", bottoms: "Pantalones y faldas", knitwear: "Punto", swimwear: "Trajes de baño", accessories: "Accesorios", other: "Otro" },
-    pres: { yes: "Sí", starting: "Empezando ahora", no: "No" },
-    opp: { distribution: "Distribución", wholesale: "Venta mayorista", partnership: "Alianza de marca", other: "Otro" },
+    categories: "Categorías de producto", markets: "Mercados actuales (países / regiones donde vendes)", presence: "Presencia mayorista (tiendas, showrooms o plataformas donde vendes al por mayor)", opportunity: "Tipo de oportunidad", choose: "Seleccionar…",
+    cat: { dresses: "Vestidos", tops: "Tops", skirts: "Faldas", pants: "Pantalones", jumpsuits: "Monos", sets: "Conjuntos", resort: "Resort", accessories: "Accesorios" },
+    opp: { international_distribution: "Distribución internacional", national_distribution: "Distribución nacional", wholesale_b2b: "Mayorista / B2B", commercial_placement: "Placement comercial / Alianza de marca", other: "Otro" },
   },
   pt: {
-    categories: "Categorias de produto", markets: "Mercados atuais (países / regiões onde vende)", presence: "Você já vende no atacado?", opportunity: "Tipo de oportunidade", choose: "Selecionar…",
-    cat: { dresses: "Vestidos", tops: "Blusas e tops", bottoms: "Calças e saias", knitwear: "Tricô", swimwear: "Moda praia", accessories: "Acessórios", other: "Outro" },
-    pres: { yes: "Sim", starting: "Começando agora", no: "Não" },
-    opp: { distribution: "Distribuição", wholesale: "Atacado", partnership: "Parceria de marca", other: "Outro" },
+    categories: "Categorias de produto", markets: "Mercados atuais (países / regiões onde vende)", presence: "Presença no atacado (lojas, showrooms ou plataformas onde vende no atacado)", opportunity: "Tipo de oportunidade", choose: "Selecionar…",
+    cat: { dresses: "Vestidos", tops: "Blusas e tops", skirts: "Saias", pants: "Calças", jumpsuits: "Macacões", sets: "Conjuntos", resort: "Resort", accessories: "Acessórios" },
+    opp: { international_distribution: "Distribuição internacional", national_distribution: "Distribuição nacional", wholesale_b2b: "Atacado / B2B", commercial_placement: "Placement comercial / Parceria de marca", other: "Outro" },
   },
 } as const;
 
@@ -76,13 +73,7 @@ export function BrandApplicationForm() {
         </div>
       </fieldset>
       <label className="text-xs space-y-1 sm:col-span-2">{x.markets}<input className={box} value={f.currentMarkets} onChange={set("currentMarkets")} /></label>
-      <label className="text-xs space-y-1">
-        {x.presence}
-        <select className={box} value={f.wholesalePresence} onChange={set("wholesalePresence")}>
-          <option value="">{x.choose}</option>
-          {BRAND_WHOLESALE_PRESENCE.map((v) => <option key={v} value={v}>{x.pres[v]}</option>)}
-        </select>
-      </label>
+      <label className="text-xs space-y-1 sm:col-span-2">{x.presence}<input className={box} value={f.wholesalePresence} onChange={set("wholesalePresence")} /></label>
       <label className="text-xs space-y-1">
         {x.opportunity}
         <select className={box} value={f.opportunityType} onChange={set("opportunityType")}>

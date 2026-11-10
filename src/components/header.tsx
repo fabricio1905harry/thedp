@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { MegaMenu } from "@/components/mega-menu";
 import { CartLink } from "@/components/cart-link";
+import { HeaderSearch } from "@/components/header-search";
 import { MobileNav } from "@/components/mobile-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { CurrencySwitcher } from "@/components/currency-switcher";
@@ -124,6 +125,7 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
                 </Link>
               </div>
             ))}
+          <HeaderSearch label={t("search")} placeholder={t("searchPlaceholder")} />
           {!isNacional && <CartLink signedIn={Boolean(customer)} />}
         </div>
       </div>

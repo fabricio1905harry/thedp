@@ -4,7 +4,8 @@ import { VideoPlayer } from "@/components/video-player";
 import { normalizeImageUrl } from "@/lib/image-url";
 import type { ShopProduct } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
-import { isOptimizable, optimizedSrcSet, optimizedUrl } from "@/lib/image-opt";
+import { localizedBanners } from "@/components/home/banner-picture";
+import { HeroCarousel, type HeroSlide } from "@/components/home/hero-carousel";
 
 type C = Record<string, unknown>;
 const s = (v: unknown) => (typeof v === "string" ? v : "");
@@ -14,103 +15,44 @@ const EYEBROW = "text-[11px] font-semibold uppercase tracking-[0.3em] text-muted
 const BUTTON =
   "inline-block bg-foreground text-background px-8 py-3.5 text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-accent-hover transition-colors";
 
-/** Desktop + mobile banner of the visitor's language; a language without its own uses the default banner. */
-function localizedBanners(c: C, locale: string) {
-  const lang = ["en", "es", "pt"].includes(locale) ? locale : "en";
-  const pick = (kind: "desktop" | "mobile") => normalizeImageUrl(s(c[`${kind}_image_${lang}`])) ?? normalizeImageUrl(s(c[`${kind}_image`]));
-  const desktop = pick("desktop");
-  return { desktop, mobile: pick("mobile") ?? desktop };
-}
-
-/**
- * The whole art is shown (no crop, no distortion): desktop and mobile each keep their own aspect ratio. On
- * large screens the height is capped to the visible area under the header so the banner never needs a scroll.
- */
-function BannerPicture({ desktop, mobile, alt, priority }: { desktop: string | null; mobile: string | null; alt: string; priority: boolean }) {
-  return (
-    <picture className="block">
-      {mobile && <source media="(max-width: 639px)" srcSet={optimizedSrcSet(mobile, 828) ?? mobile} sizes="100vw" />}
-      <img
-        src={desktop && isOptimizable(desktop) ? optimizedUrl(desktop, 1920) : desktop ?? mobile ?? ""}
-        srcSet={desktop ? optimizedSrcSet(desktop) : undefined}
-        sizes="100vw"
-        decoding="async"
-        loading={priority ? "eager" : "lazy"}
-        alt={alt}
-        referrerPolicy="no-referrer"
-        fetchPriority={priority ? "high" : "auto"}
-        className="mx-auto block h-auto w-auto max-w-full sm:max-h-[calc(100svh-11rem)] xl:max-h-[calc(100svh-7.5rem)]"
-      />
-    </picture>
-  );
-}
-
 export function HeroModule({ c, locale }: { c: C; locale: string }) {
   const { desktop, mobile } = localizedBanners(c, locale);
   const headline = s(c.headline);
   const text = s(c.text);
-  const link = s(c.link).trim();
-  if (!desktop && !mobile) return null;
+  const lang = ["en", "es", "pt"].includes(locale) ? locale : "en";
 
-  const banner = (
-    <div className="relative w-full overflow-hidden bg-surface">
-      <BannerPicture desktop={desktop} mobile={mobile} alt={s(c.alt)} priority />
-      {(headline || text) && (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent p-6 sm:p-12 text-white">
-          <div className="max-w-7xl mx-auto">
-            {headline && <h1 className="font-serif text-3xl sm:text-5xl leading-tight max-w-3xl">{headline}</h1>}
-            {text && <p className="mt-3 text-sm sm:text-base text-white/90 max-w-xl">{text}</p>}
-          </div>
+  // P47: the main banner first, then the rotating banners of this language (or of every language)
+  const slides: HeroSlide[] = [];
+  if (desktop || mobile) slides.push({ desktop, mobile, alt: s(c.alt), link: s(c.link).trim() });
+  for (const item of list(c.slides)) {
+    const only = s(item.locale);
+    if (only && only !== lang) continue;
+    const d = normalizeImageUrl(s(item.desktop_image));
+    const m = normalizeImageUrl(s(item.mobile_image)) ?? d;
+    if (!d && !m) continue;
+    slides.push({ desktop: d ?? m, mobile: m, alt: s(item.alt) || s(c.alt), link: s(item.link).trim() });
+  }
+  if (slides.length === 0) return null;
+
+  const overlay =
+    headline || text ? (
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent p-6 pb-10 sm:p-12 text-white">
+        <div className="max-w-7xl mx-auto">
+          {headline && <h1 className="font-serif text-3xl sm:text-5xl leading-tight max-w-3xl">{headline}</h1>}
+          {text && <p className="mt-3 text-sm sm:text-base text-white/90 max-w-xl">{text}</p>}
         </div>
-      )}
-    </div>
-  );
-
-  return (
-    <section className="w-full bg-surface">
-      {link ? (
-        <CmsLink href={link} className="block w-full cursor-pointer">
-          {banner}
-        </CmsLink>
-      ) : (
-        banner
-      )}
-    </section>
-  );
+      </div>
+    ) : null;
+  const seconds = Number(c.rotation_seconds);
+  return <HeroCarousel slides={slides} intervalMs={(seconds >= 2 && seconds <= 48 ? seconds : 6) * 1000} overlay={overlay} />;
 }
 
-/** Second banner, right below the Hero: optional art (per language) + headline / subheadline. */
-export function InstitutionalBannerModule({ c, locale }: { c: C; locale: string }) {
-  const { desktop, mobile } = localizedBanners(c, locale);
-  const headline = s(c.headline);
-  const sub = s(c.subheadline);
-  const link = s(c.link).trim();
-  const hasArt = Boolean(desktop || mobile);
-  const art = hasArt ? (
-    <div className="w-full overflow-hidden bg-surface">
-      <BannerPicture desktop={desktop} mobile={mobile} alt={s(c.alt)} priority={false} />
-    </div>
-  ) : null;
+export function InstitutionalBannerModule({ c }: { c: C; locale?: string }) {
   return (
-    <>
-      {art && (
-        <section className="w-full bg-surface">
-          {link ? (
-            <CmsLink href={link} className="block w-full cursor-pointer">
-              {art}
-            </CmsLink>
-          ) : (
-            art
-          )}
-        </section>
-      )}
-      {(headline || sub) && (
-        <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-          {headline && <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{headline}</h2>}
-          {sub && <p className="mt-5 text-[11px] sm:text-xs uppercase tracking-[0.35em] text-muted">{sub}</p>}
-        </section>
-      )}
-    </>
+    <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
+      <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{s(c.headline)}</h2>
+      <p className="mt-5 text-[11px] sm:text-xs uppercase tracking-[0.35em] text-muted">{s(c.subheadline)}</p>
+    </section>
   );
 }
 
