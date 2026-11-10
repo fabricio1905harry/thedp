@@ -17,6 +17,7 @@ export interface RegistrationData {
   tdp_ref: string | null;
   customs_description: string | null;
   visible_ops: string[] | null;
+  brand_id?: string | null;
 }
 
 const OPS: [string, string][] = [
@@ -27,7 +28,7 @@ const OPS: [string, string][] = [
 ];
 
 /** Complete product registration: descriptions, composition, origin, NCM, references, customs text, visibility. */
-export function ProductRegistrationForm({ product }: { product: RegistrationData }) {
+export function ProductRegistrationForm({ product, brands = [] }: { product: RegistrationData; brands?: { id: string; name: string; slug: string }[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export function ProductRegistrationForm({ product }: { product: RegistrationData
     tdpRef: product.tdp_ref ?? "",
     customsDescription: product.customs_description ?? "",
     visibleOps: product.visible_ops ?? OPS.map(([k]) => k),
+    brandId: product.brand_id ?? "",
   });
   const set = (k: keyof typeof f, v: string) => setF((s) => ({ ...s, [k]: v }));
   const box = "w-full border border-border px-3 py-2 text-sm";
@@ -90,8 +92,14 @@ export function ProductRegistrationForm({ product }: { product: RegistrationData
           <input className={box} value={f.supplierRef} onChange={(e) => set("supplierRef", e.target.value)} />
         </label>
         <label className="space-y-1">
-          <span>Referência TDP (exibida ao comprador)</span>
-          <input className={box} value={f.tdpRef} onChange={(e) => set("tdpRef", e.target.value)} placeholder="TDP12345" />
+          <span>Marca</span>
+          <select className={`${box} bg-background`} value={f.brandId} onChange={(e) => set("brandId", e.target.value)}>
+            <option value="">— sem marca —</option>
+            {brands.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}{brands.filter((x) => x.name === b.name).length > 1 ? ` (${b.slug})` : ""}</option>
+            ))}
+          </select>
+          <span className="block text-[11px] text-muted">Vincula o produto à marca em Admin › Marcas.</span>
         </label>
         <label className="space-y-1 md:col-span-3">
           <span>Descrição aduaneira (invoice / DHL, em inglês)</span>

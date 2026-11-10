@@ -80,7 +80,6 @@ export default async function ProductPage({
           <h1 className="font-serif text-3xl sm:text-4xl">{product.title}</h1>
           <FavoriteButton productId={product.id} variant="icon" className="shrink-0 mt-1" />
         </div>
-        {product.reference && <p className="mt-2 text-xs uppercase tracking-[0.2em] text-muted">{product.reference}</p>}
 
         <div className="mt-8">
           {siteMode === "nacional" ? (
@@ -147,7 +146,14 @@ export default async function ProductPage({
 
         <div className="mt-10">
           <Accordion title={t("accDetails")} open>
-            {product.description && <p>{product.description}</p>}
+            {/* P46: the TDP reference is part of the description (no longer under the title) */}
+            {(product.description || product.reference) && (
+              <p>
+                {product.description}
+                {product.description && product.reference ? " " : ""}
+                {product.reference && <span className="whitespace-nowrap">Ref. {product.reference}</span>}
+              </p>
+            )}
             {product.composition && (
               <p>
                 <span className="text-foreground">{t("composition")}:</span> {product.composition}

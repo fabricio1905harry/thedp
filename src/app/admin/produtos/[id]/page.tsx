@@ -18,7 +18,7 @@ export default async function AdminProductEditPage({
   const { data: product } = await supabase
     .from("products")
     .select(
-      "id, title, title_en, title_es, category, status, is_featured, connector_id, original_price, markup, price_brl, price_usd, price_eur, extra_cost_brl, margin_pct_override, commission_pct_override, price_adjust_pct, retail_usd, retail_eur, manual_price_usd, manual_price_eur, description, description_en, description_es, composition, origin_country, ncm, supplier_ref, tdp_ref, customs_description, visible_ops, hs_code, weight_g, dims_cm, sizes, colors, default_stock, locked_fields, last_synced_at, source_snapshot"
+      "id, title, title_en, title_es, category, status, is_featured, connector_id, original_price, markup, price_brl, price_usd, price_eur, extra_cost_brl, margin_pct_override, commission_pct_override, price_adjust_pct, retail_usd, retail_eur, manual_price_usd, manual_price_eur, description, description_en, description_es, composition, origin_country, ncm, supplier_ref, tdp_ref, customs_description, visible_ops, brand_id, hs_code, weight_g, dims_cm, sizes, colors, default_stock, locked_fields, last_synced_at, source_snapshot"
     )
     .eq("id", id)
     .single();
@@ -63,6 +63,16 @@ export default async function AdminProductEditPage({
     initialConnectorIds.push(product.connector_id);
   }
 
+  // P18 / P45: category list (Admin → Categorias) and brands (Admin → Marcas) for the selects
+  const [{ data: categoryRows }, { data: brandRows }] = await Promise.all([
+    supabase.from("category_shipping_defaults").select("category, parent_category, active, sort").order("sort").order("category"),
+    supabase.from("brands").select("id, name, slug").order("name"),
+  ]);
+  const categoryOptions = (categoryRows ?? [])
+    .filter((c) => c.active !== false)
+    .map((c) => ({ value: c.category as string, label: c.parent_category ? `${c.parent_category} › ${c.category}` : (c.category as string) }))
+    .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+
   return (
     <div>
       <Link href="/admin/produtos" className="text-xs text-muted hover:text-accent">
@@ -90,9 +100,10 @@ export default async function AdminProductEditPage({
         product={product}
         connectors={connectors ?? []}
         initialConnectorIds={initialConnectorIds}
+        categoryOptions={categoryOptions}
       />
 
-      <ProductRegistrationForm product={product as unknown as RegistrationData} />
+      <ProductRegistrationForm product={product as unknown as RegistrationData} brands={(brandRows ?? []) as { id: string; name: string; slug: string }[]} />
 
       <ProductPricingPanel product={product as unknown as ProductPricingData} margin={(marginInfo as MarginInfo | null) ?? null} />
 

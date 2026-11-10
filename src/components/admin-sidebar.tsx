@@ -129,6 +129,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/avise-me", label: "Avise-me (reposição)", icon: AutomationIcon },
       { href: "/admin/cores", label: "Cores", icon: OverviewIcon },
       { href: "/admin/tamanhos", label: "Tamanhos", icon: OverviewIcon },
+      { href: "/admin/categorias", label: "Categorias", icon: OverviewIcon },
       { href: "/admin/ncm", label: "NCM / HS", icon: OverviewIcon },
     ],
   },
