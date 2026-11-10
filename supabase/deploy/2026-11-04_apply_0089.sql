@@ -48,10 +48,11 @@ update packaging_capacity_rules set category = 'Vestidos'
  where category <> 'Vestidos' and tdp_category_key(category) = 'vestidos';
 
 -- P35: Become a Brand — product categories, current markets, wholesale presence, opportunity type
+-- (options of the PDF p. 83; wholesale presence is free text)
 alter table brand_applications
   add column if not exists product_categories text[] not null default '{}',
   add column if not exists current_markets text,
-  add column if not exists wholesale_presence text
-    check (wholesale_presence is null or wholesale_presence in ('yes', 'no', 'starting')),
+  add column if not exists wholesale_presence text,
   add column if not exists opportunity_type text
-    check (opportunity_type is null or opportunity_type in ('distribution', 'wholesale', 'partnership', 'other'));
+    check (opportunity_type is null or opportunity_type in
+      ('international_distribution', 'national_distribution', 'wholesale_b2b', 'commercial_placement', 'other'));
