@@ -123,13 +123,44 @@ export const BLOCK_DEFS: BlockDef[] = [
   {
     scope: "home",
     key: "institutional_banner",
-    label: "Banner institucional",
-    description: "Faixa de texto abaixo do Hero. Para banners com imagem, use “Banners rotativos” no Hero.",
+    label: "Segundo banner (rotativo, abaixo do Hero)",
+    description:
+      "Logo abaixo do banner principal. Cadastre um ou mais banners (imagem desktop e mobile cada um); com mais de um, eles giram sozinhos. Título e subtítulo aparecem abaixo da arte (deixe vazios se a arte já traz o texto). Sem nenhum banner, a seção mostra só o texto.",
     defaultActive: true,
     defaultSort: 20,
     defaultOperations: ALL_OPERATIONS,
-    fields: [text("headline", "Título principal"), text("subheadline", "Subtítulo")],
+    fields: [
+      {
+        key: "slides",
+        label: "Banners",
+        hint: "Imagem desktop e mobile de cada banner. A ordem da lista é a ordem do rotativo.",
+        kind: "list",
+        itemLabel: "Banner",
+        itemFields: [
+          image("desktop_image", "Imagem desktop"),
+          image("mobile_image", "Imagem mobile", "Sem imagem mobile, o celular usa a desktop."),
+          url("link", "Link deste banner", "Opcional. Caminho interno (ex.: /shop) ou endereço completo."),
+          text("alt", "Texto alternativo (alt)"),
+          {
+            key: "locale",
+            label: "Idioma",
+            kind: "select",
+            options: [
+              { value: "", label: "Todos os idiomas" },
+              { value: "en", label: "Só inglês (EN)" },
+              { value: "es", label: "Só espanhol (ES)" },
+              { value: "pt", label: "Só português (PT)" },
+            ],
+          },
+        ],
+      },
+      { key: "rotation_seconds", label: "Tempo de cada banner (segundos)", kind: "number" },
+      text("headline", "Título principal"),
+      text("subheadline", "Subtítulo"),
+    ],
     defaults: {
+      slides: [],
+      rotation_seconds: 6,
       headline: t("THE DRESSING PROJECT", "THE DRESSING PROJECT", "THE DRESSING PROJECT"),
       subheadline: t(
         "A new way to source Brazilian fashion",

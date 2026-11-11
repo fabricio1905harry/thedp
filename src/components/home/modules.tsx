@@ -15,23 +15,34 @@ const EYEBROW = "text-[11px] font-semibold uppercase tracking-[0.3em] text-muted
 const BUTTON =
   "inline-block bg-foreground text-background px-8 py-3.5 text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-accent-hover transition-colors";
 
-export function HeroModule({ c, locale }: { c: C; locale: string }) {
-  const { desktop, mobile } = localizedBanners(c, locale);
-  const headline = s(c.headline);
-  const text = s(c.text);
+/** Banners of a rotating list for the visitor's language (items marked for another language are skipped). */
+function slidesOf(items: unknown, locale: string, fallbackAlt: string): HeroSlide[] {
   const lang = ["en", "es", "pt"].includes(locale) ? locale : "en";
-
-  // P47: the main banner first, then the rotating banners of this language (or of every language)
-  const slides: HeroSlide[] = [];
-  if (desktop || mobile) slides.push({ desktop, mobile, alt: s(c.alt), link: s(c.link).trim() });
-  for (const item of list(c.slides)) {
+  const out: HeroSlide[] = [];
+  for (const item of list(items)) {
     const only = s(item.locale);
     if (only && only !== lang) continue;
     const d = normalizeImageUrl(s(item.desktop_image));
     const m = normalizeImageUrl(s(item.mobile_image)) ?? d;
     if (!d && !m) continue;
-    slides.push({ desktop: d ?? m, mobile: m, alt: s(item.alt) || s(c.alt), link: s(item.link).trim() });
+    out.push({ desktop: d ?? m, mobile: m, alt: s(item.alt) || fallbackAlt, link: s(item.link).trim() });
   }
+  return out;
+}
+
+const intervalOf = (c: C) => {
+  const seconds = Number(c.rotation_seconds);
+  return (seconds >= 2 && seconds <= 48 ? seconds : 6) * 1000;
+};
+
+export function HeroModule({ c, locale }: { c: C; locale: string }) {
+  const { desktop, mobile } = localizedBanners(c, locale);
+  const headline = s(c.headline);
+  const text = s(c.text);
+  // P47: the main banner first, then the rotating banners of this language (or of every language)
+  const slides: HeroSlide[] = [];
+  if (desktop || mobile) slides.push({ desktop, mobile, alt: s(c.alt), link: s(c.link).trim() });
+  slides.push(...slidesOf(c.slides, locale, s(c.alt)));
   if (slides.length === 0) return null;
 
   const overlay =
@@ -43,16 +54,24 @@ export function HeroModule({ c, locale }: { c: C; locale: string }) {
         </div>
       </div>
     ) : null;
-  const seconds = Number(c.rotation_seconds);
-  return <HeroCarousel slides={slides} intervalMs={(seconds >= 2 && seconds <= 48 ? seconds : 6) * 1000} overlay={overlay} />;
+  return <HeroCarousel slides={slides} intervalMs={intervalOf(c)} overlay={overlay} />;
 }
 
-export function InstitutionalBannerModule({ c }: { c: C; locale?: string }) {
+/** Second banner, right below the Hero: rotating banners (desktop + mobile each) and an optional headline. */
+export function InstitutionalBannerModule({ c, locale }: { c: C; locale: string }) {
+  const slides = slidesOf(c.slides, locale, s(c.headline) || "The Dressing Project");
+  const headline = s(c.headline);
+  const sub = s(c.subheadline);
   return (
-    <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-      <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{s(c.headline)}</h2>
-      <p className="mt-5 text-[11px] sm:text-xs uppercase tracking-[0.35em] text-muted">{s(c.subheadline)}</p>
-    </section>
+    <>
+      {slides.length > 0 && <HeroCarousel slides={slides} intervalMs={intervalOf(c)} lazy />}
+      {(headline || sub) && (
+        <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
+          {headline && <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{headline}</h2>}
+          {sub && <p className="mt-5 text-[11px] sm:text-xs uppercase tracking-[0.35em] text-muted">{sub}</p>}
+        </section>
+      )}
+    </>
   );
 }
 

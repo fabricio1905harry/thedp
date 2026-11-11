@@ -16,7 +16,18 @@ export interface HeroSlide {
  * nothing jumps when it rotates. Auto-advances every `intervalMs` (paused on hover / focus, and off when the
  * visitor prefers reduced motion); dots, arrows and swipe change it by hand.
  */
-export function HeroCarousel({ slides, intervalMs, overlay }: { slides: HeroSlide[]; intervalMs: number; overlay?: React.ReactNode }) {
+export function HeroCarousel({
+  slides,
+  intervalMs,
+  overlay,
+  lazy = false,
+}: {
+  slides: HeroSlide[];
+  intervalMs: number;
+  overlay?: React.ReactNode;
+  /** below the fold (second banner): no image is loaded with high priority */
+  lazy?: boolean;
+}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchX = useRef<number | null>(null);
@@ -50,7 +61,7 @@ export function HeroCarousel({ slides, intervalMs, overlay }: { slides: HeroSlid
     >
       <div className="grid">
         {slides.map((slide, i) => {
-          const art = <BannerPicture desktop={slide.desktop} mobile={slide.mobile} alt={slide.alt} priority={i === 0} />;
+          const art = <BannerPicture desktop={slide.desktop} mobile={slide.mobile} alt={slide.alt} priority={!lazy && i === 0} />;
           return (
             <div
               key={i}
