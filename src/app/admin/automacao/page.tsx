@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import { SuppliersAdmin, type SupplierRow } from "@/components/suppliers-admin";
 
 async function getConnectors() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+    const withUrl = await supabase
       .from("connectors")
-      .select("id, supplier_name, status, included_in_contract")
+      .select("id, supplier_name, supplier_url, status, included_in_contract")
       .order("supplier_name");
-    return data ?? [];
+    if (!withUrl.error) return { rows: (withUrl.data ?? []) as SupplierRow[], urlAvailable: true };
+    // before migration 0091 there is no supplier_url column
+    const { data } = await supabase.from("connectors").select("id, supplier_name, status, included_in_contract").order("supplier_name");
+    return { rows: (data ?? []) as SupplierRow[], urlAvailable: false };
   } catch {
     return null;
   }
@@ -32,40 +36,22 @@ async function getRecentRuns(connectorIds: string[]) {
 
 export default async function AdminAutomacaoPage() {
   const connectors = await getConnectors();
-  const runs = connectors ? await getRecentRuns(connectors.map((c) => c.id)) : [];
+  const runs = connectors ? await getRecentRuns(connectors.rows.map((c) => c.id)) : [];
   const connectorName = (id: string) =>
-    connectors?.find((c) => c.id === id)?.supplier_name ?? id;
+    connectors?.rows.find((c) => c.id === id)?.supplier_name ?? id;
 
   return (
     <div>
-      <h1 className="font-serif text-2xl mb-2">Automação (ADM-05)</h1>
+      <h1 className="font-serif text-2xl mb-2">Automação</h1>
       <p className="text-sm text-muted mb-6">
-        Última execução, erros e itens processados por conector n8n — a
-        automação em si depende do acesso à VPS do prestador e da
-        lista de fornecedores (tarefa #10).
+        Fornecedores (conectores n8n) e o histórico das sincronizações. Cadastre aqui o nome e a URL de cada fornecedor;
+        o nome é o que a importação usa para vincular os produtos a ele.
       </p>
       {connectors === null ? (
         <p className="text-sm text-muted">Não foi possível carregar os conectores.</p>
       ) : (
         <>
-          <table className="w-full text-sm mb-10">
-            <thead>
-              <tr className="text-left text-xs text-muted uppercase border-b border-border">
-                <th className="py-2 pr-4">Fornecedor</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2">Incluído no contrato</th>
-              </tr>
-            </thead>
-            <tbody>
-              {connectors.map((c) => (
-                <tr key={c.id} className="border-b border-border">
-                  <td className="py-2 pr-4">{c.supplier_name}</td>
-                  <td className="py-2 pr-4">{c.status}</td>
-                  <td className="py-2">{c.included_in_contract ? "Sim" : "Não"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <SuppliersAdmin rows={connectors.rows} urlAvailable={connectors.urlAvailable} />
 
           <h2 className="text-sm font-medium uppercase tracking-wide mb-3">Sincronizações recentes</h2>
           {runs.length === 0 ? (
