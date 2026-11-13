@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Header } from "@/components/header";
 import { Footer, type FooterContent } from "@/components/footer";
 import { CookieNotice } from "@/components/cookie-notice";
+import { getWhatsAppSettings } from "@/lib/settings";
 import type { SiteMode } from "@/lib/site-mode";
 import { getCurrentCustomer } from "@/lib/auth";
 import { getPublicBlocks } from "@/lib/cms";
@@ -17,7 +18,12 @@ export async function SiteChrome({
   siteMode: SiteMode;
   children: ReactNode;
 }) {
-  const [customer, locale, tFooter] = await Promise.all([getCurrentCustomer(), getLocale(), getTranslations("footer")]);
+  const [customer, locale, tFooter, wa] = await Promise.all([
+    getCurrentCustomer(),
+    getLocale(),
+    getTranslations("footer"),
+    getWhatsAppSettings().catch(() => null),
+  ]);
   const blocks = await getPublicBlocks("site", operationForSiteMode(siteMode), locale).catch(() => []);
   const block = (key: string) => blocks.find((b) => b.key === key)?.content ?? null;
 
@@ -31,9 +37,16 @@ export async function SiteChrome({
     links: Array.isArray(footer?.links)
       ? (footer.links as Record<string, unknown>[]).map((l) => ({ group: str(l.group), label: str(l.label), href: str(l.href) }))
       : [],
-    social: social
-      ? { whatsapp: str(social.whatsapp), email: str(social.email), instagram: str(social.instagram), linkedin: str(social.linkedin) }
-      : null,
+    // WhatsApp: the number of Admin → WhatsApp (one place to change it); the CMS field is only a fallback
+    social:
+      social || wa?.number
+        ? {
+            whatsapp: wa?.number || str(social?.whatsapp),
+            email: str(social?.email),
+            instagram: str(social?.instagram),
+            linkedin: str(social?.linkedin),
+          }
+        : null,
     newsletter: newsletter
       ? {
           title: str(newsletter.title),

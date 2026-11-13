@@ -33,7 +33,8 @@ export default async function ContatoPage({ searchParams }: { searchParams: Prom
   const wholesale = byKey.get("wholesale_cta");
   const brand = byKey.get("brand_cta");
 
-  const waRaw = s(intro?.whatsapp).trim() || (wa?.number ?? "");
+  // the number of Admin → WhatsApp is the one source; the CMS field is only a fallback
+  const waRaw = (wa?.number ?? "") || s(intro?.whatsapp).trim();
   const waHref = waRaw ? (/^https?:/.test(waRaw) ? waRaw : `https://wa.me/${waRaw.replace(/\D/g, "")}`) : "";
   const email = s(intro?.email).trim();
   const subjects = ((form?.subjects as C[]) ?? []).map((x) => ({ value: s(x.value), label: s(x.label) }));
