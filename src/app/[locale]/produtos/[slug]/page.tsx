@@ -53,7 +53,8 @@ export default async function ProductPage({
   // Contact channels for the "exact color" help (same source as the Contact page)
   const contact = await getPublicBlock("contact", "intro", operationForSiteMode(siteMode), locale);
   const wa = await getWhatsAppSettings();
-  const waRaw = (typeof contact?.whatsapp === "string" && contact.whatsapp.trim()) || wa?.number || "";
+  // the number of Admin → WhatsApp is the one source; the CMS field is only a fallback
+  const waRaw = wa?.number || (typeof contact?.whatsapp === "string" && contact.whatsapp.trim()) || "";
   const waHref = waRaw ? (/^https?:/.test(waRaw) ? waRaw : `https://wa.me/${waRaw.replace(/\D/g, "")}`) : "";
   const email = typeof contact?.email === "string" ? contact.email.trim() : "";
 

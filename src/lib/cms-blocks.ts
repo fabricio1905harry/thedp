@@ -669,7 +669,7 @@ export const BLOCK_DEFS: BlockDef[] = [
     fields: [
       text("title", "Título"),
       area("text", "Introdução"),
-      plain("whatsapp", "Número ou link do WhatsApp", "Deixe vazio para usar o número de Admin → WhatsApp."),
+      plain("whatsapp", "WhatsApp (reserva)", "O número vem de Admin → WhatsApp; este campo só é usado se lá estiver vazio."),
       plain("email", "E-mail de contato"),
       area("extra", "Informações de contato adicionais (opcional)"),
     ],
@@ -828,7 +828,7 @@ export const BLOCK_DEFS: BlockDef[] = [
     defaultSort: 40,
     defaultOperations: ALL_OPERATIONS,
     fields: [
-      plain("whatsapp", "WhatsApp (número com DDI ou link)"),
+      plain("whatsapp", "WhatsApp (reserva)", "O número vem de Admin → WhatsApp; este campo só é usado se lá estiver vazio."),
       plain("email", "E-mail de contato"),
       url("instagram", "Instagram (URL)"),
       url("linkedin", "LinkedIn (URL)"),
