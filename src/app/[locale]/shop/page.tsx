@@ -8,7 +8,7 @@ import { ProductCard } from "@/components/product-card";
 import { ShopToolbar } from "@/components/shop-toolbar";
 import { SITE_MODE_HEADER, type SiteMode } from "@/lib/site-mode";
 
-type SP = { category?: string; size?: string; color?: string; sort?: string; new?: string; min?: string; max?: string; f?: string };
+type SP = { q?: string; category?: string; size?: string; color?: string; sort?: string; new?: string; min?: string; max?: string; f?: string };
 
 const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
 const NEW_IN_DAYS = 30;
@@ -49,8 +49,18 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const max = sp.max ? Number(sp.max) : null;
   const cutoff = daysAgoMs(NEW_IN_DAYS);
 
+  // P50: search box of the header (title in any language, category); accents and case are ignored
+  const fold = (v: string | null | undefined) => (v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const terms = fold(sp.q).split(/\s+/).filter(Boolean);
+  const matches = (p: ShopProduct) => {
+    if (terms.length === 0) return true;
+    const hay = fold([p.title, p.titleEn, p.titleEs, p.category].filter(Boolean).join(" "));
+    return terms.every((term) => hay.includes(term));
+  };
+
   let products = catalog.filter(
     (p) =>
+      matches(p) &&
       (!sp.category || p.category?.toLowerCase() === sp.category.toLowerCase()) &&
       (!sp.size || p.sizes.includes(sp.size)) &&
       (!sp.color || p.colors.includes(sp.color)) &&
@@ -76,13 +86,19 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   };
   const chip = (active: boolean) =>
     `inline-block border px-3 py-1.5 text-[11px] uppercase tracking-[0.12em] ${active ? "bg-foreground text-background border-foreground" : "border-border hover:border-foreground"}`;
-  const hasFilters = Boolean(sp.category || sp.size || sp.color || sp.new || sp.min || sp.max);
+  const hasFilters = Boolean(sp.q || sp.category || sp.size || sp.color || sp.new || sp.min || sp.max);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 sm:py-14">
       <div className="mb-8 sm:mb-10">
         <h1 className="font-serif text-4xl sm:text-5xl">{t("title")}</h1>
         <p className="mt-3 text-xs uppercase tracking-[0.2em] text-muted">{t("results", { n: products.length })}</p>
+        {sp.q && (
+          <p className="mt-2 text-sm">
+            {t("searchResults", { q: sp.q })}{" "}
+            <Link href={link({ q: undefined })} className="underline text-muted">{t("clearSearch")}</Link>
+          </p>
+        )}
       </div>
 
       <ShopToolbar

@@ -1,8 +1,8 @@
 /**
- * Minimal dependency-free PDF writer (A4, standard Helvetica fonts,
- * WinAnsi text). Enough for text documents such as the commercial invoice:
- * text with alignment, lines, rectangles and automatic width measuring.
- * y coordinates are measured from the TOP of the page.
+ * Minimal dependency-free PDF writer (A4 portrait or landscape, standard
+ * Helvetica fonts, WinAnsi text, JPEG images). Enough for documents such as the
+ * commercial invoice: text with alignment, lines, rectangles, JPEG images and
+ * automatic width measuring. y coordinates are measured from the TOP of the page.
  */
 
 const W = [
@@ -61,6 +61,13 @@ export function wrapText(text: string, size: number, maxWidth: number, bold = fa
 export const PAGE_WIDTH = 595.28;
 export const PAGE_HEIGHT = 841.89;
 
+export interface PdfImage {
+  /** raw JPEG bytes (RGB or gray) */
+  jpeg: Uint8Array;
+  width: number;
+  height: number;
+}
+
 export interface TextOptions {
   size?: number;
   bold?: boolean;
@@ -71,6 +78,15 @@ export interface TextOptions {
 
 export class PdfDocument {
   private pages: string[][] = [[]];
+  private images: PdfImage[] = [];
+  private pageImages: Set<number>[] = [new Set()];
+  readonly pageWidth: number;
+  readonly pageHeight: number;
+
+  constructor(opts: { landscape?: boolean } = {}) {
+    this.pageWidth = opts.landscape ? PAGE_HEIGHT : PAGE_WIDTH;
+    this.pageHeight = opts.landscape ? PAGE_WIDTH : PAGE_HEIGHT;
+  }
 
   get pageCount() {
     return this.pages.length;
@@ -78,6 +94,7 @@ export class PdfDocument {
 
   addPage() {
     this.pages.push([]);
+    this.pageImages.push(new Set());
   }
 
   private get ops() {
@@ -91,15 +108,15 @@ export class PdfDocument {
     const px = opts.align === "right" ? x - width : opts.align === "center" ? x - width / 2 : x;
     const hex = toWinAnsi(text).map((b) => b.toString(16).padStart(2, "0")).join("");
     const gray = opts.gray ?? 0;
-    this.ops.push(`${gray} g BT /${bold ? "F2" : "F1"} ${size} Tf ${px.toFixed(2)} ${(PAGE_HEIGHT - yTop).toFixed(2)} Td <${hex}> Tj ET`);
+    this.ops.push(`${gray} g BT /${bold ? "F2" : "F1"} ${size} Tf ${px.toFixed(2)} ${(this.pageHeight - yTop).toFixed(2)} Td <${hex}> Tj ET`);
   }
 
   line(x1: number, y1: number, x2: number, y2: number, width = 0.5, gray = 0) {
-    this.ops.push(`${gray} G ${width} w ${x1.toFixed(2)} ${(PAGE_HEIGHT - y1).toFixed(2)} m ${x2.toFixed(2)} ${(PAGE_HEIGHT - y2).toFixed(2)} l S`);
+    this.ops.push(`${gray} G ${width} w ${x1.toFixed(2)} ${(this.pageHeight - y1).toFixed(2)} m ${x2.toFixed(2)} ${(this.pageHeight - y2).toFixed(2)} l S`);
   }
 
   rect(x: number, yTop: number, w: number, h: number, fillGray?: number, strokeGray?: number) {
-    const y = PAGE_HEIGHT - yTop - h;
+    const y = this.pageHeight - yTop - h;
     const parts: string[] = [];
     if (fillGray !== undefined) parts.push(`${fillGray} g`);
     if (strokeGray !== undefined) parts.push(`${strokeGray} G 0.5 w`);
@@ -108,42 +125,76 @@ export class PdfDocument {
     this.ops.push(parts.join(" "));
   }
 
+  /** Draws a JPEG image with its top-left corner at (x, yTop), scaled to w × h points. */
+  image(x: number, yTop: number, w: number, h: number, img: PdfImage) {
+    let idx = this.images.indexOf(img);
+    if (idx < 0) {
+      this.images.push(img);
+      idx = this.images.length - 1;
+    }
+    this.pageImages[this.pages.length - 1].add(idx);
+    const y = this.pageHeight - yTop - h;
+    this.ops.push(`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm /Im${idx} Do Q`);
+  }
+
   /** Serialises to PDF bytes. */
   build(title = "Document"): Uint8Array {
     const objects: (string | Uint8Array)[] = [];
     const n = this.pages.length;
-    // 1 catalog, 2 pages, 3 F1, 4 F2, then per page: page obj + content obj, then info
+    // 1 catalog, 2 pages, 3 F1, 4 F2, then per page: page obj + content obj, then images, then info
     const pageObj = (i: number) => 5 + i * 2;
     const contentObj = (i: number) => 6 + i * 2;
-    const infoObj = 5 + n * 2;
+    const imageObj = (i: number) => 5 + n * 2 + i;
+    const infoObj = 5 + n * 2 + this.images.length;
+    const enc = new TextEncoder();
 
     objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
     objects[2] = `<< /Type /Pages /Kids [${this.pages.map((_, i) => `${pageObj(i)} 0 R`).join(" ")}] /Count ${n} >>`;
     objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
     objects[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
     this.pages.forEach((ops, i) => {
-      objects[pageObj(i)] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObj(i)} 0 R >>`;
+      const xobjects = [...this.pageImages[i]].map((idx) => `/Im${idx} ${imageObj(idx)} 0 R`).join(" ");
+      objects[pageObj(i)] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${this.pageWidth.toFixed(2)} ${this.pageHeight.toFixed(2)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>${xobjects ? ` /XObject << ${xobjects} >>` : ""} >> /Contents ${contentObj(i)} 0 R >>`;
       const stream = ops.join("\n");
       objects[contentObj(i)] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+    });
+    this.images.forEach((img, i) => {
+      const head = enc.encode(`<< /Type /XObject /Subtype /Image /Width ${img.width} /Height ${img.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.jpeg.length} >>\nstream\n`);
+      const tail = enc.encode("\nendstream");
+      const body = new Uint8Array(head.length + img.jpeg.length + tail.length);
+      body.set(head, 0);
+      body.set(img.jpeg, head.length);
+      body.set(tail, head.length + img.jpeg.length);
+      objects[imageObj(i)] = body;
     });
     const titleHex = toWinAnsi(title).map((b) => b.toString(16).padStart(2, "0")).join("");
     objects[infoObj] = `<< /Title <${titleHex}> /Producer (TDP) >>`;
 
-    const chunks: string[] = ["%PDF-1.4\n"];
+    const chunks: Uint8Array[] = [enc.encode("%PDF-1.4\n")];
     const offsets: number[] = [];
     let length = chunks[0].length;
+    const push = (c: Uint8Array) => {
+      chunks.push(c);
+      length += c.length;
+    };
     for (let id = 1; id < objects.length; id++) {
       offsets[id] = length;
-      const body = `${id} 0 obj\n${objects[id]}\nendobj\n`;
-      chunks.push(body);
-      length += body.length;
+      const obj = objects[id];
+      push(enc.encode(`${id} 0 obj\n`));
+      push(typeof obj === "string" ? enc.encode(obj) : obj);
+      push(enc.encode("\nendobj\n"));
     }
     const xrefStart = length;
     let xref = `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
     for (let id = 1; id < objects.length; id++) xref += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
     xref += `trailer\n<< /Size ${objects.length} /Root 1 0 R /Info ${infoObj} 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
-    chunks.push(xref);
-    // content is pure ASCII (text is hex-encoded), so string length === byte length
-    return new TextEncoder().encode(chunks.join(""));
+    push(enc.encode(xref));
+    const out = new Uint8Array(length);
+    let pos = 0;
+    for (const c of chunks) {
+      out.set(c, pos);
+      pos += c.length;
+    }
+    return out;
   }
 }

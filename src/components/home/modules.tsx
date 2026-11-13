@@ -4,7 +4,8 @@ import { VideoPlayer } from "@/components/video-player";
 import { normalizeImageUrl } from "@/lib/image-url";
 import type { ShopProduct } from "@/lib/catalog";
 import type { SiteMode } from "@/lib/site-mode";
-import { isOptimizable, optimizedSrcSet, optimizedUrl } from "@/lib/image-opt";
+import { localizedBanners } from "@/components/home/banner-picture";
+import { HeroCarousel, type HeroSlide } from "@/components/home/hero-carousel";
 
 type C = Record<string, unknown>;
 const s = (v: unknown) => (typeof v === "string" ? v : "");
@@ -14,63 +15,63 @@ const EYEBROW = "text-[11px] font-semibold uppercase tracking-[0.3em] text-muted
 const BUTTON =
   "inline-block bg-foreground text-background px-8 py-3.5 text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-accent-hover transition-colors";
 
-export function HeroModule({ c }: { c: C }) {
-  const desktop = normalizeImageUrl(s(c.desktop_image));
-  const mobile = normalizeImageUrl(s(c.mobile_image)) ?? desktop;
-  const headline = s(c.headline);
-  const text = s(c.text);
-  const link = s(c.link).trim();
-  if (!desktop && !mobile) return null;
-
-  // The whole art is shown (no crop, no distortion): desktop and mobile each
-  // keep their own aspect ratio. On large screens the height is capped to the
-  // visible area under the header so the bottom of the banner never needs a scroll.
-  const banner = (
-    <div className="relative w-full overflow-hidden bg-surface">
-      <picture className="block">
-        {mobile && <source media="(max-width: 639px)" srcSet={optimizedSrcSet(mobile, 828) ?? mobile} sizes="100vw" />}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={desktop && isOptimizable(desktop) ? optimizedUrl(desktop, 1920) : desktop ?? mobile ?? ""}
-          srcSet={desktop ? optimizedSrcSet(desktop) : undefined}
-          sizes="100vw"
-          decoding="async"
-          alt={s(c.alt)}
-          referrerPolicy="no-referrer"
-          fetchPriority="high"
-          className="mx-auto block h-auto w-auto max-w-full sm:max-h-[calc(100svh-11rem)] xl:max-h-[calc(100svh-7.5rem)]"
-        />
-      </picture>
-      {(headline || text) && (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent p-6 sm:p-12 text-white">
-          <div className="max-w-7xl mx-auto">
-            {headline && <h1 className="font-serif text-3xl sm:text-5xl leading-tight max-w-3xl">{headline}</h1>}
-            {text && <p className="mt-3 text-sm sm:text-base text-white/90 max-w-xl">{text}</p>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <section className="w-full bg-surface">
-      {link ? (
-        <CmsLink href={link} className="block w-full cursor-pointer">
-          {banner}
-        </CmsLink>
-      ) : (
-        banner
-      )}
-    </section>
-  );
+/** Banners of a rotating list for the visitor's language (items marked for another language are skipped). */
+function slidesOf(items: unknown, locale: string, fallbackAlt: string): HeroSlide[] {
+  const lang = ["en", "es", "pt"].includes(locale) ? locale : "en";
+  const out: HeroSlide[] = [];
+  for (const item of list(items)) {
+    const only = s(item.locale);
+    if (only && only !== lang) continue;
+    const d = normalizeImageUrl(s(item.desktop_image));
+    const m = normalizeImageUrl(s(item.mobile_image)) ?? d;
+    if (!d && !m) continue;
+    out.push({ desktop: d ?? m, mobile: m, alt: s(item.alt) || fallbackAlt, link: s(item.link).trim() });
+  }
+  return out;
 }
 
-export function InstitutionalBannerModule({ c }: { c: C }) {
+const intervalOf = (c: C) => {
+  const seconds = Number(c.rotation_seconds);
+  return (seconds >= 2 && seconds <= 48 ? seconds : 6) * 1000;
+};
+
+export function HeroModule({ c, locale }: { c: C; locale: string }) {
+  const { desktop, mobile } = localizedBanners(c, locale);
+  const headline = s(c.headline);
+  const text = s(c.text);
+  // P47: the main banner first, then the rotating banners of this language (or of every language)
+  const slides: HeroSlide[] = [];
+  if (desktop || mobile) slides.push({ desktop, mobile, alt: s(c.alt), link: s(c.link).trim() });
+  slides.push(...slidesOf(c.slides, locale, s(c.alt)));
+  if (slides.length === 0) return null;
+
+  const overlay =
+    headline || text ? (
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent p-6 pb-10 sm:p-12 text-white">
+        <div className="max-w-7xl mx-auto">
+          {headline && <h1 className="font-serif text-3xl sm:text-5xl leading-tight max-w-3xl">{headline}</h1>}
+          {text && <p className="mt-3 text-sm sm:text-base text-white/90 max-w-xl">{text}</p>}
+        </div>
+      </div>
+    ) : null;
+  return <HeroCarousel slides={slides} intervalMs={intervalOf(c)} overlay={overlay} />;
+}
+
+/** Second banner, right below the Hero: rotating banners (desktop + mobile each) and an optional headline. */
+export function InstitutionalBannerModule({ c, locale }: { c: C; locale: string }) {
+  const slides = slidesOf(c.slides, locale, s(c.headline) || "The Dressing Project");
+  const headline = s(c.headline);
+  const sub = s(c.subheadline);
   return (
-    <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-      <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{s(c.headline)}</h2>
-      <p className="mt-5 text-[11px] sm:text-xs uppercase tracking-[0.35em] text-muted">{s(c.subheadline)}</p>
-    </section>
+    <>
+      {slides.length > 0 && <HeroCarousel slides={slides} intervalMs={intervalOf(c)} lazy />}
+      {(headline || sub) && (
+        <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
+          {headline && <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{headline}</h2>}
+          {sub && <p className="mt-5 text-[11px] sm:text-xs uppercase tracking-[0.35em] text-muted">{sub}</p>}
+        </section>
+      )}
+    </>
   );
 }
 

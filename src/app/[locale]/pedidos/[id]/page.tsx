@@ -8,7 +8,7 @@ import { WhatsAppContextSetter, WhatsAppInlineLink } from "@/components/whatsapp
 import { DeliveryModeChoice } from "@/components/delivery-mode-choice";
 import { OrderPayPanel } from "@/components/order-pay-panel";
 import { OrderPostPayBuyer } from "@/components/order-postpay-buyer";
-import { calculateShipmentPackages } from "@/lib/dhl-packaging";
+import { calculateShipmentPackages, pieceWeightKg } from "@/lib/dhl-packaging";
 import { bankFeeInCurrency, computeAmountDue, ORDER_CHARGE_COLUMNS } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { BUYER_CANCELABLE_STATUSES, BUYER_RELEASED_STATUSES, BUYER_STATUS_KEYS } from "@/lib/order-status";
@@ -56,7 +56,7 @@ export default async function OrderConfirmationPage({
         supabase
           .from("order_items")
           .select(`
-            id, qty, unit_price, item_status, original_qty, original_unit_price, added_by_tdp,
+            id, qty, unit_price, item_status, original_qty, original_unit_price, added_by_tdp, variant_id, product_id,
             variants ( color, size, sku, products ( title, slug ) )
           `)
           .eq("order_id", id),
@@ -128,7 +128,10 @@ export default async function OrderConfirmationPage({
   let packagesList: Array<Record<string, unknown>> = [];
   if (!isRequestStage && !isCanceled && activeItemCount > 0) {
     try {
-      packagesList = (await calculateShipmentPackages({ quantity: activeItemCount, category: "Dresses" })).packages as unknown as Array<Record<string, unknown>>;
+      const activeLines = (items ?? [])
+        .filter((i) => i.item_status === "available" || i.item_status === "requested")
+        .map((i) => ({ productId: i.product_id ?? null, variantId: i.variant_id ?? null, qty: Number(i.qty) }));
+      packagesList = (await calculateShipmentPackages({ quantity: activeItemCount, category: "Dresses", unitWeightKg: await pieceWeightKg(activeLines) })).packages as unknown as Array<Record<string, unknown>>;
     } catch {
       const snapshot = (order.quote_snapshot as Record<string, unknown>)?.packaging as Record<string, unknown> | undefined;
       packagesList = (snapshot?.packages as Array<Record<string, unknown>>) || [];

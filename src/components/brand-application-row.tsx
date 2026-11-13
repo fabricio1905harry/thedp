@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateBrandApplication, type BrandStatus } from "@/app/admin/candidaturas-marcas/actions";
+import { BRAND_CATEGORY_LABEL_PT, BRAND_OPPORTUNITY_LABEL_PT } from "@/lib/brand-application";
 
 export interface BrandApplicationRow {
   id: string;
@@ -66,10 +67,10 @@ export function BrandApplicationRowView({ row }: { row: BrandApplicationRow }) {
         </p>
         {(row.product_categories?.length || row.current_markets || row.wholesale_presence || row.opportunity_type) && (
           <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
-            {row.product_categories && row.product_categories.length > 0 && (<div><dt className="inline text-muted">Categorias: </dt><dd className="inline">{row.product_categories.join(", ")}</dd></div>)}
+            {row.product_categories && row.product_categories.length > 0 && (<div><dt className="inline text-muted">Categorias: </dt><dd className="inline">{row.product_categories.map((c) => BRAND_CATEGORY_LABEL_PT[c] ?? c).join(", ")}</dd></div>)}
             {row.current_markets && (<div><dt className="inline text-muted">Mercados atuais: </dt><dd className="inline">{row.current_markets}</dd></div>)}
-            {row.wholesale_presence && (<div><dt className="inline text-muted">Vende no atacado: </dt><dd className="inline">{row.wholesale_presence}</dd></div>)}
-            {row.opportunity_type && (<div><dt className="inline text-muted">Oportunidade: </dt><dd className="inline">{row.opportunity_type}</dd></div>)}
+            {row.wholesale_presence && (<div><dt className="inline text-muted">Presença no atacado: </dt><dd className="inline">{row.wholesale_presence}</dd></div>)}
+            {row.opportunity_type && (<div><dt className="inline text-muted">Oportunidade: </dt><dd className="inline">{BRAND_OPPORTUNITY_LABEL_PT[row.opportunity_type] ?? row.opportunity_type}</dd></div>)}
           </dl>
         )}
         {row.message && <p className="whitespace-pre-line">{row.message}</p>}

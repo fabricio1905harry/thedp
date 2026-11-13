@@ -44,10 +44,13 @@ export function ProductEditForm({
   product,
   connectors = [],
   initialConnectorIds = [],
+  categoryOptions = [],
 }: {
   product: ProductRow;
   connectors?: ConnectorRow[];
   initialConnectorIds?: string[];
+  /** Admin → Categorias (value = category name, label shows the parent) */
+  categoryOptions?: { value: string; label: string }[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -226,11 +229,23 @@ export function ProductEditForm({
         </div>
 
         <Field label="Categoria">
-          <input
+          <select
             value={form.category}
             onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-            className="w-full border border-border px-3 py-2 text-sm"
-          />
+            className="w-full border border-border px-3 py-2 text-sm bg-background"
+          >
+            <option value="">— escolha a categoria —</option>
+            {form.category && !categoryOptions.some((o) => o.value === form.category) && (
+              <option value={form.category}>{form.category} (não cadastrada em Categorias)</option>
+            )}
+            {categoryOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <span className="block text-[11px] text-muted mt-1">
+            NCM, HS, peso e medidas vêm da categoria ao salvar (cadastre em{" "}
+            <Link href="/admin/categorias" className="underline">Categorias</Link>). Um valor digitado aqui no produto fica fixo nele.
+          </span>
         </Field>
 
         <div>

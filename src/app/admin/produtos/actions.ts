@@ -117,7 +117,8 @@ async function updateProductImpl(productId: string, input: UpdateProductInput) {
     markup: input.markup,
     hs_code: input.hsCode || null,
     weight_g: input.weightG,
-    dims_cm: input.dimsCm,
+    // empty dimensions are NULL (then they come from the category), never {"length": null, ...}
+    dims_cm: input.dimsCm && Number(input.dimsCm.length) > 0 && Number(input.dimsCm.width) > 0 && Number(input.dimsCm.height) > 0 ? input.dimsCm : null,
     sizes: input.sizes,
     colors: input.colors,
   };
@@ -173,6 +174,8 @@ export interface ProductRegistrationInput {
   tdpRef: string;
   customsDescription: string;
   visibleOps: string[];
+  /** brand of the product (Admin → Marcas); "" = none */
+  brandId?: string;
 }
 
 const OPERATIONS = ["intl_b2b", "intl_b2c", "br_b2b", "br_b2c"];
@@ -213,6 +216,7 @@ async function updateProductRegistrationImpl(productId: string, input: ProductRe
     supplier_ref: clean(input.supplierRef, 120),
     customs_description: clean(input.customsDescription, 300),
     visible_ops: ops,
+    ...(input.brandId !== undefined ? { brand_id: input.brandId || null } : {}),
     locked_fields: lockedFields,
     updated_at: new Date().toISOString(),
   };

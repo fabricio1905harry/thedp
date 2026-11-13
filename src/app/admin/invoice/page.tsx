@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_INVOICE_TEMPLATE, type InvoiceTemplate } from "@/lib/invoice";
 import { InvoiceTemplateForm } from "@/components/invoice-template-form";
@@ -15,7 +16,8 @@ export default async function InvoiceSettingsPage() {
       <div>
         <h1 className="font-serif text-2xl mb-1">Configurações da invoice</h1>
         <p className="text-sm text-muted">
-          Dados da empresa, dados bancários e observações usados no PDF da commercial invoice. O modelo final do cliente ainda está pendente: o layout lê tudo daqui. Os dados do remetente também alimentam o envio DHL.
+          Dados do remetente, assinatura, dados bancários e observações usados no PDF da commercial invoice (modelo “INVOICE PANAMÁ”). Os dados do remetente também alimentam o envio DHL. Para ver todas as invoices emitidas, abra{" "}
+          <Link href="/admin/invoices" className="underline">Invoices emitidas</Link>.
         </p>
       </div>
       <InvoiceTemplateForm initial={initial} />

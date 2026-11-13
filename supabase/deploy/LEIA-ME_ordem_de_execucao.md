@@ -28,5 +28,9 @@ Se algum já foi rodado antes, pode pular. Ao terminar, avise para o merge.
 | 21 | 2026-10-29_apply_0087.sql | idioma da comunicação do pedido |
 | 22 | 2026-10-29_apply_0088.sql | regras de NCM/HS por categoria + composição, padrão de Vestidos (1,60 kg, 36×34×11) |
 | 23 | 2026-11-04_apply_0089.sql | reteste 03/11: MULTI em ES, categorias "Dresses"/em branco unificadas em "Vestidos" (NCM, embalagens) com o padrão de 1,60 kg e 36×34×11 |
+| 24 | **2026-11-10_apply_0088_0089_0090.sql** | **substitui os itens 22 e 23** (0088 + 0089 + 0090 juntas, na ordem): Categorias com subcategorias e herança de NCM/HS/peso/medidas, tamanhos do PDF, importação Vesti, Become a Brand |
+| 25 | 2026-11-13_apply_0091.sql | URL do fornecedor (Admin › Automação › Cadastrar fornecedor) |
 
 Os itens 1 a 3 e 14 e 15 só precisam rodar se ainda não foram rodados.
+
+**Atenção (10/11):** no banco, 0088 e 0089 não estavam aplicadas — a 0089 depende da 0088 e, rodada sozinha, falhava e era desfeita inteira. Rode o item 24 (que já contém as duas) em vez dos itens 22 e 23.

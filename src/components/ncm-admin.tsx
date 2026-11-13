@@ -3,11 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
-  applyCategoryDefaults,
   approveProductShipping,
-  deleteCategoryDefault,
   deleteHsRule,
-  saveCategoryDefault,
   saveHsRule,
   saveHsCode,
   type Dims,
@@ -70,21 +67,27 @@ function DimsInputs({ value, onChange }: { value: Dims; onChange: (d: Dims) => v
 export function NcmAdmin({
   tab,
   codes,
-  defaults,
   categories,
   review,
   rules = [],
 }: {
   tab: string;
   codes: Code[];
-  defaults: CatDefault[];
+  /** kept for the page props; category defaults are edited in Admin → Categorias */
+  defaults?: CatDefault[];
   categories: string[];
   review: ReviewProduct[];
   rules?: Rule[];
 }) {
   if (tab === "mestre") return <MasterTab codes={codes} />;
   if (tab === "regras") return <RulesTab rules={rules} codes={codes} categories={categories} />;
-  if (tab === "categorias") return <CategoriesTab codes={codes} defaults={defaults} categories={categories} />;
+  if (tab === "categorias")
+    return (
+      <p className="text-sm border border-border p-4">
+        Os padrões por categoria (NCM, HS, peso e medidas) agora ficam em{" "}
+        <Link href="/admin/categorias" className="underline font-medium">Admin › Categorias</Link>, com subcategorias e peso por fornecedor.
+      </p>
+    );
   return <ReviewTab review={review} />;
 }
 
@@ -125,54 +128,6 @@ function ReviewRow({ p }: { p: ReviewProduct }) {
       <button disabled={pending} className={btnCls} onClick={() => run(() => approveProductShipping({ productId: p.id, hs_code: hs, weight, dims, saveAsRule }), "Aprovado.")}>
         Aprovar
       </button>
-      <Msg message={message} />
-    </div>
-  );
-}
-
-function CategoriesTab({ codes, defaults, categories }: { codes: Code[]; defaults: CatDefault[]; categories: string[] }) {
-  const { pending, message, run } = useRun();
-  const byCat = new Map(defaults.map((d) => [d.category, d]));
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <button
-          disabled={pending}
-          className={btnGhost}
-          onClick={() => run(async () => { const r = await applyCategoryDefaults(); return r; }, "Padrões aplicados aos produtos sem dados (veja a aba Revisão).")}
-        >
-          Aplicar padrões aos produtos sem dados
-        </button>
-        <Msg message={message} />
-      </div>
-      {categories.map((c) => (
-        <CategoryRow key={c} category={c} initial={byCat.get(c)} codes={codes} />
-      ))}
-      {categories.length === 0 && <p className="text-sm text-muted">Nenhuma categoria encontrada nos produtos.</p>}
-    </div>
-  );
-}
-
-function CategoryRow({ category, initial, codes }: { category: string; initial?: CatDefault; codes: Code[] }) {
-  const { pending, message, run } = useRun();
-  const [hs, setHs] = useState(initial?.hs_code ?? "");
-  const [weight, setWeight] = useState(initial?.weight_g ? String(initial.weight_g) : "");
-  const [dims, setDims] = useState(dimsOf(initial?.dims_cm ?? null));
-  return (
-    <div className="border border-border p-3 flex flex-wrap items-center gap-3">
-      <strong className="w-40">{category}</strong>
-      <select value={hs} onChange={(e) => setHs(e.target.value)} className={`${inputCls} w-72`}>
-        <option value="">— sem NCM padrão —</option>
-        {codes.filter((c) => c.active).map((c) => (
-          <option key={c.code} value={c.code}>{c.code} — {c.description.slice(0, 50)}</option>
-        ))}
-      </select>
-      <input value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Peso (g)" className={`${inputCls} w-24`} />
-      <DimsInputs value={dims} onChange={setDims} />
-      <button disabled={pending} className={btnCls} onClick={() => run(() => saveCategoryDefault({ category, hs_code: hs, weight, dims }), "Salvo.")}>Salvar</button>
-      {initial && (
-        <button disabled={pending} className={btnGhost} onClick={() => run(() => deleteCategoryDefault(category), "Padrão removido.")}>Remover</button>
-      )}
       <Msg message={message} />
     </div>
   );

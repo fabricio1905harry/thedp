@@ -94,11 +94,15 @@
   },
   "nav": {
     "myAccount": "Minha conta",
-    "accountMenu": "Menu da conta"
+    "accountMenu": "Menu da conta",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar vestidos…"
   },
   "shop": {
     "filtersButton": "Filtros",
-    "filtersActive": "{n} ativos"
+    "filtersActive": "{n} ativos",
+    "searchResults": "Resultados para “{q}”",
+    "clearSearch": "Limpar busca"
   },
   "auth": {
     "email": "E-mail",

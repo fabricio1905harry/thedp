@@ -1,4 +1,4 @@
-/** Institutional pages added in the 24/10 homologation: URL slug → CMS page key + default title per language. */
+/** Institutional pages: URL slug → CMS page key + default title per language. */
 export const EXTRA_PAGES: Record<string, { pageKey: string; title: { en: string; es: string; pt: string } }> = {
   "frete-e-impostos": {
     pageKey: "shipping_duties",

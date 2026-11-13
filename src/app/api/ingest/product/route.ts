@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { applyLocks, type SyncableField } from "@/lib/product-sync";
 import { isApiBlocked } from "@/lib/app-target";
+import { IMPORT_DEFAULT_STOCK, looksLikeComposition, sentenceCase } from "@/lib/import-normalize";
 
 function parseList(input: unknown): string[] {
   if (!input) return [];
@@ -117,10 +118,12 @@ export async function POST(request: Request) {
       rawBody.body ??
       rawBody) as Record<string, unknown>;
 
-    const title = typeof body.title === "string" ? body.title : undefined;
+    const rawTitle = typeof body.title === "string" ? body.title : undefined;
+    // P42: titles arrive as "VESTIDO CAPA"; the catalog uses sentence case
+    const title = rawTitle !== undefined ? sentenceCase(rawTitle) : undefined;
     const slug =
       (typeof body.slug === "string" && body.slug) ||
-      title?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      rawTitle?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     if (!slug) {
       return NextResponse.json({ error: "Product slug or title is required" }, { status: 400 });
     }
@@ -130,8 +133,17 @@ export async function POST(request: Request) {
     // ---- supplier values (only what the payload actually carries) ----
     const sourceValues: Partial<Record<SyncableField, unknown>> = {};
     if (title !== undefined) sourceValues.title = title;
-    for (const key of ["title_en", "title_es", "description", "category", "brand", "hs_code"] as const) {
+    // P41: the category is never taken from the supplier: the TDP chooses it (it defines NCM, weight and
+    // dimensions, see Admin → Categorias). The supplier's category is only kept in the snapshot.
+    for (const key of ["title_en", "title_es", "description", "brand", "hs_code"] as const) {
       if (typeof body[key] === "string") sourceValues[key] = body[key];
+    }
+    // P44: the composition goes to "Material / composição" (used by the NCM rule), never to the description
+    const compositionRaw = firstDefined(body, ["composition", "composicao", "composição", "material"]);
+    let composition = typeof compositionRaw === "string" && compositionRaw.trim() ? compositionRaw.trim().slice(0, 300) : undefined;
+    if (typeof sourceValues.description === "string" && looksLikeComposition(sourceValues.description)) {
+      composition ??= sourceValues.description.trim();
+      delete sourceValues.description;
     }
     const originalPrice = toNumber(firstDefined(body, ["original_price", "valor", "price"]));
     if (originalPrice !== undefined) sourceValues.original_price = originalPrice;
@@ -152,7 +164,6 @@ export async function POST(request: Request) {
         "source_url", "url", "urls", "link", "links",
       ])
     );
-    const defaultStock = toNumber(firstDefined(body, ["default_stock", "stock"]));
     const variantStock = parseVariantStock(firstDefined(body, ["variants", "variantes", "stock_by_variant"]));
 
     // ---- suppliers ----
@@ -174,7 +185,7 @@ export async function POST(request: Request) {
 
     const { data: existing } = await supabase
       .from("products")
-      .select("id, images, locked_fields, source_snapshot")
+      .select("id, images, locked_fields, source_snapshot, composition")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -182,6 +193,8 @@ export async function POST(request: Request) {
     const snapshot = {
       ...((existing?.source_snapshot as Record<string, unknown> | null) ?? {}),
       ...sourceValues,
+      ...(typeof body.category === "string" ? { supplier_category: body.category } : {}),
+      ...(composition ? { composition } : {}),
       ...(imageList.length > 0 ? { images: imageList } : {}),
     };
 
@@ -204,6 +217,8 @@ export async function POST(request: Request) {
           ...writable,
           ...(primaryConnectorId ? { connector_id: primaryConnectorId } : {}),
           ...(imageList.length > 0 ? { images: mergedImages } : {}),
+          // a composition the TDP already filled in is never replaced
+          ...(composition && !String(existing.composition ?? "").trim() ? { composition } : {}),
           source_snapshot: snapshot,
           last_synced_at: now,
           updated_at: now,
@@ -212,14 +227,26 @@ export async function POST(request: Request) {
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       productId = existing.id;
     } else {
+      // P45: imported products belong to the brand "The Dressing Project"
+      const { data: tdpBrand } = await supabase
+        .from("brands")
+        .select("id, slug")
+        .ilike("name", "the dressing project")
+        .order("created_at")
+        .limit(5);
+      const brandId = (tdpBrand ?? []).sort((a, b) => Number(b.slug === "the-dressing-project") - Number(a.slug === "the-dressing-project"))[0]?.id ?? null;
+
       const { data: created, error } = await supabase
         .from("products")
         .insert({
           slug,
           title: title || slug,
           ...sourceValues,
+          ...(composition ? { composition } : {}),
+          brand_id: brandId,
           connector_id: primaryConnectorId,
-          default_stock: defaultStock !== undefined && defaultStock >= 0 ? defaultStock : 0,
+          // P43: every new size × color combination starts with 500 (the TDP can change it per product)
+          default_stock: IMPORT_DEFAULT_STOCK,
           // New supplier products always go to review first: publishing
           // needs at least one APPROVED image + cover (migration 0024).
           status: "draft",
