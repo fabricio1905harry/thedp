@@ -63,9 +63,10 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
             </div>
           )}
 
-      {/* Row 1: menu button + logo | controls. Row 2 (below xl): the menu links. One row from xl.
-          Nothing overlaps at any width: the logo never shrinks and the controls hide before they collide. */}
-      <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-x-4">
+      {/* Row 1: menu button + logo | controls. Row 2 (below 2xl): the menu links, centered. One row from 2xl (1536 px).
+          Logo + menu + controls need ~1.45k px, so a single row is only used where it really fits: the controls never
+          drop to a line of their own. The search is only a magnifier (its field opens in a panel). */}
+      <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 2xl:px-8 flex flex-wrap 2xl:flex-nowrap items-center justify-between gap-x-4">
         <div className="flex items-center gap-3 shrink-0">
           <MobileNav
             labels={{
@@ -90,7 +91,7 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
           </Link>
         </div>
 
-        <nav className="hidden md:flex order-3 w-full justify-center gap-6 border-t border-border/60 xl:order-none xl:w-auto xl:flex-1 xl:border-0 xl:gap-8">
+        <nav className="hidden md:flex order-3 w-full justify-center gap-6 lg:gap-8 border-t border-border/60 2xl:order-none 2xl:w-auto 2xl:flex-1 2xl:border-0">
           {items.map((item) =>
             item.key === "shop" ? (
               <MegaMenu key="shop" label={item.label} allLabel={t("allProducts")} categories={categories} />
@@ -120,7 +121,7 @@ export async function Header({ siteMode }: { siteMode: SiteMode }) {
                 <Link href="/login" className="text-[11px] font-semibold uppercase tracking-[0.15em] hover:text-muted">
                   {t("login")}
                 </Link>
-                <Link href="/cadastro" className="btn-primary text-[11px] uppercase tracking-[0.15em] font-semibold px-4 py-2">
+                <Link href="/cadastro" className="hidden lg:inline-block btn-primary text-[11px] uppercase tracking-[0.15em] font-semibold px-4 py-2">
                   {t("cadastro")}
                 </Link>
               </div>

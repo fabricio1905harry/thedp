@@ -21,12 +21,15 @@ export function HeroCarousel({
   intervalMs,
   overlay,
   lazy = false,
+  inline = false,
 }: {
   slides: HeroSlide[];
   intervalMs: number;
   overlay?: React.ReactNode;
   /** below the fold (second banner): no image is loaded with high priority */
   lazy?: boolean;
+  /** second banner: inside the page width, the art fills it (no side bars), rounded corners */
+  inline?: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -43,7 +46,7 @@ export function HeroCarousel({
 
   return (
     <section
-      className="relative w-full bg-surface overflow-hidden"
+      className={`relative w-full overflow-hidden ${inline ? "rounded-sm" : "bg-surface"}`}
       aria-roledescription="carousel"
       aria-label="Banners"
       onMouseEnter={() => setPaused(true)}
@@ -61,7 +64,7 @@ export function HeroCarousel({
     >
       <div className="grid">
         {slides.map((slide, i) => {
-          const art = <BannerPicture desktop={slide.desktop} mobile={slide.mobile} alt={slide.alt} priority={!lazy && i === 0} />;
+          const art = <BannerPicture desktop={slide.desktop} mobile={slide.mobile} alt={slide.alt} priority={!lazy && i === 0} fill={inline ? "width" : "screen"} />;
           return (
             <div
               key={i}

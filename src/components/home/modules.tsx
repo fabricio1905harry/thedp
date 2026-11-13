@@ -64,7 +64,12 @@ export function InstitutionalBannerModule({ c, locale }: { c: C; locale: string 
   const sub = s(c.subheadline);
   return (
     <>
-      {slides.length > 0 && <HeroCarousel slides={slides} intervalMs={intervalOf(c)} lazy />}
+      {/* own space below the Hero (it no longer touches it) and the page width, like the rest of the Home */}
+      {slides.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 pt-8 pb-4 sm:pt-12 sm:pb-6">
+          <HeroCarousel slides={slides} intervalMs={intervalOf(c)} lazy inline />
+        </section>
+      )}
       {(headline || sub) && (
         <section className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
           {headline && <h2 className="font-serif text-4xl sm:text-6xl tracking-[0.12em]">{headline}</h2>}
