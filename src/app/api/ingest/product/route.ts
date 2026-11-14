@@ -193,11 +193,6 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data: existing } = await supabase
-      .from("products")
-      .select("id, images, locked_fields, source_snapshot, composition")
-      .eq("slug", slug)
-      .maybeSingle();
 
     // Product page at the supplier (n8n: source_url = $('Split Out').item.json.links). Kept in source_url and
     // also in `url`, a column added by hand to products (NOT NULL in some databases).
@@ -211,6 +206,25 @@ export async function POST(request: Request) {
       delete copy.url;
       return copy;
     };
+
+    // Which product is this? 1) same slug; 2) same supplier link (source_url / url). The supplier link is the
+    // stable identity: a flow that generates a new slug on every run (e.g. "vestido-longo-<random uuid>") then
+    // updates the product instead of trying to create it again. The existing product keeps its own slug.
+    const PRODUCT_COLS = "id, slug, images, locked_fields, source_snapshot, composition";
+    type ExistingProduct = { id: string; slug: string; images: unknown; locked_fields: string[] | null; source_snapshot: unknown; composition: string | null };
+    let existing: ExistingProduct | null = null;
+    {
+      const { data } = await supabase.from("products").select(PRODUCT_COLS).eq("slug", slug).maybeSingle();
+      existing = (data as ExistingProduct | null) ?? null;
+    }
+    if (!existing && sourceUrl) {
+      const bySource = await supabase.from("products").select(PRODUCT_COLS).eq("source_url", sourceUrl).limit(1);
+      existing = ((bySource.data ?? [])[0] as ExistingProduct | undefined) ?? null;
+      if (!existing) {
+        const byUrl = await supabase.from("products").select(PRODUCT_COLS).eq("url", sourceUrl).limit(1);
+        if (!byUrl.error) existing = ((byUrl.data ?? [])[0] as ExistingProduct | undefined) ?? null; // no `url` column: ignore
+      }
+    }
 
     const now = new Date().toISOString();
     const snapshot = {
