@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { applyLocks, type SyncableField } from "@/lib/product-sync";
 import { isApiBlocked } from "@/lib/app-target";
+import { timingSafeEqual } from "node:crypto";
 import { IMPORT_DEFAULT_STOCK, looksLikeComposition, sentenceCase } from "@/lib/import-normalize";
+
+/** Constant-time comparison of two keys (no early exit that would leak how much of the key matched). */
+function safeEqual(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
 
 function parseList(input: unknown): string[] {
   if (!input) return [];
@@ -99,10 +107,12 @@ export async function POST(request: Request) {
     // with zero credentials. Local test scripts already send the header
     // (see scripts/test-ingest-product-endpoint.mjs) so this doesn't
     // change the local testing workflow.
-    const isAuthorized =
-      !!serviceKey &&
-      ((apiKey && apiKey === serviceKey) ||
-        (authHeader && authHeader.replace("Bearer ", "") === serviceKey));
+    // Accepted keys: INGEST_API_KEY (a key only for this import — the one n8n should use) or the Supabase
+    // service-role key. Sent as `x-api-key: <key>` or `Authorization: Bearer <key>`.
+    const ingestKey = process.env.INGEST_API_KEY;
+    const provided = [apiKey, authHeader?.replace(/^Bearer\s+/i, "")].filter((v): v is string => Boolean(v && v.trim()));
+    const accepted = [ingestKey, serviceKey].filter((v): v is string => Boolean(v && v.length >= 16));
+    const isAuthorized = provided.some((p) => accepted.some((k) => safeEqual(p.trim(), k)));
 
     if (!isAuthorized) {
       return NextResponse.json({ error: "Unauthorized ingestion call" }, { status: 401 });

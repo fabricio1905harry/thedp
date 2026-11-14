@@ -28,6 +28,7 @@ Mesmo repositório, **dois projetos na Vercel**. A variável `APP_TARGET` define
 
 **4. n8n**
 - Aponte o webhook de ingestão para `https://admin.seudominio.com/api/ingest/product` (mesma chave `x-api-key`).
+- Chave da importação: crie no projeto do **admin** a variável `INGEST_API_KEY` (um texto aleatório longo, só para isso) e use o mesmo valor no n8n, num node HTTP Request com credencial **Header Auth** (`x-api-key: <INGEST_API_KEY>`). A service-role key do Supabase continua aceita, mas precisa ser exatamente a mesma da variável `SUPABASE_SERVICE_ROLE_KEY` da Vercel.
 
 ## Testado
 Build único, subindo com cada `APP_TARGET`:
