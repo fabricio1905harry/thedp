@@ -199,6 +199,19 @@ export async function POST(request: Request) {
       .eq("slug", slug)
       .maybeSingle();
 
+    // Product page at the supplier (n8n: source_url = $('Split Out').item.json.links). Kept in source_url and
+    // also in `url`, a column added by hand to products (NOT NULL in some databases).
+    const rawSourceUrl = typeof body.source_url === "string" ? body.source_url : typeof body.url === "string" ? body.url : "";
+    const sourceUrl = /^https?:\/\//i.test(rawSourceUrl.trim()) ? rawSourceUrl.trim().slice(0, 2000) : null;
+    const urlFields = sourceUrl ? { source_url: sourceUrl, url: sourceUrl } : {};
+    // the `url` column does not exist everywhere: if the database refuses it, write again without it
+    const missingUrlColumn = (message: string) => /column "?url"? .*does not exist|Could not find the 'url' column/i.test(message);
+    const withoutUrl = <T extends Record<string, unknown>>(row: T) => {
+      const copy: Record<string, unknown> = { ...row };
+      delete copy.url;
+      return copy;
+    };
+
     const now = new Date().toISOString();
     const snapshot = {
       ...((existing?.source_snapshot as Record<string, unknown> | null) ?? {}),
@@ -221,19 +234,19 @@ export async function POST(request: Request) {
       const knownImages = parseList(existing.images);
       const mergedImages = [...knownImages, ...imageList.filter((u) => !knownImages.includes(u))];
 
-      const { error } = await supabase
-        .from("products")
-        .update({
-          ...writable,
-          ...(primaryConnectorId ? { connector_id: primaryConnectorId } : {}),
-          ...(imageList.length > 0 ? { images: mergedImages } : {}),
-          // a composition the TDP already filled in is never replaced
-          ...(composition && !String(existing.composition ?? "").trim() ? { composition } : {}),
-          source_snapshot: snapshot,
-          last_synced_at: now,
-          updated_at: now,
-        })
-        .eq("id", existing.id);
+      const patch: Record<string, unknown> = {
+        ...writable,
+        ...(primaryConnectorId ? { connector_id: primaryConnectorId } : {}),
+        ...(imageList.length > 0 ? { images: mergedImages } : {}),
+        // a composition the TDP already filled in is never replaced
+        ...(composition && !String(existing.composition ?? "").trim() ? { composition } : {}),
+        ...urlFields,
+        source_snapshot: snapshot,
+        last_synced_at: now,
+        updated_at: now,
+      };
+      let { error } = await supabase.from("products").update(patch).eq("id", existing.id);
+      if (error && missingUrlColumn(error.message)) ({ error } = await supabase.from("products").update(withoutUrl(patch)).eq("id", existing.id));
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       productId = existing.id;
     } else {
@@ -246,28 +259,28 @@ export async function POST(request: Request) {
         .limit(5);
       const brandId = (tdpBrand ?? []).sort((a, b) => Number(b.slug === "the-dressing-project") - Number(a.slug === "the-dressing-project"))[0]?.id ?? null;
 
-      const { data: created, error } = await supabase
-        .from("products")
-        .insert({
-          slug,
-          title: title || slug,
-          ...sourceValues,
-          ...(composition ? { composition } : {}),
-          brand_id: brandId,
-          connector_id: primaryConnectorId,
-          // P43: every new size × color combination starts with 500 (the TDP can change it per product)
-          default_stock: IMPORT_DEFAULT_STOCK,
-          // New supplier products always go to review first: publishing
-          // needs at least one APPROVED image + cover (migration 0024).
-          status: "draft",
-          images: imageList,
-          source_url: typeof body.source_url === "string" ? body.source_url : null,
-          source_snapshot: snapshot,
-          last_synced_at: now,
-          updated_at: now,
-        })
-        .select("id")
-        .single();
+      const newRow: Record<string, unknown> = {
+        slug,
+        title: title || slug,
+        ...sourceValues,
+        ...(composition ? { composition } : {}),
+        brand_id: brandId,
+        connector_id: primaryConnectorId,
+        // P43: every new size × color combination starts with 500 (the TDP can change it per product)
+        default_stock: IMPORT_DEFAULT_STOCK,
+        // New supplier products always go to review first: publishing
+        // needs at least one APPROVED image + cover (migration 0024).
+        status: "draft",
+        images: imageList,
+        source_url: sourceUrl,
+        ...(sourceUrl ? { url: sourceUrl } : {}),
+        source_snapshot: snapshot,
+        last_synced_at: now,
+        updated_at: now,
+      };
+      let insert = await supabase.from("products").insert(newRow).select("id").single();
+      if (insert.error && missingUrlColumn(insert.error.message)) insert = await supabase.from("products").insert(withoutUrl(newRow)).select("id").single();
+      const { data: created, error } = insert;
       if (error || !created) {
         return NextResponse.json({ error: error?.message ?? "Insert failed" }, { status: 500 });
       }
