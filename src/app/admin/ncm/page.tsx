@@ -13,7 +13,7 @@ export default async function NcmPage({ searchParams }: { searchParams: Promise<
     supabase.from("products").select("category").neq("status", "archived").not("category", "is", null).limit(5000),
     supabase
       .from("products")
-      .select("id, title, slug, category, composition, hs_code, weight_g, dims_cm, shipping_inherited")
+      .select("id, title, slug, tdp_ref, category, composition, hs_code, weight_g, dims_cm, shipping_inherited")
       .eq("hs_review_status", "needs_review")
       .neq("status", "archived")
       .order("title")

@@ -28,11 +28,12 @@ export default async function AdminMinimumOrderPage() {
 
   const productIds = (rules ?? []).filter((r) => r.scope === "product" && r.scope_value).map((r) => r.scope_value as string);
   const { data: products } = productIds.length
-    ? await supabase.from("products").select("id, title").in("id", productIds)
-    : { data: [] as { id: string; title: string }[] };
+    ? await supabase.from("products").select("id, title, tdp_ref").in("id", productIds)
+    : { data: [] as { id: string; title: string; tdp_ref: string | null }[] };
 
   const unique = (values: (string | null)[]) => [...new Set(values.filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b));
-  const productTitle = new Map((products ?? []).map((p) => [p.id as string, p.title as string]));
+  // product rules show the product code with the title (TDP10026 · Vestido drapeado)
+  const productTitle = new Map((products ?? []).map((p) => [p.id as string, `${p.tdp_ref ? `${p.tdp_ref} · ` : ""}${p.title as string}`]));
 
   return (
     <div className="space-y-6 max-w-5xl">

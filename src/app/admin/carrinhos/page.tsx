@@ -15,7 +15,7 @@ interface CartRow {
   order_id: string | null;
   ordered_at: string | null;
   customers: { email: string; name: string | null; company_name: string | null } | { email: string; name: string | null; company_name: string | null }[] | null;
-  cart_items: { title: string | null; color: string | null; size: string | null; qty: number }[];
+  cart_items: { title: string | null; product_slug: string | null; color: string | null; size: string | null; qty: number }[];
 }
 
 const FILTERS = [
@@ -34,11 +34,15 @@ export default async function AdminAbandonedCartsPage({ searchParams }: { search
   const [{ data }, { data: settings }] = await Promise.all([
     supabase
       .from("carts")
-      .select("id, status, currency, item_count, total_value, last_activity_at, reminder_1_sent_at, reminder_2_sent_at, recovery_clicked_at, order_id, ordered_at, customers ( email, name, company_name ), cart_items ( title, color, size, qty )")
+      .select("id, status, currency, item_count, total_value, last_activity_at, reminder_1_sent_at, reminder_2_sent_at, recovery_clicked_at, order_id, ordered_at, customers ( email, name, company_name ), cart_items ( title, product_slug, color, size, qty )")
       .order("last_activity_at", { ascending: false })
       .limit(300),
     supabase.from("app_settings").select("key, value").in("key", ["abandoned_cart_enabled", "abandoned_cart_hours_1", "abandoned_cart_hours_2"]),
   ]);
+  // product code (TDP reference) of every product in the carts, by slug
+  const slugs = [...new Set(((data ?? []) as unknown as CartRow[]).flatMap((c) => (c.cart_items ?? []).map((i) => i.product_slug).filter(Boolean)))] as string[];
+  const { data: codeRows } = slugs.length ? await supabase.from("products").select("slug, tdp_ref").in("slug", slugs) : { data: [] as { slug: string; tdp_ref: string | null }[] };
+  const codeBySlug = new Map((codeRows ?? []).map((p) => [p.slug as string, (p.tdp_ref as string | null) ?? ""]));
   const cfg = Object.fromEntries((settings ?? []).map((s) => [s.key, s.value]));
   const hours1 = Number(cfg.abandoned_cart_hours_1 ?? 2);
 
@@ -95,7 +99,7 @@ export default async function AdminAbandonedCartsPage({ searchParams }: { search
                     <td className="p-2">
                       {c.item_count} peça(s)
                       <span className="block text-muted max-w-xs">
-                        {c.cart_items.slice(0, 3).map((i) => `${i.title ?? ""} ${i.color ?? ""}/${i.size ?? ""} ×${i.qty}`).join(" · ")}
+                        {c.cart_items.slice(0, 3).map((i) => `${i.product_slug && codeBySlug.get(i.product_slug) ? `${codeBySlug.get(i.product_slug)} ` : ""}${i.title ?? ""} ${i.color ?? ""}/${i.size ?? ""} ×${i.qty}`).join(" · ")}
                         {c.cart_items.length > 3 ? ` … +${c.cart_items.length - 3}` : ""}
                       </span>
                     </td>

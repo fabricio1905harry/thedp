@@ -10,6 +10,7 @@ import {
   type Dims,
 } from "@/app/admin/ncm/actions";
 import { Msg, btnCls, btnGhost, inputCls, useRun } from "@/components/admin-ui";
+import { ProductCode } from "@/components/product-code";
 
 interface Code {
   code: string;
@@ -39,6 +40,7 @@ interface Rule {
 interface ReviewProduct {
   id: string;
   title: string;
+  tdp_ref?: string | null;
   slug: string;
   category: string | null;
   composition?: string | null;
@@ -114,7 +116,10 @@ function ReviewRow({ p }: { p: ReviewProduct }) {
   return (
     <div className="border border-border p-3 flex flex-wrap items-center gap-3">
       <div className="flex-1 min-w-[12rem]">
-        <Link href={`/admin/produtos/${p.id}`} className="font-medium underline">{p.title}</Link>
+        <span className="flex flex-wrap items-center gap-1.5">
+          <ProductCode code={p.tdp_ref} />
+          <Link href={`/admin/produtos/${p.id}`} className="font-medium underline">{p.title}</Link>
+        </span>
         <p className="text-xs text-muted">
           {p.category ?? "sem categoria"}{p.composition ? ` · ${p.composition}` : " · sem composição"} · pendente: {(p.shipping_inherited ?? []).map((f) => FIELD_LABEL[f] ?? f).join(", ")}
         </p>

@@ -17,6 +17,7 @@ import {
 } from "@/app/admin/produtos/actions";
 import { resolveImageUrl } from "@/lib/image-url";
 import { croppedImageStyle, parseCrop, type ImageCrop } from "@/lib/image-crop";
+import { ProductCode } from "@/components/product-code";
 import { ImageCropEditor } from "@/components/image-crop-editor";
 
 export interface ImageRow {
@@ -30,6 +31,8 @@ export interface ImageRow {
   crop: unknown;
   replaces_image_id: string | null;
   product_title?: string | null;
+  /** product code (TDP reference) */
+  product_code?: string | null;
   /** supplier color text the photo belongs to (empty = every color) */
   color_key?: string | null;
 }
@@ -239,9 +242,17 @@ export function ProductImagesManager({
                 </div>
                 <div className="p-1.5 flex flex-wrap gap-x-2 gap-y-1">
                   {mode === "queue" && img.product_id && (
-                    <Link href={`/admin/produtos/${img.product_id}`} className="w-full truncate underline">
-                      {img.product_title ?? "Produto"}
-                    </Link>
+                    <span className="w-full flex items-center gap-1.5 min-w-0">
+
+                      <ProductCode code={img.product_code} />
+
+                      <Link href={`/admin/produtos/${img.product_id}`} className="truncate underline">
+
+                        {img.product_title ?? "Produto"}
+
+                      </Link>
+
+                    </span>
                   )}
                   {img.review_status !== "approved" && img.review_status !== "replaced" && (
                     <ActionLink onClick={() => run(() => setImagesReviewStatus([img.id], "approved"))}>

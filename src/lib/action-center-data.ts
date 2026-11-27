@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { sortActionItems, type ActionItem, type QueueSort } from "@/lib/action-center";
+import { getProductCodes } from "@/lib/product-codes";
 
 export interface ActionCard {
   code: string;
@@ -30,6 +31,9 @@ export async function loadActionCenter(sort: QueueSort = "system", type?: string
   ]);
 
   const open = (items ?? []) as ActionItem[];
+  // items about a product show its code (TDP10026) as the reference
+  const codes = await getProductCodes(supabase, open.filter((i) => i.reference_type === "product").map((i) => i.reference_id));
+  for (const i of open) if (i.reference_type === "product" && i.reference_id) i.product_code = codes.get(i.reference_id) ?? null;
   const cards: ActionCard[] = (types ?? []).map((t) => {
     const ofType = open.filter((i) => i.action_type === t.code);
     return {

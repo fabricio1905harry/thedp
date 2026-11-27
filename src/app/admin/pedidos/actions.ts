@@ -248,6 +248,8 @@ async function restoreOrderItemImpl(orderId: string, itemId: string) {
 export interface VariantSearchResult {
   sku: string;
   title: string;
+  /** product code (TDP reference) */
+  code: string | null;
   color: string | null;
   size: string | null;
   stock: number;
@@ -275,10 +277,12 @@ async function searchVariantsImpl(orderId: string, query: string): Promise<Varia
   const { data: order } = await supabase.from("orders").select("currency").eq("id", orderId).single();
   const currency = (order?.currency ?? "USD").toUpperCase();
 
-  const select = "id, sku, color, size, stock, products!inner ( title, price_brl, price_usd, price_eur )";
-  const [bySku, byTitle] = await Promise.all([
+  const select = "id, sku, color, size, stock, products!inner ( title, tdp_ref, price_brl, price_usd, price_eur )";
+  // by SKU, by product title or by product code (TDP10026)
+  const [bySku, byTitle, byCode] = await Promise.all([
     supabase.from("variants").select(select).ilike("sku", `%${q}%`).limit(20),
     supabase.from("variants").select(select).ilike("products.title", `%${q}%`).limit(20),
+    supabase.from("variants").select(select).ilike("products.tdp_ref", `%${q}%`).limit(20),
   ]);
 
   if (bySku.error) throw new Error(bySku.error.message);
@@ -286,19 +290,19 @@ async function searchVariantsImpl(orderId: string, query: string): Promise<Varia
 
   const seen = new Set<string>();
   const results: VariantSearchResult[] = [];
-  for (const row of [...(bySku.data ?? []), ...(byTitle.data ?? [])] as unknown as {
+  for (const row of [...(bySku.data ?? []), ...(byCode.data ?? []), ...(byTitle.data ?? [])] as unknown as {
     id: string;
     sku: string;
     color: string | null;
     size: string | null;
     stock: number;
-    products: { title: string; price_brl: number | null; price_usd: number | null; price_eur: number | null };
+    products: { title: string; tdp_ref: string | null; price_brl: number | null; price_usd: number | null; price_eur: number | null };
   }[]) {
     if (seen.has(row.id)) continue;
     seen.add(row.id);
     const p = row.products;
     const price = currency === "BRL" ? p.price_brl : currency === "EUR" ? p.price_eur : p.price_usd;
-    results.push({ sku: row.sku, title: p.title, color: row.color, size: row.size, stock: row.stock, price });
+    results.push({ sku: row.sku, title: p.title, code: p.tdp_ref ?? null, color: row.color, size: row.size, stock: row.stock, price });
   }
   return results.slice(0, 20);
 }

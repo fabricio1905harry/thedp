@@ -4,10 +4,13 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { setProductStatus, deleteProducts } from "@/app/admin/produtos/actions";
 import { resolveImageUrl } from "@/lib/image-url";
+import { ProductCode } from "@/components/product-code";
 
 interface Row {
   id: string;
   title: string;
+  /** product code (TDP reference) */
+  tdp_ref?: string | null;
   category: string | null;
   status: string;
   favorites?: number;
@@ -155,6 +158,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
               />
             </th>
             <th className="py-2 pr-4 w-14"></th>
+            <th className="py-2 pr-4">Código</th>
             <th className="py-2 pr-4">Título</th>
             <th className="py-2 pr-4">Categoria</th>
             <th className="py-2 pr-4">Fornecedor(es)</th>
@@ -186,6 +190,7 @@ export function ProductModerationTable({ products }: { products: Row[] }) {
                   ) : null}
                 </Link>
               </td>
+              <td className="py-2 pr-4"><ProductCode code={p.tdp_ref} /></td>
               <td className="py-2 pr-4">{p.title}</td>
               <td className="py-2 pr-4">{p.category}</td>
               <td className="py-2 pr-4 text-xs text-muted">

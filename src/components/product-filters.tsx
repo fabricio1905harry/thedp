@@ -54,7 +54,7 @@ export function ProductFilters({
         type="text"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Buscar por título…"
+        placeholder="Buscar por título ou código (TDP…)"
         className="border border-border px-3 py-1.5 text-sm w-56"
       />
       <select

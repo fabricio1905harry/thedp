@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
+import { ProductCode } from "@/components/product-code";
+
 export const metadata = { title: "Avise-me — Admin" };
 
 interface Req {
@@ -9,7 +11,7 @@ interface Req {
   created_at: string;
   notified_at: string | null;
   customers: { email: string; name: string | null; company_name: string | null } | null;
-  products: { title: string; slug: string } | null;
+  products: { title: string; slug: string; tdp_ref: string | null } | null;
   variants: { color: string | null; size: string | null } | null;
 }
 
@@ -18,7 +20,7 @@ export default async function NotifyAdminPage({ searchParams }: { searchParams: 
   const supabase = await createClient();
   let q = supabase
     .from("notify_requests")
-    .select("id, product_id, created_at, notified_at, customers ( email, name, company_name ), products ( title, slug ), variants ( color, size )")
+    .select("id, product_id, created_at, notified_at, customers ( email, name, company_name ), products ( title, slug, tdp_ref ), variants ( color, size )")
     .order("created_at", { ascending: false })
     .limit(500);
   if (product) q = q.eq("product_id", product);
@@ -26,9 +28,9 @@ export default async function NotifyAdminPage({ searchParams }: { searchParams: 
   const rows = (data ?? []) as unknown as Req[];
   const waiting = rows.filter((r) => !r.notified_at);
 
-  const byProduct = new Map<string, { title: string; slug: string; buyers: Set<string>; n: number }>();
+  const byProduct = new Map<string, { title: string; slug: string; code: string | null; buyers: Set<string>; n: number }>();
   for (const r of waiting) {
-    const e = byProduct.get(r.product_id) ?? { title: r.products?.title ?? "—", slug: r.products?.slug ?? "", buyers: new Set<string>(), n: 0 };
+    const e = byProduct.get(r.product_id) ?? { title: r.products?.title ?? "—", slug: r.products?.slug ?? "", code: r.products?.tdp_ref ?? null, buyers: new Set<string>(), n: 0 };
     e.buyers.add(r.customers?.email ?? r.id);
     e.n++;
     byProduct.set(r.product_id, e);
@@ -54,7 +56,7 @@ export default async function NotifyAdminPage({ searchParams }: { searchParams: 
           <ul className="text-sm divide-y divide-border">
             {demand.map(([pid, d]) => (
               <li key={pid} className="py-2 flex justify-between gap-3">
-                <Link href={`/admin/produtos/${pid}`} className="underline">{d.title}</Link>
+                <ProductCode code={d.code} className="mr-2" /><Link href={`/admin/produtos/${pid}`} className="underline">{d.title}</Link>
                 <span>{d.buyers.size} comprador(es)</span>
               </li>
             ))}
@@ -80,7 +82,7 @@ export default async function NotifyAdminPage({ searchParams }: { searchParams: 
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-border">
                 <td className="p-2">{r.customers?.company_name || r.customers?.name || "—"}<span className="block text-xs text-muted">{r.customers?.email}</span></td>
-                <td className="p-2">{r.products?.title}</td>
+                <td className="p-2"><ProductCode code={r.products?.tdp_ref} className="mr-2" />{r.products?.title}</td>
                 <td className="p-2">{r.variants?.color ?? "—"} / {r.variants?.size ?? "—"}</td>
                 <td className="p-2 whitespace-nowrap">{new Date(r.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
                 <td className="p-2 whitespace-nowrap">{r.notified_at ? new Date(r.notified_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "aguardando"}</td>

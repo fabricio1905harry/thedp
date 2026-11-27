@@ -37,7 +37,7 @@ export default async function AdminPricingPage({ searchParams }: { searchParams:
   let query = supabase
     .from("products")
     .select(
-      "id, title, category, status, original_price, extra_cost_brl, margin_pct_override, commission_pct_override, price_adjust_pct, price_brl, price_usd, price_eur, retail_usd, retail_eur",
+      "id, title, tdp_ref, category, status, original_price, extra_cost_brl, margin_pct_override, commission_pct_override, price_adjust_pct, price_brl, price_usd, price_eur, retail_usd, retail_eur",
       { count: "exact" }
     )
     .order("title")
