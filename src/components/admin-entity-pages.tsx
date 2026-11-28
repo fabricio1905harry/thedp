@@ -27,8 +27,8 @@ function visibility(r: Row): EntityRow["visibility"] {
 
 async function productOptions(): Promise<PickOption[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("products").select("id, title, slug, status").neq("status", "archived").order("title").limit(3000);
-  return (data ?? []).map((p) => ({ id: p.id, label: p.title, sub: `${p.slug}${p.status !== "published" ? " · rascunho" : ""}` }));
+  const { data } = await supabase.from("products").select("id, title, slug, status, tdp_ref").neq("status", "archived").order("title").limit(3000);
+  return (data ?? []).map((p) => ({ id: p.id, label: p.tdp_ref ? `${p.tdp_ref} · ${p.title}` : p.title, sub: `${p.slug}${p.status !== "published" ? " · rascunho" : ""}` }));
 }
 
 export async function EntityListPage({ kind }: { kind: EntityKind }) {

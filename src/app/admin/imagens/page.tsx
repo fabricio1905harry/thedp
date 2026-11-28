@@ -18,7 +18,7 @@ export default async function AdminImageQueuePage({
 
   let query = supabase
     .from("product_images")
-    .select("id, product_id, storage_path, position, review_status, origin, is_cover, crop, replaces_image_id, created_at, products ( title )", { count: "exact" })
+    .select("id, product_id, storage_path, position, review_status, origin, is_cover, crop, replaces_image_id, created_at, products ( title, tdp_ref )", { count: "exact" })
     .eq("review_status", "pending_review")
     .order("created_at", { ascending: true })
     .limit(PAGE_SIZE);
@@ -28,6 +28,7 @@ export default async function AdminImageQueuePage({
   const images: ImageRow[] = (data ?? []).map((row) => ({
     ...(row as unknown as ImageRow),
     product_title: (row.products as unknown as { title: string } | null)?.title ?? null,
+    product_code: (row.products as unknown as { tdp_ref: string | null } | null)?.tdp_ref ?? null,
   }));
 
   return (

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getProductCodes } from "@/lib/product-codes";
 import { PASS_THROUGH_COMPONENTS, type PassThroughKey } from "@/lib/payments";
 
 /**
@@ -213,6 +214,8 @@ export interface DashboardRaw {
   lostSales: LostSaleRow[];
   cancellations: { reference_id: string; created_at: string }[];
   customers: Map<string, string>;
+  /** product id → product code (TDP reference) */
+  productCodes?: Map<string, string>;
   rates: Record<string, number>; // BRL per unit, latest
 }
 
@@ -288,12 +291,18 @@ export async function loadDashboardRaw(): Promise<DashboardRaw> {
     if (!(r.quote in rates)) rates[r.quote] = Number(r.rate);
   }
 
+  const productCodes = await getProductCodes(
+    supabase,
+    [...new Set(items.map((i) => i.product_id).filter((id): id is string => Boolean(id)))]
+  );
+
   return {
     payments,
     orders,
     items,
     lostSales,
     cancellations,
+    productCodes,
     customers: new Map(customerRows.map((c) => [c.id, c.company_name || c.name || c.email])),
     rates,
   };
@@ -540,10 +549,14 @@ export function revenueBreakdowns(raw: DashboardRaw, range: DateRange, channel: 
 
     const lines = itemsByOrder.get(order.id) ?? [];
     const base = lines.reduce((s, i) => s + Number(i.qty) * Number(i.unit_price), 0);
+    const labelOf = (line: ItemRow) => {
+      const code = line.product_id ? raw.productCodes?.get(line.product_id) : undefined;
+      return `${code ? `${code} · ` : ""}${line.product_title ?? "—"}`;
+    };
     for (const line of lines) {
       const share = base > 0 ? (Number(line.qty) * Number(line.unit_price)) / base : 0;
       const key = line.product_id ?? line.product_title ?? "—";
-      const cur = products.get(key) ?? { label: line.product_title ?? "—", value: 0, units: 0 };
+      const cur = products.get(key) ?? { label: labelOf(line), value: 0, units: 0 };
       cur.value += value * share;
       cur.units += firstPayment.get(order.id)?.id === p.id ? Number(line.qty) : 0;
       products.set(key, cur);

@@ -4,10 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { bulkAdjustPrices, type BulkAction } from "@/app/admin/precificacao/actions";
+import { ProductCode } from "@/components/product-code";
 
 export interface PricedProduct {
   id: string;
   title: string;
+  tdp_ref?: string | null;
   category: string | null;
   status: string;
   original_price: number | null;
@@ -165,7 +167,10 @@ export function BulkPricingPanel({
                     />
                   </td>
                   <td className="py-2 pr-3">
-                    <Link href={`/admin/produtos/${p.id}`} className="hover:underline">{p.title}</Link>
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <ProductCode code={p.tdp_ref} />
+                      <Link href={`/admin/produtos/${p.id}`} className="hover:underline">{p.title}</Link>
+                    </span>
                     <span className="block text-muted">{p.category ?? "—"} · {p.status}</span>
                   </td>
                   <td className="py-2 pr-3 text-right">{fmt(p.original_price)}</td>

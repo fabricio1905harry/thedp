@@ -25,6 +25,8 @@ export interface ActionItem {
   reference_id: string | null;
   reference_label: string | null;
   subject_label: string | null;
+  /** product code (TDP reference) when the item is about a product */
+  product_code?: string | null;
   value_amount: number | null;
   value_currency: string | null;
   value_brl: number | null;

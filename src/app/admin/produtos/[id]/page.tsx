@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProductEditForm } from "@/components/product-edit-form";
+import { ProductCode } from "@/components/product-code";
 import { VariantStockTable } from "@/components/variant-stock-table";
 import { ProductImagesManager, type ImageRow } from "@/components/product-images-manager";
 import { SyncLocksPanel } from "@/components/sync-locks-panel";
@@ -78,7 +79,10 @@ export default async function AdminProductEditPage({
       <Link href="/admin/produtos" className="text-xs text-muted hover:text-accent">
         ← Produtos
       </Link>
-      <h1 className="font-serif text-2xl mt-2 mb-6">{product.title}</h1>
+      <h1 className="font-serif text-2xl mt-2 mb-6 flex flex-wrap items-center gap-3">
+        {product.title}
+        <ProductCode code={product.tdp_ref} className="text-xs" />
+      </h1>
 
       <SyncLocksPanel
         productId={id}

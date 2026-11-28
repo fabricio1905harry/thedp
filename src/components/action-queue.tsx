@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { markActionResolved, setActionPinned } from "@/app/admin/acoes/actions";
 import { displayLevel, waitingTime, type ActionItem } from "@/lib/action-center";
 import { actionTitlePt, actionTypeLabelPt } from "@/lib/action-labels-pt";
+import { ProductCode } from "@/components/product-code";
 
 const LEVEL_CLASS = {
   critical: "bg-red-600 text-white",
@@ -75,7 +76,9 @@ export function ActionQueue({
                   </Link>
                   <span className="block text-muted">{actionTitlePt(item.title)}</span>
                 </td>
-                <td className="py-2 pr-2">{item.reference_label ?? "—"}</td>
+                <td className="py-2 pr-2">
+                  {item.reference_type === "product" ? <ProductCode code={item.product_code} /> : item.reference_label ?? "—"}
+                </td>
                 <td className="py-2 pr-2">{item.subject_label ?? "—"}</td>
                 <td className="py-2 pr-2 text-right whitespace-nowrap">
                   {item.value_amount !== null && item.value_amount !== undefined

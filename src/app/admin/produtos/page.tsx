@@ -41,7 +41,7 @@ async function getProducts({
       .from("products")
       .select(
         `
-        id, title, category, status, price_brl, connector_id,
+        id, title, tdp_ref, category, status, price_brl, connector_id,
         connectors!products_connector_id_fkey ( supplier_name ),
         product_connectors ( connector_id, connectors ( supplier_name ) ),
         product_images ( storage_path, position )
@@ -50,7 +50,11 @@ async function getProducts({
       )
       .order("created_at", { ascending: false });
 
-    if (q) query = query.ilike("title", `%${q}%`);
+    // search by title or by the product code (TDP10026)
+    if (q) {
+      const term = q.replace(/[,()%]/g, " ").trim();
+      query = query.or(`title.ilike.%${term}%,tdp_ref.ilike.%${term}%`);
+    }
     if (status) query = query.eq("status", status);
     if (category) query = query.eq("category", category);
 
@@ -90,6 +94,7 @@ async function getProducts({
       return {
         id: p.id,
         title: p.title,
+        tdp_ref: (p as { tdp_ref?: string | null }).tdp_ref ?? null,
         category: p.category,
         status: p.status,
         price_brl: p.price_brl,

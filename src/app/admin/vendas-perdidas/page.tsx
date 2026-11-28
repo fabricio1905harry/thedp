@@ -1,3 +1,5 @@
+import { ProductCode } from "@/components/product-code";
+import { getProductCodes } from "@/lib/product-codes";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CHANNEL_LABELS } from "@/lib/payments";
@@ -59,18 +61,20 @@ export default async function LostSalesPage({
   if (sp.variant) query = query.eq("variant_id", sp.variant);
   const { data } = await query;
   const rows = (data ?? []) as unknown as Row[];
+  const codes = await getProductCodes(supabase, rows.map((r) => r.product_id));
+  const codeOf = (r: Row) => (r.product_id ? codes.get(r.product_id) ?? null : null);
 
   const group = (GROUPS.some(([k]) => k === sp.group) ? sp.group : "variant") as (typeof GROUPS)[number][0];
   const keyOf = (r: Row) =>
     group === "product"
-      ? r.product_title ?? "—"
+      ? `${codeOf(r) ? `${codeOf(r)} · ` : ""}${r.product_title ?? "—"}`
       : group === "brand"
         ? r.brand ?? "—"
         : group === "color"
           ? r.color ?? "—"
           : group === "size"
             ? r.size ?? "—"
-            : `${r.product_title ?? "—"} — ${r.color ?? "—"} / ${r.size ?? "—"}`;
+            : `${codeOf(r) ? `${codeOf(r)} · ` : ""}${r.product_title ?? "—"} — ${r.color ?? "—"} / ${r.size ?? "—"}`;
 
   const agg = new Map<string, { units: number; value: Map<string, number>; buyers: Set<string>; orders: Set<string>; restocks: number; recUnits: number; recRevenue: Map<string, number> }>();
   for (const r of rows) {
@@ -177,7 +181,7 @@ export default async function LostSalesPage({
                 <tr key={r.id} className="border-b border-border">
                   <td className="py-1 pr-2">{new Date(r.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
                   <td className="py-1 pr-2">{r.customers?.company_name || r.customers?.name || r.customers?.email || "—"}</td>
-                  <td className="py-1 pr-2">{r.product_title}<span className="block font-mono text-muted">{r.product_code}</span></td>
+                  <td className="py-1 pr-2"><ProductCode code={codeOf(r)} className="mr-1.5" />{r.product_title}<span className="block font-mono text-muted">{r.product_code}</span></td>
                   <td className="py-1 pr-2">{r.brand ?? "—"}</td>
                   <td className="py-1 pr-2">{r.color ?? "—"} / {r.size ?? "—"}</td>
                   <td className="py-1 pr-2 text-right">{r.quantity}</td>

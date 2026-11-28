@@ -28,6 +28,7 @@ import { PASS_THROUGH_COMPONENTS, PAYMENT_METHOD_LABELS } from "@/lib/payments";
 import { DUTIES_MODES, DUTIES_MODE_LABELS_PT, dutiesDefaultAmount, type DutiesMode } from "@/lib/duties";
 import { PaymentProofLink } from "@/components/payment-proof-link";
 import { OrderLanguageSelect, StaffProofUpload } from "@/components/order-staff-tools";
+import { ProductCode } from "@/components/product-code";
 
 export interface OrderItemRow {
   id: string;
@@ -358,14 +359,17 @@ function ItemRow({
   return (
     <tr className={`border-b border-border align-top ${inactive ? "opacity-60" : ""}`}>
       <td className="py-2 pr-2">
-        <span className={inactive ? "line-through" : ""}>{item.product_title ?? "—"}</span>
+        <span className="flex flex-wrap items-center gap-1.5">
+          <ProductCode code={item.tdp_ref} />
+          <span className={inactive ? "line-through" : ""}>{item.product_title ?? "—"}</span>
+        </span>
         <span className="block text-muted font-mono">{item.sku}</span>
         <span className="block text-[10px] text-muted">
           Fornecedor: {item.supplier_name || "—"} · ref. fornecedor: {item.supplier_ref || "—"} · ref. TDP: {item.tdp_ref || "—"} · estoque sincronizado: {item.synced_stock ?? "—"}
         </span>
         {item.added_by_tdp && <span className="block text-[10px] uppercase text-accent">adicionado pela TDP</span>}
         {substitutedFor && (
-          <span className="block text-[10px] text-muted">substitui {substitutedFor.product_title} {substitutedFor.color}/{substitutedFor.size}</span>
+          <span className="block text-[10px] text-muted">substitui {substitutedFor.tdp_ref ? `${substitutedFor.tdp_ref} · ` : ""}{substitutedFor.product_title} {substitutedFor.color}/{substitutedFor.size}</span>
         )}
       </td>
       <td className="py-2 pr-2">
@@ -494,7 +498,7 @@ function AddItemForm({
     setPicked(r);
     setPrice(r.price !== null ? String(r.price) : "");
     setResults([]);
-    setQuery(`${r.title} — ${r.color ?? "—"} / ${r.size ?? "—"}`);
+    setQuery(`${r.code ? `${r.code} · ` : ""}${r.title} — ${r.color ?? "—"} / ${r.size ?? "—"}`);
   }
 
   return (
@@ -520,7 +524,7 @@ function AddItemForm({
         <input
           value={query}
           onChange={(e) => search(e.target.value)}
-          placeholder="Buscar por nome do produto ou SKU…"
+          placeholder="Buscar por nome, código (TDP…) ou SKU…"
           className="w-full border border-border px-2 py-1"
         />
         {(results.length > 0 || searching) && (
@@ -529,6 +533,7 @@ function AddItemForm({
             {results.map((r) => (
               <li key={r.sku}>
                 <button type="button" onClick={() => pick(r)} className="w-full text-left px-2 py-1 hover:bg-surface">
+                  {r.code && <span className="font-mono font-semibold mr-1">{r.code}</span>}
                   {r.title} — {r.color ?? "—"} / {r.size ?? "—"}{" "}
                   <span className="text-muted font-mono">{r.sku}</span>{" "}
                   <span className="text-muted">
@@ -557,7 +562,7 @@ function AddItemForm({
               .filter((i) => i.item_status !== "removed")
               .map((i) => (
                 <option key={i.id} value={i.id}>
-                  {i.product_title} {i.color}/{i.size}
+                  {i.tdp_ref ? `${i.tdp_ref} · ` : ""}{i.product_title} {i.color}/{i.size}
                 </option>
               ))}
           </select>
@@ -582,7 +587,7 @@ function OrderHistoryPanel({ order, items, events }: { order: OrderSummary; item
         <ul className="mt-1 ml-3 space-y-0.5">
           {original.map((i) => (
             <li key={i.id}>
-              {i.original_qty} × {i.product_title} {i.color}/{i.size} @ {money(i.original_unit_price, order.currency)}
+              {i.original_qty} × {i.tdp_ref ? `${i.tdp_ref} · ` : ""}{i.product_title} {i.color}/{i.size} @ {money(i.original_unit_price, order.currency)}
             </li>
           ))}
         </ul>
